@@ -74,9 +74,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .topbar { background: var(--ink); color: var(--on-dark); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; }
 .topbar-in { max-width: 1320px; margin: 0 auto; height: var(--topbar-h); padding-left: var(--gutter-l); padding-right: var(--gutter-r); display: flex; align-items: center; gap: 28px; }
 .brand { display: flex; align-items: center; gap: 10px; background: none; border: 0; color: inherit; padding: 0; }
-.mark { width: 36px; height: 36px; border-radius: 9px; background: var(--amber); color: var(--ink); display: grid; place-items: center; font: 800 20px var(--display); }
-.brand-name { font: 800 18px var(--display); letter-spacing: 0.08em; display: flex; flex-direction: column; line-height: 1; text-align: left; }
-.brand-name small { font: 600 9px var(--body); letter-spacing: 0.3em; color: var(--on-dark-muted); margin-top: 3px; }
+.brand-logo { display: block; height: 40px; width: auto; }
 .topnav { display: flex; gap: 4px; flex: 1; }
 .topnav button { background: none; border: 0; color: var(--on-dark-muted); padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 14px; }
 .topnav button:hover { color: var(--on-dark); background: var(--navy); }
@@ -453,7 +451,7 @@ th { background: var(--surface-2); font-weight: 700; }
 }
 @media (max-width: 680px) {
   body { font-size: 14.5px; }
-  .brand-name small { display: none; }
+  .brand-logo { height: 34px; }
   .previewstrip span { display: none; }
   .hero { grid-template-columns: minmax(0, 1fr); border-radius: 18px; }
   .hero::after { background: linear-gradient(180deg, var(--ink) 0%, var(--ink) 46%, color-mix(in srgb, var(--ink) 70%, transparent) 58%, transparent 74%); }
