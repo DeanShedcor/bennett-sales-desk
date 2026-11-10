@@ -301,6 +301,23 @@ legend { font-weight: 700; padding: 0 6px; }
 .siding-thumb { grid-column: 2; grid-row: 1 / span 2; width: clamp(72px, 12vw, 120px); height: auto; }
 .electrical-description { grid-column: 1; font-size: 12.5px; color: var(--muted); align-self: start; }
 .electrical-art { grid-column: 2; grid-row: 1 / span 2; width: clamp(110px, 18vw, 200px); height: auto; border-radius: 6px; }
+.choice .grow:has(.porchplan) { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.choice .grow:has(.porchplan) > strong { grid-column: 1; }
+.choice .grow:has(.porchplan) > small { display: contents; }
+.choice .porchplan { grid-column: 2; grid-row: 1 / span 3; width: 104px; height: auto; }
+.porchplan text { font: 600 7px var(--body); fill: var(--muted); }
+.porchside .seg { flex: 1 1 140px; }
+.porchside .porchplan { display: block; width: 120px; max-width: 100%; height: auto; margin: 0 auto 6px; }
+.porchside .seg.on .porchplan text { fill: var(--on-dark-muted); }
+.planstage { display: grid; place-items: center; align-content: center; gap: 8px; min-height: var(--model-h, 320px); padding: 16px 16px 44px; text-align: center; }
+.planstage.mini { padding: 10px; }
+.planstage .porchplan { width: min(100%, 340px); height: auto; max-height: calc(var(--model-h, 320px) - 110px); }
+.stage:has(.planstage) .stage-cap span { display: none; }
+.planstage.mini .porchplan { max-height: calc(var(--model-h, 170px) - 20px); }
+.plan-note { font-size: 12.5px; color: var(--muted); max-width: 44ch; }
+.extrarow { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); margin: 0 !important; }
+.panelhead + .extrarow { margin-top: 12px !important; }
+.extrarow strong { display: block; }
 .roof-art { grid-column: 2; grid-row: 1 / span 2; width: 104px; height: auto; }
 .choice .grow:has(.roof-art) > strong { grid-column: 1; align-self: end; }
 
@@ -501,6 +518,9 @@ th { background: var(--surface-2); font-weight: 700; }
   .choice .grow:has(.siding-thumb), .choice .grow:has(.electrical-art), .choice .grow:has(.roof-art) { display: block; }
   .choice .grow:has(.siding-thumb) > small, .choice .grow:has(.electrical-art) > small, .choice .grow:has(.roof-art) > small { display: block; }
   .siding-thumb, .electrical-art, .roof-art { display: block; margin-top: 8px; width: auto; max-width: 160px; max-height: 64px; }
+  .choice .grow:has(.porchplan) { display: block; }
+  .choice .grow:has(.porchplan) > small { display: block; }
+  .choice .porchplan { display: block; margin-top: 8px; width: 110px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }
