@@ -804,7 +804,7 @@ function doorTileThumbnail(value) {
 function openDoorPicker(adding) {
   modal(
     adding ? "Add a door" : "Change main door",
-    `${adding ? doorQuantityControl() : ""}<div class="choicegrid door-picker">${doorOptions.map(([value, label, note]) => `<button class="choice" onclick='selectDoor(${JSON.stringify(value)},${adding})'><img class="door-thumb" data-door-thumbnail="${esc(value)}" src="${doorThumbnail(value)}" alt="" width="48" height="48"><span><strong>${esc(label || value)}</strong><small>${esc([note, whiteOnlyDoor(value) ? "White only" : null].filter(Boolean).join(" · "))}</small><small>${doorPriceLabel(value, adding)}</small></span></button>`).join("")}</div>`,
+    `${adding ? doorQuantityControl() : ""}<div class="choicegrid door-picker">${doorOptions.map(([value, label, note]) => `<button class="choice" onclick='selectDoor(${JSON.stringify(value)},${adding})'><img class="door-thumb" data-door-thumbnail="${esc(value)}" src="${doorThumbnail(value)}" alt="" width="48" height="48"><span><strong>${esc(label || value)}</strong><small>${esc([note, whiteOnlyDoor(value) ? "White only" : null].filter(Boolean).join(" · "))}</small><small>${doorPriceLabel(value, adding)}</small></span></button>`).join("")}${usesWoodOptions(S.c) ? '<button class="choice" onclick="addCustomDoor()"><span><strong>Custom door or opening</strong><small>Enter the size and type after selecting</small><small>Price to confirm</small></span></button>' : ""}</div>`,
   );
 }
 function selectDoor(value, adding) {
