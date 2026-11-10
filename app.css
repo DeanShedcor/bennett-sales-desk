@@ -366,6 +366,12 @@ legend { font-weight: 700; padding: 0 6px; }
 .budget.warn { background: var(--warn-bg); color: var(--warn); }
 .summaryactions { display: flex; gap: 10px; }
 .summaryactions button { white-space: nowrap; }
+.summaryactions .locked { opacity: 0.55; }
+.stepsleft { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 6px; }
+.stepsleft li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; font-weight: 600; }
+.stepsleft li small { margin-left: auto; font-weight: 500; }
+.stepsleft li.done { color: var(--muted); background: var(--surface-2); border-color: transparent; }
+.stepsleft li.done .icon { color: var(--good); }
 .deal-drawer { background: var(--surface); color: var(--ink); border-top: 1px solid var(--line); max-height: min(62vh, 560px); overflow: auto; }
 .deal-drawer-in { max-width: 1320px; margin: 0 auto; padding: 22px var(--gutter-r) 22px var(--gutter-l); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
 .deal-drawer h3 { margin-bottom: 10px; }
