@@ -200,7 +200,7 @@ const descriptions = {
   "Low-Wall Barn": "A gambrel roof with shorter sidewalls and a lower profile.",
   "Silver Bullet": "Ribbed metal siding and a silver finish for a simple, durable appearance.",
 };
-const steps = ["Style", "Size", "Package", "Colors", "Exterior", "Openings", "Electrical", "Finish"];
+const steps = ["Style", "Size", "Package", "Openings", "Colors", "Exterior", "Electrical", "Finish"];
 function series(c = S.c) {
   return ["Greenhouse", "Low-Wall Barn", "Silver Bullet"].includes(c.style)
     ? c.style
@@ -521,7 +521,7 @@ function change(key, value, resolve = false) {
   if (
     S.page === "configure" &&
     S.path !== "lot" &&
-    [3, 5].includes(S.step) &&
+    ["Colors", "Openings"].includes(steps[S.step]) &&
     ["color", "roofColor", "trimColor", "doorColor", "doorTrimColor"].includes(key)
   ) {
     document
@@ -543,9 +543,9 @@ function change(key, value, resolve = false) {
   }
   render();
   if (
-    (key === "style" && S.step === 0) ||
-    (key === "size" && S.step === 1) ||
-    (key === "electrical" && S.step === 6)
+    (key === "style" && steps[S.step] === "Style") ||
+    (key === "size" && steps[S.step] === "Size") ||
+    (key === "electrical" && steps[S.step] === "Electrical")
   ) {
     const button = document.querySelector(".workspace section .actions > button.primary");
     if (button) {
