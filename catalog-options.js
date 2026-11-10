@@ -35,6 +35,8 @@ function packageOpenings(c) {
     return [`${c.garageDoorWidth || 6} × 7 ft roll-up door`, 'Solid fiberglass entry door', details.windows];
   }
   if (c.package === 'Dormer Package') {
+    if (c.dormerGable)
+      return ['2 × 3×3 windows with shutters', 'Double wood doors with a transom in each door'];
     return [
       c.dormerLength === 12 ? '2 × 3×3 windows with shutters' : '2 × 2×3 windows with shutters',
       `${c.dormerLength === 12 ? 4 : 3} dormer transom windows`,
@@ -57,7 +59,7 @@ function catalogFeatures(c) {
     usesWoodOptions(c) && c.accentColor && `${c.accentArea==='lower'?'Two-tone siding':'Accent gable'} · ${c.accentColor}`,
     usesWoodOptions(c) && c.customPaint && `Sherwin-Williams match · ${c.customPaint}`,
     usesWoodOptions(c) && c.customDoor && `Custom door request · ${c.customDoor}`,
-    c.package === 'Dormer Package' && `${c.dormerLength || 8}-ft dormer`,
+    c.package === 'Dormer Package' && dormerOption(c).label,
     (c.package === 'Side Porch' || c.package === 'Deluxe Porch') && `Porch on the ${(c.porchSide || 'Left').toLowerCase()}`,
     ...packageFeatures(c)
   ].filter(Boolean);
@@ -120,11 +122,17 @@ function packageVariantMarkup(c) {
       '</select></label></div><p class="source">Confirm door fit and clearance for this building before quoting.</p>';
   }
   if (c.package === 'Dormer Package') {
-    return '<div class="fields"><label>Dormer length<select onchange="change(\'dormerLength\',+this.value)">'+
-      [8,12].map(length=>`<option value="${length}" ${length===(c.dormerLength||8)?'selected':''}>${length} ft</option>`).join('')+
-      '</select></label></div>';
+    const current = dormerOption(c);
+    return '<h3>Which dormer?</h3><div class="segrow porchside dormeropts">' +
+      dormerOptions.map(o => `<button type="button" class="seg${o === current ? ' on' : ''}" aria-pressed="${o === current}" onclick="setDormer(${o.length},${o.gable})"><strong>${o.label.replace(' dormer', '')}</strong><small>+${money(o.price)}</small></button>`).join('') +
+      '</div>' + (current.gable ? '<p class="source">The 3D preview shows the standard dormer. A gable dormer model is not available yet.</p>' : '');
   }
   return '';
+}
+
+function setDormer(length, gable) {
+  S.c.dormerGable = gable;
+  change('dormerLength', length);
 }
 
 function wallHeightMarkup(c) {
