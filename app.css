@@ -213,6 +213,9 @@ legend { font-weight: 700; padding: 0 6px; }
 .startcard, .lotcard { display: flex; flex-direction: column; }
 .startcard .primary, .lotcard .primary { margin-top: auto; width: 100%; }
 .startcard .muted { margin-bottom: 8px; }
+.startgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.startcard a.primary { text-decoration: none; }
+.carport-art { display: block; width: 100%; height: var(--model-h, 170px); }
 .lotcard-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .price { font: 800 26px var(--display); font-variant-numeric: tabular-nums; }
 .lotfacts { font-size: 13.5px; color: var(--muted); margin-bottom: 8px; }
