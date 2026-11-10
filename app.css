@@ -216,6 +216,10 @@ legend { font-weight: 700; padding: 0 6px; }
 .price { font: 800 26px var(--display); font-variant-numeric: tabular-nums; }
 .lotfacts { font-size: 13.5px; color: var(--muted); margin-bottom: 8px; }
 .lotfacts strong { color: var(--ink); }
+.lotpay { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; }
+.lotpay .price { font-size: 32px; line-height: 1.1; }
+.lotpay .price small { font: 600 15px var(--body); color: var(--muted); margin-left: 2px; }
+.lotpay span { font-size: 12.5px; color: var(--muted); }
 .unitphoto { border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--stage-b); }
 .unitphoto img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .cfg-options .unitphoto { margin: 14px 0 16px; }
