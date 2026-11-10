@@ -214,8 +214,20 @@ function label(c) {
   return `${c.size} ${series(c)} ${["Greenhouse", "Low-Wall Barn", "Silver Bullet"].includes(c.style) ? "" : c.style}`.trim();
 }
 const electricalPrices = { Minimal: 50, Basic: 100, Expanded: 200, Utility: 555, Workshop: 650 };
+/* Extra electrical items beyond the package. A null price means the item is recorded on the
+   quote but left out of the total until a per-item price is set here. */
+const electricalExtraPrices = { extraLights: null, extraSwitches: null, extraReceptacles: null };
+const electricalExtraNames = { extraLights: "extra light", extraSwitches: "extra switch", extraReceptacles: "extra receptacle" };
+function electricalExtras(c) {
+  if (!c.electrical || c.electrical === "None") return [];
+  return Object.keys(electricalExtraPrices)
+    .map((key) => ({ key, qty: Number(c[key]) || 0, price: electricalExtraPrices[key] }))
+    .filter((e) => e.qty > 0)
+    .map((e) => ({ ...e, label: `${e.qty} ${electricalExtraNames[e.key]}${e.qty > 1 ? "s" : ""}` }));
+}
 const referencePackagePrices = {
   "End Porch": 1510,
+  "Middle Porch": 1680,
   "Side Porch": 1510,
   "Deluxe Porch": 2330,
   "Dormer Package": 1485,
@@ -306,6 +318,9 @@ function breakdown(c = S.c) {
           },
         ]
       : []),
+    ...electricalExtras(c)
+      .filter((e) => e.price !== null)
+      .map((e) => ({ name: e.label, amount: e.price * e.qty, source: "Per-item price" })),
     ...roofBreakdown(c),
     ...(c.floor && !activePackage(c)?.floor
       ? [{ name: "12-inch-on-center floor joists", amount: 375, source: "App catalog upgrade; sample price" }]
@@ -801,12 +816,19 @@ const buildingPackages = [
     "Garage Package",
     "Roll-up garage access on Utility or Lofted Barn. Published range: 10 × 12 to 14 × 40 ft.",
   ],
+  ["End Porch", "Covered porch at the end. Utility or Lofted Barn. Published range: 8 × 8 to 14 × 40 ft."],
+  [
+    "Middle Porch",
+    "Covered porch set into the middle of the long side. Utility or Lofted Barn. Published range: 8 × 12 to 14 × 40 ft.",
+  ],
   [
     "Side Porch",
-    "Covered porch along the side. Utility or Lofted Barn. Published range: 8 × 12 to 14 × 40 ft.",
+    "Covered corner porch at the left or right end of the long side. Utility or Lofted Barn. Published range: 8 × 12 to 14 × 40 ft.",
   ],
-  ["End Porch", "Covered porch at the end. Utility or Lofted Barn. Published range: 8 × 8 to 14 × 40 ft."],
-  ["Deluxe Porch", "Larger covered porch. Utility or Lofted Barn. Published range: 10 × 20 to 14 × 40 ft."],
+  [
+    "Deluxe Porch",
+    "Wraparound porch across the front and along the left or right side. Utility or Lofted Barn. Published range: 10 × 20 to 14 × 40 ft.",
+  ],
 ];
 function packagesFor(style) {
   return buildingPackages.filter(
@@ -836,7 +858,7 @@ function packageChoices() {
           "package",
           name,
           name,
-          description + (details ? "<br>Includes " + details : ""),
+          description + (details ? "<br>Includes " + details : "") + porchPlan(name, S.c.porchSide || "Left"),
           name === "Standard Storage"
             ? "Included"
             : "+" +
@@ -1055,6 +1077,7 @@ function included(c) {
     ...doors.map(doorName),
     ...windowItems(c).map(windowLabel),
     `${c.electrical} electrical`,
+    ...electricalExtras(c).map((e) => e.label),
     c.shutters ? "Window shutters" : "No shutters",
     c.shield ? "TechShield selected" : "Standard roof package",
   ];
