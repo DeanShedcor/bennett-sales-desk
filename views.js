@@ -234,6 +234,28 @@ function receiptInbox() {
 
 /* ---------- Start a sale / lot ---------- */
 
+/* Carport drawing for the Steel Structure card: a simple three-quarter view built from one
+   corner point plus width, depth and height offsets. */
+function carportArt() {
+  const at = (w, d, h) => [60 + w * 90 + d * 110, 128 + w * 12 - d * 34 - h * 62];
+  const pt = (w, d, h) => at(w, d, h).map((n) => n.toFixed(1)).join(',');
+  const peak = (d) => { const [x, y] = at(0.5, d, 1); return x.toFixed(1) + ',' + (y - 22).toFixed(1); };
+  const post = (w, d) => `<path d="M${pt(w, d, 0)}L${pt(w, d, 1)}"/>`;
+  let ribs = '';
+  for (let i = 1; i < 10; i++) ribs += `<path d="M${peak(i / 10)}L${pt(1, i / 10, 1)}"/>`;
+  return `<svg class="carport-art" viewBox="0 0 320 170" role="img" aria-label="Steel carport">
+    <ellipse cx="165" cy="128" rx="128" ry="26" fill="#0c1a28" opacity=".1"/>
+    <polygon points="${pt(0, 0, 0)} ${pt(1, 0, 0)} ${pt(1, 1, 0)} ${pt(0, 1, 0)}" fill="#dfe4e8" stroke="#c3ccd4"/>
+    <g stroke="#55626e" stroke-width="3.500" stroke-linecap="round">${post(0, 1)}${post(0, 0.5)}${post(0, 0)}</g>
+    <polygon points="${pt(0, 0, 1)} ${peak(0)} ${peak(1)} ${pt(0, 1, 1)}" fill="#8f9ba5"/>
+    <polygon points="${peak(0)} ${pt(1, 0, 1)} ${pt(1, 1, 1)} ${peak(1)}" fill="#c3cbd1"/>
+    <g stroke="#98a4ad" stroke-width="1.200">${ribs}</g>
+    <polygon points="${pt(0, 0, 1)} ${peak(0)} ${pt(1, 0, 1)}" fill="#aab4bc" stroke="#2f3b46" stroke-width="2.500" stroke-linejoin="round"/>
+    <path d="M${pt(1, 0, 1)}L${pt(1, 1, 1)}M${peak(0)}L${peak(1)}" stroke="#2f3b46" stroke-width="2.500" stroke-linecap="round" fill="none"/>
+    <g stroke="#2f3b46" stroke-width="4" stroke-linecap="round">${post(1, 1)}${post(1, 0.5)}${post(1, 0)}</g>
+  </svg>`;
+}
+
 function start() {
   const lead = leadData[S.saleLead];
   const card = (model, title, text, cta, fn) =>
@@ -261,7 +283,7 @@ function start() {
       'Design a shed for on-site construction and save it for a site review.',
       'Configure an on-site build',
       "begin('site')"
-    )}</div>`
+    )}<section class="card startcard"><div class="reference-model mini">${carportArt()}</div><h2>Steel Structure</h2><p class="muted">Carports, garages and steel buildings are designed and quoted in the steel builder. It opens in a new tab.</p><a class="primary" href="https://steel.buybennett.com" target="_blank" rel="noopener">Open the steel builder ${icon('arrow', 18)}</a></section></div>`
   );
 }
 
