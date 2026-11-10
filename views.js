@@ -499,7 +499,7 @@ function electricalExtrasMarkup() {
       `<button type="button" ${disabled ? 'disabled' : ''} aria-label="${aria}" onclick="setElectricalExtra('${key}',${value})">${icon(ic, 16)}</button>`;
     return `<div class="extrarow"><span class="grow"><strong>${name}</strong><small>${hint} · ${price === null ? 'price to confirm' : '+' + money(price) + ' each'}</small></span><span class="stepper" role="group" aria-label="${name} quantity">${btn(qty - 1, 'minus', off || qty <= 0, 'One fewer')}<output>${qty}</output>${btn(qty + 1, 'plus', off || qty >= 10, 'One more')}</span></div>`;
   }).join('');
-  return `<section class="panel elec-extras"><div class="panelhead"><h3>Add extras</h3>${off ? '<span class="pill amber">Choose a package first</span>' : ''}</div>${rows}<p class="source">Extras are recorded on the quote. An item marked price to confirm is not added to the total, and the quote is flagged for review until its price is set.</p></section>`;
+  return `<section class="panel elec-extras"><div class="panelhead"><h3>Add extras</h3>${off ? '<span class="pill amber">Choose a package first</span>' : ''}</div>${rows}<p class="source">Each extra light, switch or receptacle adds $50.00 and is listed on the quote.</p></section>`;
 }
 
 /* Updates only the extras panel and the price bar, so the 3D model is not reloaded. */
@@ -511,9 +511,9 @@ function setElectricalExtra(key, value) {
 }
 
 const electricalChoices = [
-  ['Minimal', '1 LED light, 1 switch, and 1 external drop-cord adapter.', 'minimal', '+$50'],
-  ['Basic', '1 LED light, 1 switch, 1 receptacle, and 1 external drop-cord adapter.', 'basic', '+$100'],
-  ['Expanded', '1 LED light, 1 switch, 3 receptacles, and 1 external drop-cord adapter.', 'expanded', '+$200'],
+  ['Lights Only', '1 LED light, 1 switch, and 1 external drop-cord adapter.', 'minimal', '+$175'],
+  ['Basic', '1 LED light, 1 switch, 1 receptacle, and 1 external drop-cord adapter.', 'basic', '+$205'],
+  ['Expanded', '1 LED light, 1 switch, 3 receptacles, and 1 external drop-cord adapter.', 'expanded', '+$305'],
   ['Utility', '1 LED light, 1 switch, 3 receptacles, and a six-space breaker box.', 'utility', '+$555']
 ];
 
