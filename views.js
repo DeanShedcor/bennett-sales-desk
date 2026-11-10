@@ -325,17 +325,52 @@ function lotCards(q) {
 
 /* ---------- Configurator ---------- */
 
+/* Top-view layout of a porch package, with the front of the building at the bottom.
+   Left and right are as you face the front. Shapes are drawn right-handed and flipped for Left. */
+function porchPlan(name, side = 'Left', large = false) {
+  const sided = name === 'Side Porch' || name === 'Deluxe Porch';
+  const wide = name === 'Middle Porch' || name === 'Side Porch';
+  const [x0, y0, x1, y1] = wide ? [12, 14, 108, 74] : [30, 8, 90, 80];
+  const shapes = {
+    'Middle Porch': [[[12, 14], [108, 14], [108, 74], [78, 74], [78, 54], [42, 54], [42, 74], [12, 74]], [53, 54, 67, 54]],
+    'Side Porch': [[[12, 14], [108, 14], [108, 54], [60, 54], [60, 74], [12, 74]], [77, 54, 91, 54]],
+    'End Porch': [[[30, 8], [90, 8], [90, 62], [30, 62]], [53, 62, 67, 62]],
+    'Deluxe Porch': [[[30, 8], [90, 8], [90, 26], [72, 26], [72, 50], [60, 62], [30, 62]], [62.5, 59.5, 69.5, 52.5]]
+  };
+  if (!shapes[name]) return '';
+  const fx = (x) => (sided && side === 'Left' ? 120 - x : x);
+  const [room, door] = shapes[name];
+  let planks = '';
+  for (let y = y0 + 5; y < y1; y += 5) planks += `M${x0} ${y}H${x1}`;
+  return `<svg class="porchplan${large ? ' large' : ''}" viewBox="0 0 120 96" role="img" aria-label="${name}${sided ? ' on the ' + side.toLowerCase() : ''}, top view">
+    <rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" rx="1.5" fill="#b78d60"/>
+    <path d="${planks}" stroke="#8f6c47" stroke-width=".6"/>
+    <polygon points="${room.map(([x, y]) => fx(x) + ',' + y).join(' ')}" fill="#f1e4c8" stroke="#1f2a35" stroke-width="3" stroke-linejoin="miter"/>
+    <path d="M${fx(door[0])} ${door[1]}L${fx(door[2])} ${door[3]}" stroke="#ffffff" stroke-width="3.400"/>
+    <text x="60" y="92" text-anchor="middle">Front</text>${
+      large ? `<text x="${wide ? 6 : 22}" y="48" text-anchor="middle" transform="rotate(-90 ${wide ? 6 : 22} 48)">Left</text><text x="${wide ? 114 : 98}" y="48" text-anchor="middle" transform="rotate(90 ${wide ? 114 : 98} 48)">Right</text>` : ''
+    }
+  </svg>`;
+}
+
 function modelMarkup(c, small = false, interactive = !small) {
   const variants = bennettModels[c.style];
   if (!variants) return '';
   const index = c.siding === 'Lap' ? 2 : c.shield || c.siding === 'Silvertech groove' ? 1 : 0;
   const packageModel = {
-    'Side Porch': '08-side-porch',
+    'Middle Porch': '08-side-porch',
     'End Porch': '09-end-porch',
     'Deluxe Porch': '10-deluxe-porch',
     'Dormer Package': '12-dormer-package',
     'Garage Package': '11-garage-package'
   }[c.package];
+  const porchSide = c.porchSide || 'Left';
+  if (c.package === 'Side Porch')
+    return `<div class="reference-model planstage${small ? ' mini' : ''}">${porchPlan('Side Porch', porchSide, !small)}${
+      small ? '' : '<p class="plan-note">Top view of the Side Porch layout. A 3D model for this package is not available yet.</p>'
+    }</div>`;
+  /* The deluxe porch model wraps the right side; the left-hand version is its mirror image. */
+  const mirrored = c.package === 'Deluxe Porch' && porchSide === 'Left';
   const baseModel = packageModel || variants[index] || variants[0];
   const shutterModels = [
     '01-basic-utility', '02-classic-utility', '03-elite-utility', '04-basic-lofted-barn',
@@ -349,9 +384,9 @@ function modelMarkup(c, small = false, interactive = !small) {
     JSON.stringify(c)
   )}" src="./${model}.glb" alt="${esc(
     packageModel ? c.package : c.style
-  )} 3D reference model" loading="eager" interaction-prompt="none" shadow-intensity="0.9" shadow-softness="0.9" ${
+  )} 3D reference model" loading="eager" interaction-prompt="none" ${mirrored ? 'scale="-1 1 1" ' : ''}shadow-intensity="0.9" shadow-softness="0.9" ${
     interactive
-      ? 'camera-controls auto-rotate auto-rotate-delay="1200" rotation-per-second="14deg" touch-action="pan-y"'
+      ? 'camera-controls touch-action="pan-y"'
       : 'camera-orbit="40deg 75deg auto"'
   } onload="applyModelColors(this)"></model-viewer></div>`;
 }
@@ -448,6 +483,33 @@ function openingsMarkup() {
   <p class="source">Door add-on prices are from IdeaRoom on a 12 × 16 Basic Utility. Main-door changes use the difference from the included double shed door. Confirm fit and any unpriced option. The 3D model shows reference openings.</p></section>`;
 }
 
+/* Extra lights, switches and receptacles on top of the electrical package. */
+const ELECTRICAL_EXTRAS = [
+  ['extraLights', 'Extra light', 'Overhead LED light with bulb'],
+  ['extraSwitches', 'Extra switch', 'Wall switch'],
+  ['extraReceptacles', 'Extra receptacle', 'Outlet']
+];
+
+function electricalExtrasMarkup() {
+  const off = S.c.electrical === 'None';
+  const rows = ELECTRICAL_EXTRAS.map(([key, name, hint]) => {
+    const qty = off ? 0 : Number(S.c[key]) || 0;
+    const price = electricalExtraPrices[key];
+    const btn = (value, ic, disabled, aria) =>
+      `<button type="button" ${disabled ? 'disabled' : ''} aria-label="${aria}" onclick="setElectricalExtra('${key}',${value})">${icon(ic, 16)}</button>`;
+    return `<div class="extrarow"><span class="grow"><strong>${name}</strong><small>${hint} · ${price === null ? 'price to confirm' : '+' + money(price) + ' each'}</small></span><span class="stepper" role="group" aria-label="${name} quantity">${btn(qty - 1, 'minus', off || qty <= 0, 'One fewer')}<output>${qty}</output>${btn(qty + 1, 'plus', off || qty >= 10, 'One more')}</span></div>`;
+  }).join('');
+  return `<section class="panel elec-extras"><div class="panelhead"><h3>Add extras</h3>${off ? '<span class="pill amber">Choose a package first</span>' : ''}</div>${rows}<p class="source">Extras are recorded on the quote. An item marked price to confirm is not added to the total, and the quote is flagged for review until its price is set.</p></section>`;
+}
+
+/* Updates only the extras panel and the price bar, so the 3D model is not reloaded. */
+function setElectricalExtra(key, value) {
+  S.c[key] = Math.max(0, Math.min(10, Math.floor(Number(value) || 0)));
+  const panel = $('.elec-extras');
+  if (panel) panel.outerHTML = electricalExtrasMarkup();
+  refreshSummary();
+}
+
 const electricalChoices = [
   ['Minimal', '1 LED light, 1 switch, and 1 external drop-cord adapter.', 'minimal', '+$50'],
   ['Basic', '1 LED light, 1 switch, 1 receptacle, and 1 external drop-cord adapter.', 'basic', '+$100'],
@@ -503,6 +565,7 @@ function stepBody() {
               choice('electrical', id, id + ' electrical', `<span class="electrical-description">${text}</span><img class="electrical-art" src="./${art}-tile.svg" alt="" width="184" height="46">`, price)
             )
             .join('') +
+          electricalExtrasMarkup() +
           '<p class="notice">Prices observed in IdeaRoom on a 12 × 16 Basic Utility. Have a licensed electrician inspect or connect the building. <a href="https://www.buybennett.com/packages" target="_blank" rel="noopener">Bennett electrical package chart</a></p>'
       ];
     default: {
