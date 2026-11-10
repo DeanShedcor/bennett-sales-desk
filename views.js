@@ -505,6 +505,15 @@ function stepBody() {
   }
 }
 
+/* Move to a configurator step and return to the top of the page. Called through window so an
+   inline handler cannot pick up the button's own scrollTo. */
+function goStep(step) {
+  S.step = step;
+  S.completed = Math.max(S.completed, step);
+  render();
+  window.scrollTo(0, 0);
+}
+
 function configure() {
   if (S.step !== 1) S.sizeWidth = null;
   const stage = `<div class="cfg-stage"><div class="stage">${modelMarkup(S.c)}<div class="stage-cap"><strong>${label(S.c)}</strong><span>${icon('rotate', 14)} Drag to rotate</span></div></div></div>`;
@@ -521,13 +530,13 @@ function configure() {
     stepsNav = `<nav class="steps" aria-label="Configuration progress">${steps
       .map(
         (s, i) =>
-          `<button class="${S.step === i ? 'active' : i < S.completed || i < S.step ? 'done' : ''}" aria-current="${S.step === i ? 'step' : 'false'}" ${i > S.completed ? 'disabled' : ''} onclick="S.step=${i};render()"><span class="step-number">${i + 1}</span><span class="step-label">${s}</span></button>`
+          `<button class="${S.step === i ? 'active' : i < S.completed || i < S.step ? 'done' : ''}" aria-current="${S.step === i ? 'step' : 'false'}" ${i > S.completed ? 'disabled' : ''} onclick="goStep(${i})"><span class="step-number">${i + 1}</span><span class="step-label">${s}</span></button>`
       )
       .join('')}</nav>`;
     options = `<div class="eyebrow">Step ${S.step + 1} of ${steps.length} · ${series()} series</div><h1>${title}</h1>${body}
-      <div class="actions">${S.step ? button(icon('back', 18) + ' Back', 'S.step--;render()', 'secondary') : ''}${button(
+      <div class="actions">${S.step ? button(icon('back', 18) + ' Back', 'goStep(S.step-1)', 'secondary') : ''}${button(
         (last ? (S.path === 'site' ? 'Request a site review ' : 'Review and create quote ') : 'Continue ') + icon('arrow'),
-        last ? 'quoteForm()' : 'S.step++;S.completed=Math.max(S.completed,S.step);render();scrollTo(0,0)',
+        last ? 'quoteForm()' : 'goStep(S.step+1)',
         last ? 'primary big' : 'primary big continue-step'
       )}</div>`;
   }
