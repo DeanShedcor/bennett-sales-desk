@@ -275,9 +275,11 @@ function lot() {
   );
 }
 
-/* Real listing photo. Falls back to the 3D reference model where the photo cannot load. */
-function unitPhoto(u, i) {
-  return `<div class="unitphoto"><img src="${u.photo}" alt="${esc(u.name)}" loading="lazy" onerror="this.parentNode.outerHTML=modelMarkup(lots[${i}].c,true)"></div>`;
+/* Real listing photo, resized by the listing site's image service. Falls back to the 3D
+   reference model where the photo cannot load. */
+function unitPhoto(u, i, width = 640) {
+  const src = `https://shedcor.shedsuite.com/_next/image?url=${encodeURIComponent(u.photo)}&w=${width}&q=75`;
+  return `<div class="unitphoto"><img src="${esc(src)}" alt="${esc(u.name)}" loading="lazy" onerror="this.parentNode.outerHTML=modelMarkup(lots[${i}].c,true)"></div>`;
 }
 
 function lotCards(q) {
@@ -287,7 +289,7 @@ function lotCards(q) {
       .filter(({ u }) => [u.id, u.name, u.c.size, u.colors.siding, u.condition].join(' ').toLowerCase().includes(q.toLowerCase()))
       .map(
         ({ u, i }) =>
-          `<section class="card lotcard">${unitPhoto(u, i)}<div class="lotcard-head"><span class="pillrow"><span class="pill ${u.status === 'Available' ? 'good' : 'amber'}">${u.status}</span><span class="pill ${u.condition === 'used' ? 'amber' : 'ghost'}">${u.condition === 'used' ? 'Pre-owned' : 'New'}</span></span><strong class="price">${money(u.price)}</strong></div><h3>${esc(u.name)}</h3><small class="serial">${u.id}</small><p class="lotfacts">${u.c.size.replace('x', ' × ')} ft · ${esc(u.colors.siding)} siding · ${esc(u.colors.trim)} trim<br>From <strong>${money(payment(u.price, 60))}/mo</strong> over 60 months, before tax</p>${button(
+          `<section class="card lotcard">${unitPhoto(u, i)}<div class="lotcard-head"><span class="pillrow"><span class="pill ${u.status === 'Available' ? 'good' : 'amber'}">${u.status}</span><span class="pill ${u.condition === 'used' ? 'amber' : 'ghost'}">${u.condition === 'used' ? 'Pre-owned' : 'New'}</span></span></div><div class="lotpay"><strong class="price">${money(payment(u.price, 60))}<small>/mo</small></strong><span>60-month rent-to-own, before tax</span></div><h3>${esc(u.name)}</h3><small class="serial">${u.id}</small><p class="lotfacts">${u.c.size.replace('x', ' × ')} ft · ${esc(u.colors.siding)} siding · ${esc(u.colors.trim)} trim<br>Cash price <strong>${money(u.price)}</strong></p>${button(
             (u.status === 'Available' ? 'Choose this unit ' : 'View sales record ') + icon('arrow', 18),
             `pickLot(${i})`
           )}<button class="link" onclick="S.shown.push({unit:'${u.id}',date:new Date().toISOString()});toast('Shown-to-customer event recorded separately from quotes')">Mark as shown to customer</button>${
@@ -510,7 +512,7 @@ function configure() {
   let stepsNav = '';
   if (S.path === 'lot') {
     const u = lots[S.lot];
-    options = `<span class="pillrow"><span class="pill">Specific unit · fixed configuration</span><span class="pill ${u.condition === 'used' ? 'amber' : 'ghost'}">${u.condition === 'used' ? 'Pre-owned' : 'New'}</span></span><h1>${esc(u.name)}</h1><p class="serial">${u.id} · ${label(S.c)}</p>${unitPhoto(u, S.lot)}<section class="panel"><h2>On this building</h2><ul class="included">${[u.colors.siding + ' siding', u.colors.trim + ' trim', u.colors.roof + ' roof', ...u.features]
+    options = `<span class="pillrow"><span class="pill">Specific unit · fixed configuration</span><span class="pill ${u.condition === 'used' ? 'amber' : 'ghost'}">${u.condition === 'used' ? 'Pre-owned' : 'New'}</span></span><h1>${esc(u.name)}</h1><p class="serial">${u.id} · ${label(S.c)}</p>${unitPhoto(u, S.lot, 1080)}<section class="panel"><h2>On this building</h2><ul class="included">${[u.colors.siding + ' siding', u.colors.trim + ' trim', u.colors.roof + ' roof', ...u.features]
       .map((item) => `<li>${icon('check', 16)}${esc(item)}</li>`)
       .join('')}</ul><p class="notice">Copied from the buybennett.com listing on ${LOT_LISTING_DATE}. The photo shows the actual building, and the 3D model is a reference for its style and colors. Confirm it is still on the lot before quoting.</p></section>`;
   } else {
