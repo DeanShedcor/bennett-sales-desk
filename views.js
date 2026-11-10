@@ -264,7 +264,7 @@ function modelMarkup(c, small = false, interactive = !small) {
   const model = wantsShutters && shutterModels.includes(baseModel) ? baseModel + '-shutters' : baseModel;
   return `<div class="reference-model${small ? ' mini' : ''}"><model-viewer data-finish-config="${esc(
     JSON.stringify(c)
-  )}" src="./models/${model}.glb" alt="${esc(
+  )}" src="./${model}.glb" alt="${esc(
     packageModel ? c.package : c.style
   )} 3D reference model" loading="eager" interaction-prompt="none" shadow-intensity="0.9" shadow-softness="0.9" ${
     interactive
@@ -404,9 +404,9 @@ function stepBody() {
           : ['Greenhouse', 'Low-Wall Barn'].includes(c.style)
             ? '<p class="notice">Dedicated style package. Series rules and exact material options need confirmation.</p>'
             : '<div class="smart-side-tile">' +
-              choice('siding', 'Basic groove', 'LP Smart Side', 'LP 3/8-inch groove · Basic or Classic with TechShield<img class="siding-thumb" src="./siding/smartside-grooved-panel.png" alt="Vertical grooves on LP Smart Side" loading="lazy">', 'Included') +
+              choice('siding', 'Basic groove', 'LP Smart Side', 'LP 3/8-inch groove · Basic or Classic with TechShield<img class="siding-thumb" src="./smartside-grooved-panel.png" alt="Vertical grooves on LP Smart Side" loading="lazy">', 'Included') +
               `<label class="techshield-addon"><input id="techshield" type="checkbox" ${c.shield ? 'checked' : ''} onchange="change('shield',this.checked)"> <span>Add TechShield (free upgrade to 7/16" thickness)</span> <strong>+$325 sample</strong></label></div>` +
-              choice('siding', 'Lap', 'LP Smart Side Lap Siding', 'Elite series · supported by catalog rule<img class="siding-thumb" src="./siding/smartside-lap-siding.png" alt="Horizontal courses on LP Smart Side Lap Siding" loading="lazy">', '+$1,050 sample')
+              choice('siding', 'Lap', 'LP Smart Side Lap Siding', 'Elite series · supported by catalog rule<img class="siding-thumb" src="./smartside-lap-siding.png" alt="Horizontal courses on LP Smart Side Lap Siding" loading="lazy">', '+$1,050 sample')
       ];
     case 5:
       return ['Light, access and finishing touches.', openingsMarkup()];
@@ -416,7 +416,7 @@ function stepBody() {
         choice('electrical', 'None', 'No electrical package', 'Keep the building unpowered.', 'Included') +
           electricalChoices
             .map(([id, text, art, price]) =>
-              choice('electrical', id, id + ' electrical', `<span class="electrical-description">${text}</span><img class="electrical-art" src="./electrical/packages/${art}-tile.svg" alt="" width="184" height="46">`, price)
+              choice('electrical', id, id + ' electrical', `<span class="electrical-description">${text}</span><img class="electrical-art" src="./${art}-tile.svg" alt="" width="184" height="46">`, price)
             )
             .join('') +
           '<p class="notice">Prices observed in IdeaRoom on a 12 × 16 Basic Utility. Have a licensed electrician inspect or connect the building. <a href="https://www.buybennett.com/packages" target="_blank" rel="noopener">Bennett electrical package chart</a></p>'
@@ -425,7 +425,7 @@ function stepBody() {
       if (c.catalogOptions && c.style === 'Silver Bullet')
         return ['Make it theirs.', '<p class="notice">Galvanized steel roof and standard floor included.</p>'];
       const greenhouse = c.style === 'Greenhouse';
-      const roofArt = (name) => `<img class="roof-art" src="./roof-thumbnails/${name}.svg" alt="" width="104" height="62">`;
+      const roofArt = (name) => `<img class="roof-art" src="./${name}.svg" alt="" width="104" height="62">`;
       return [
         'Make it theirs.',
         '<h3>Roof</h3>' +
