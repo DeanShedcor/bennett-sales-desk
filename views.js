@@ -435,8 +435,9 @@ const electricalChoices = [
 
 function stepBody() {
   const c = S.c;
-  switch (S.step) {
-    case 0:
+  /* Steps are matched by name, so the order is set only by the `steps` list in core.js. */
+  switch (steps[S.step]) {
+    case 'Style':
       return [
         'Start with how they’ll use it.',
         `<div class="choicegrid">${Object.keys(descriptions)
@@ -446,18 +447,18 @@ function stepBody() {
           )
           .join('')}</div>`
       ];
-    case 1:
+    case 'Size':
       return [
         'Give their plans some room.',
         sizeGroups() +
           wallHeightMarkup(c) +
           '<p class="draft-note">Sizes follow IdeaRoom. Pricing uses the existing preview estimates. Sizes without a sample adjustment show the base estimate.</p>'
       ];
-    case 2:
+    case 'Package':
       return ['Choose a building package.', packageChoices()];
-    case 3:
+    case 'Colors':
       return ['Choose their colors.', `<div class="colors">${colorsMarkup()}</div>`];
-    case 4:
+    case 'Exterior':
       return [
         'The look comes first. Series follows.',
         c.style === 'Silver Bullet'
@@ -469,9 +470,9 @@ function stepBody() {
               `<label class="techshield-addon"><input id="techshield" type="checkbox" ${c.shield ? 'checked' : ''} onchange="change('shield',this.checked)"> <span>Add TechShield (free upgrade to 7/16" thickness)</span> <strong>+$325 sample</strong></label></div>` +
               choice('siding', 'Lap', 'LP Smart Side Lap Siding', 'Elite series · supported by catalog rule<img class="siding-thumb" src="./smartside-lap-siding.png" alt="Horizontal courses on LP Smart Side Lap Siding" loading="lazy">', '+$1,050 sample')
       ];
-    case 5:
+    case 'Openings':
       return ['Light, access and finishing touches.', openingsMarkup()];
-    case 6:
+    case 'Electrical':
       return [
         'Power for what comes next.',
         choice('electrical', 'None', 'No electrical package', 'Keep the building unpowered.', 'Included') +
