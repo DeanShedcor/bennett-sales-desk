@@ -213,10 +213,11 @@ function series(c = S.c) {
 function label(c) {
   return `${c.size} ${series(c)} ${["Greenhouse", "Low-Wall Barn", "Silver Bullet"].includes(c.style) ? "" : c.style}`.trim();
 }
-const electricalPrices = { Minimal: 50, Basic: 100, Expanded: 200, Utility: 555, Workshop: 650 };
-/* Extra electrical items beyond the package. A null price means the item is recorded on the
-   quote but left out of the total until a per-item price is set here. */
-const electricalExtraPrices = { extraLights: null, extraSwitches: null, extraReceptacles: null };
+/* Package prices from the Bennett configurator (12 × 16 Basic Utility). Minimal is the old name for Lights Only. */
+const electricalPrices = { "Lights Only": 175, Minimal: 175, Basic: 205, Expanded: 305, Utility: 555, Workshop: 650 };
+/* Extra electrical items beyond the package: $50 for each extra light, switch or receptacle.
+   A null price would record the item on the quote but leave it out of the total. */
+const electricalExtraPrices = { extraLights: 50, extraSwitches: 50, extraReceptacles: 50 };
 const electricalExtraNames = { extraLights: "extra light", extraSwitches: "extra switch", extraReceptacles: "extra receptacle" };
 function electricalExtras(c) {
   if (!c.electrical || c.electrical === "None") return [];
