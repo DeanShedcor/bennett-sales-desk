@@ -172,14 +172,20 @@ legend { font-weight: 700; padding: 0 6px; }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0 0; align-items: center; }
 
 /* ---------- Home ---------- */
-.hero { background: var(--ink); color: var(--on-dark); border-radius: 22px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); align-items: center; gap: 8px; padding: clamp(24px, 3vw, 40px) clamp(24px, 4vw, 52px); padding-right: clamp(8px, 2vw, 24px); overflow: hidden; position: relative; }
-.hero::after { content: ""; position: absolute; right: -10%; top: -40%; width: 70%; height: 180%; background: radial-gradient(closest-side, rgb(255 183 3 / 0.2), transparent); pointer-events: none; }
-.hero-copy { position: relative; z-index: 1; }
+.hero { background: var(--ink); color: var(--on-dark); border-radius: 22px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; overflow: hidden; position: relative; isolation: isolate; }
+.hero::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(90deg, var(--ink) 0%, var(--ink) 28%, color-mix(in srgb, var(--ink) 78%, transparent) 40%, transparent 60%); }
+.hero-copy { position: relative; z-index: 3; align-self: center; padding: clamp(24px, 3vw, 44px) 0 clamp(24px, 3vw, 44px) clamp(24px, 4vw, 52px); }
 .hero .eyebrow { color: var(--amber); }
 .hero h1 { font-size: clamp(32px, 4.400vw, 58px); line-height: 1; margin: 14px 0 16px; }
 .hero p { color: var(--on-dark-muted); font-size: clamp(16px, 1.600vw, 20px); }
 .home-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
-.shed-hero { position: relative; z-index: 1; display: block; width: 100%; height: auto; filter: drop-shadow(0 18px 24px rgb(0 0 0 / 0.35)); }
+/* Hero scene: painted field (.scene-bg) behind the photo cut-out. The cut-out's lower edge is
+   feathered and a blurred copy sits under it so its grass melts into the field. */
+.scene { position: relative; z-index: 1; aspect-ratio: 1600 / 901; margin: 7% 3% 5% 0; min-width: 0; }
+.scene-bg { position: absolute; left: -200%; top: -77.700%; width: 350%; height: 222%; max-width: none; }
+.scene img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.shed-halo { filter: blur(12px); transform: scale(1.06); transform-origin: 50% 82%; -webkit-mask-image: linear-gradient(transparent 62%, #000 74%); mask-image: linear-gradient(transparent 62%, #000 74%); }
+.shed-hero { -webkit-mask-image: linear-gradient(#000 0 58%, transparent 71%), radial-gradient(ellipse 56% 25% at 50% 80%, #000 62%, transparent 98%); mask-image: linear-gradient(#000 0 58%, transparent 71%), radial-gradient(ellipse 56% 25% at 50% 80%, #000 62%, transparent 98%); }
 .today { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0 20px; }
 .kpi { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 18px; text-align: left; color: var(--muted); min-width: 0; }
 .kpi:hover { border-color: var(--ink); }
@@ -449,7 +455,10 @@ th { background: var(--surface-2); font-weight: 700; }
   body { font-size: 14.5px; }
   .brand-name small { display: none; }
   .previewstrip span { display: none; }
-  .hero { grid-template-columns: minmax(0, 1fr); padding: 24px 20px 8px; border-radius: 18px; }
+  .hero { grid-template-columns: minmax(0, 1fr); border-radius: 18px; }
+  .hero::after { background: linear-gradient(180deg, var(--ink) 0%, var(--ink) 46%, color-mix(in srgb, var(--ink) 70%, transparent) 58%, transparent 74%); }
+  .hero-copy { padding: 24px 20px 4px; }
+  .scene { margin: 0 -4% 5%; }
   .home-actions .big { flex: 1 1 100%; }
   .grid2, .cards, .fields { grid-template-columns: minmax(0, 1fr); }
   .panel, .card { padding: 18px; }
