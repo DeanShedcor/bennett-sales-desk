@@ -1,4 +1,5 @@
 const packageDetails = {
+  'Middle Porch': { minWidth: 8, minLength: 12, windows: '3 × 2×3 windows', porch: '4-ft composite porch, painted posts and railing' },
   'Side Porch': { minWidth: 8, minLength: 12, windows: '3 × 2×3 windows', porch: '4-ft composite porch, painted posts and railing' },
   'End Porch': { minWidth: 8, minLength: 8, windows: '3 × 2×3 windows', porch: '4-ft composite porch, painted posts and railing' },
   'Deluxe Porch': { minWidth: 10, minLength: 20, windows: '5 × 2×3 windows', porch: 'Wraparound composite porch, painted posts and railing' },
@@ -57,6 +58,7 @@ function catalogFeatures(c) {
     usesWoodOptions(c) && c.customPaint && `Sherwin-Williams match · ${c.customPaint}`,
     usesWoodOptions(c) && c.customDoor && `Custom door request · ${c.customDoor}`,
     c.package === 'Dormer Package' && `${c.dormerLength || 8}-ft dormer`,
+    (c.package === 'Side Porch' || c.package === 'Deluxe Porch') && `Porch on the ${(c.porchSide || 'Left').toLowerCase()}`,
     ...packageFeatures(c)
   ].filter(Boolean);
 }
@@ -72,7 +74,8 @@ function catalogReviewItems(c) {
     c.package === 'Garage Package' && 'Roll-up door fit and package pricing for the selected size',
     c.package === 'Dormer Package' && 'Dormer fit and package pricing for the selected size',
     activePackage(c) && packageAmount(c) === null && 'Building package price',
-    c.roof === 'Shingles' && shinglePrice(c) === null && 'Architectural shingles price'
+    c.roof === 'Shingles' && shinglePrice(c) === null && 'Architectural shingles price',
+    electricalExtras(c).some((e) => e.price === null) && 'Extra electrical items and their price'
   ].filter(Boolean);
 }
 
@@ -105,6 +108,12 @@ function syncPackageSelection(previous, next, key) {
 }
 
 function packageVariantMarkup(c) {
+  if (c.package === 'Side Porch' || c.package === 'Deluxe Porch') {
+    const side = c.porchSide || 'Left';
+    return '<h3>Which side is the porch on?</h3><div class="segrow porchside">' +
+      ['Left', 'Right'].map(s => `<button type="button" class="seg${s === side ? ' on' : ''}" aria-pressed="${s === side}" onclick="change('porchSide','${s}')">${porchPlan(c.package, s)}<strong>${s}</strong></button>`).join('') +
+      '</div><p class="source">Left and right are as you face the front of the building.</p>';
+  }
   if (c.package === 'Garage Package') {
     return '<div class="fields"><label>Included roll-up door size<select onchange="change(\'garageDoorWidth\',+this.value)">'+
       garageDoorWidths.map(width=>`<option value="${width}" ${width===(c.garageDoorWidth||6)?'selected':''}>${width} × 7 ft</option>`).join('')+
