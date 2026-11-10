@@ -674,7 +674,7 @@ function windowLabel(w) {
 }
 function windowThumb(name) {
   return (
-    '<img class="window-thumb" src="./window-renderings/' + name + '.svg" alt="" width="42" height="42">'
+    '<img class="window-thumb" src="./' + name + '.svg" alt="" width="42" height="42">'
   );
 }
 function sameWindow(a, b) {
