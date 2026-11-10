@@ -233,9 +233,23 @@ const referencePackagePrices = {
   "Dormer Package": 1485,
   "Garage Package": 1370,
 };
+/* Dormer options and prices observed in the Bennett configurator on a 12 × 16 Basic Utility. */
+const dormerOptions = [
+  { length: 8, gable: false, label: "8 ft dormer", price: 1485 },
+  { length: 12, gable: false, label: "12 ft dormer", price: 1685 },
+  { length: 12, gable: true, label: "12 ft gable dormer", price: 2105 },
+];
+function dormerOption(c) {
+  if (c.dormerGable) return dormerOptions[2];
+  return dormerOptions.find((o) => !o.gable && o.length === (c.dormerLength || 8)) || dormerOptions[0];
+}
+function packageReference(c, name = c.package) {
+  if (name === "Dormer Package") return dormerOption(c).price;
+  return referencePackagePrices[name] ?? null;
+}
 function packageAmount(c, name = c.package) {
   if (c.style !== "Utility" || series(c) !== "Basic" || c.roof !== "Metal") return null;
-  return referencePackagePrices[name] ?? null;
+  return packageReference(c, name);
 }
 function packageBreakdown(c) {
   const amount = packageAmount(c);
@@ -811,7 +825,10 @@ function removeAddedDoor(i) {
 }
 const buildingPackages = [
   ["Standard Storage", "Normal shed with no building package."],
-  ["Dormer Package", "Utility roof with a dormer. Published range: 8 × 12 to 14 × 40 ft."],
+  [
+    "Dormer Package",
+    "Utility roof with an 8 ft dormer, a 12 ft dormer or a 12 ft gable dormer. Published range: 8 × 12 to 14 × 40 ft.",
+  ],
   [
     "Garage Package",
     "Roll-up garage access on Utility or Lofted Barn. Published range: 10 × 12 to 14 × 40 ft.",
@@ -862,7 +879,7 @@ function packageChoices() {
           name === "Standard Storage"
             ? "Included"
             : "+" +
-                money(referencePackagePrices[name]) +
+                money(packageReference(S.c, name)) +
                 (packageAmount(S.c, name) === null ? " reference · confirm" : ""),
         );
       })
