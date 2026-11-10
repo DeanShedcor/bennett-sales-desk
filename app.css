@@ -214,7 +214,11 @@ legend { font-weight: 700; padding: 0 6px; }
 .startcard .muted { margin-bottom: 8px; }
 .lotcard-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .price { font: 800 26px var(--display); font-variant-numeric: tabular-nums; }
-.lotcard .source { margin-bottom: 8px; }
+.lotfacts { font-size: 13.5px; color: var(--muted); margin-bottom: 8px; }
+.lotfacts strong { color: var(--ink); }
+.unitphoto { border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--stage-b); }
+.unitphoto img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cfg-options .unitphoto { margin: 14px 0 16px; }
 .lotcard .link { justify-content: center; }
 
 /* 3D model stage */
