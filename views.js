@@ -476,11 +476,25 @@ function openingsMarkup() {
   ${extra}
   <div class="door-color-choices">${doorFinishChoices()}</div>
   ${
-    usesWoodOptions(S.c)
-      ? `<label class="field">Custom door dimensions<input id="custom-door" maxlength="120" placeholder="Width × height and door type" value="${esc(S.c.customDoor)}" oninput="setCatalogText('customDoor',this.value)"></label><p class="source">Custom dimensions are saved for fit and price confirmation.</p>`
+    usesWoodOptions(S.c) && (S.c.customOpening || S.c.customDoor)
+      ? `<div class="doorrow customdoor"><span class="grow"><strong>Custom door or opening</strong><small>Price to confirm</small><label class="field">Custom door dimensions<input id="custom-door" maxlength="120" placeholder="Width × height and door type" value="${esc(S.c.customDoor)}" oninput="setCatalogText('customDoor',this.value)"></label></span><button type="button" class="remove-opening" aria-label="Remove custom door or opening" onclick="removeCustomDoor()">Remove</button></div><p class="source">Custom dimensions are saved for fit and price confirmation.</p>`
       : ''
   }
   <p class="source">Door add-on prices are from IdeaRoom on a 12 × 16 Basic Utility. Main-door changes use the difference from the included double shed door. Confirm fit and any unpriced option. The 3D model shows reference openings.</p></section>`;
+}
+
+/* The custom dimensions field only appears after a custom door or opening is picked in the door list. */
+function addCustomDoor() {
+  S.c.customOpening = true;
+  closeModal();
+  render();
+  setTimeout(() => $('#custom-door')?.focus(), 0);
+}
+
+function removeCustomDoor() {
+  S.c.customOpening = false;
+  S.c.customDoor = '';
+  render();
 }
 
 /* Extra lights, switches and receptacles on top of the electrical package. */
