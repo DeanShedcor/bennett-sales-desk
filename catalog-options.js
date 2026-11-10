@@ -58,7 +58,7 @@ function catalogFeatures(c) {
     usesWoodOptions(c) && c.wallHeight && `${c.wallHeight}-ft sidewalls`,
     usesWoodOptions(c) && c.accentColor && `${c.accentArea==='lower'?'Two-tone siding':'Accent gable'} · ${c.accentColor}`,
     usesWoodOptions(c) && c.customPaint && `Sherwin-Williams match · ${c.customPaint}`,
-    usesWoodOptions(c) && c.customDoor && `Custom door request · ${c.customDoor}`,
+    usesWoodOptions(c) && (c.customOpening || c.customDoor) && `Custom door request · ${c.customDoor || 'dimensions needed'}`,
     c.package === 'Dormer Package' && dormerOption(c).label,
     (c.package === 'Side Porch' || c.package === 'Deluxe Porch') && `Porch on the ${(c.porchSide || 'Left').toLowerCase()}`,
     ...packageFeatures(c)
@@ -72,7 +72,7 @@ function catalogReviewItems(c) {
     usesWoodOptions(c) && c.wallHeight && `${c.wallHeight}-ft sidewall availability and price`,
     usesWoodOptions(c) && c.accentColor && 'Accent finish availability and price',
     usesWoodOptions(c) && c.customPaint && 'Custom paint match and price',
-    usesWoodOptions(c) && c.customDoor && 'Custom door dimensions, fit and price',
+    usesWoodOptions(c) && (c.customOpening || c.customDoor) && 'Custom door dimensions, fit and price',
     c.package === 'Garage Package' && 'Roll-up door fit and package pricing for the selected size',
     c.package === 'Dormer Package' && 'Dormer fit and package pricing for the selected size',
     activePackage(c) && packageAmount(c) === null && 'Building package price',
