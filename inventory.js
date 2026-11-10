@@ -40,6 +40,7 @@ function unitFromListing(line) {
   const siding = colors.siding === 'Color Siding' ? metalColor || 'Galvalume' : colors.siding;
   const shingles = has(/Architectural Shingles/);
   const dormer = options.map((o) => o.match(/^(\d+)ft Dormer Package/)).find(Boolean);
+  const sidePorch = options.map((o) => o.match(/^Side Porch Package - (Left|Right)/)).find(Boolean);
   const windows = options.reduce((n, o) => {
     const m = o.match(/^2x3 Window.*?(?: x(\d+))? \(incl\)$/);
     return m ? n + Number(m[1] || 1) : n;
@@ -60,7 +61,7 @@ function unitFromListing(line) {
     electrical: (optionText.match(/(Basic|Expanded|Utility) Electrical Package/) || [0, 'None'])[1]
   };
   if (dormer) Object.assign(c, { package: 'Dormer Package', dormerLength: Number(dormer[1]) });
-  else if (has(/Side Porch/)) Object.assign(c, { package: 'Side Porch' });
+  else if (sidePorch) Object.assign(c, { package: 'Side Porch', porchSide: sidePorch[1] });
 
   const features = [];
   for (const raw of options) {
