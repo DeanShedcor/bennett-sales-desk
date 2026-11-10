@@ -18,6 +18,7 @@ const ICONS = {
   build: '<path d="M14 6 18 2l4 4-4 4z"/><path d="m16 8-11 11a2 2 0 0 1-3-3L13 5"/>',
   alert: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/>',
   rotate: '<path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   pin: '<path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.800 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.500"/>'
 };
 function icon(name, size = 20) {
@@ -556,6 +557,27 @@ function budgetStatus(n = amount(), long = false) {
     : `<button type="button" class="budget ${ok ? 'good' : 'bad'}" onclick="S.expanded=true;refreshSummary()" title="Edit budget">${icon(ok ? 'check' : 'alert', 14)} ${text} budget</button>`;
 }
 
+/* A custom build can be quoted or sold only after every configurator step has been confirmed.
+   Lot buildings are fixed, and a quote under revision was already complete, so both are ready. */
+function stepsLeft() {
+  if (S.path === 'lot' || S.activeQuote || S.completed >= steps.length - 1) return [];
+  return steps.slice(S.completed);
+}
+
+function whenBuildReady(action) {
+  const left = stepsLeft();
+  if (!left.length) return action();
+  const next = S.completed;
+  modal(
+    'Finish the building first',
+    `<p>A quote or sale needs every choice confirmed so the price and the building are right. ${left.length === 1 ? 'One step is' : left.length + ' steps are'} still to go:</p>
+    <ol class="stepsleft">${steps
+      .map((name, i) => `<li class="${i < next ? 'done' : ''}">${icon(i < next ? 'check' : 'lock', 16)}<span>${name}</span><small>${i < next ? 'Done' : i === next ? 'Up next' : 'Not started'}</small></li>`)
+      .join('')}</ol>
+    <div class="actions">${button('Go to ' + steps[next] + ' ' + icon('arrow', 18), `closeModal();goStep(${next})`)}${button('Close', 'closeModal()', 'secondary')}</div>`
+  );
+}
+
 function refreshSummary() {
   const el = $('.quoteaside');
   if (el) el.outerHTML = summary();
@@ -565,6 +587,8 @@ function summary() {
   const n = amount();
   const site = S.path === 'site';
   const totalLabel = site ? 'Reference estimate' : 'Building total';
+  const locked = stepsLeft().length > 0;
+  const lockedClass = locked ? ' locked' : '';
   const review = catalogReviewItems(S.c);
   const items = S.path === 'lot' ? [{ name: lots[S.lot].name + ' · exact unit', amount: n }] : breakdown();
   const termButtons = (cls, detail) =>
@@ -602,8 +626,9 @@ function summary() {
       <div class="deal-flags">${budgetStatus(n)}${review.length ? `<button type="button" class="budget warn" onclick="S.expanded=true;refreshSummary()">${icon('alert', 14)} ${review.length} to confirm</button>` : ''}</div>
       <div class="summaryactions">${
         site
-          ? button('Request a site review', 'startSiteReview()')
-          : button('Finalize sale', 'finalizeForm()', 'ghostbtn') + button('Create quote ' + icon('arrow', 18), 'quoteForm()')
+          ? button((locked ? icon('lock', 16) + ' ' : '') + 'Request a site review', 'whenBuildReady(startSiteReview)', 'primary' + lockedClass)
+          : button((locked ? icon('lock', 16) + ' ' : '') + 'Finalize sale', 'whenBuildReady(finalizeForm)', 'ghostbtn' + lockedClass) +
+            button((locked ? icon('lock', 16) + ' ' : '') + 'Create quote ' + (locked ? '' : icon('arrow', 18)), 'whenBuildReady(quoteForm)', 'primary' + lockedClass)
       }</div>
     </div>
   </aside>`;
