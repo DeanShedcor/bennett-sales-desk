@@ -93,6 +93,59 @@ function salesRows(arr = S.sales) {
     .join('');
 }
 
+/* Home hero: a golden-hour field painted behind the building cut-out. The drawing uses the
+   photo's own pixel grid (1600 x 901) so its horizon lines up with the photo at any size. */
+function heroScene() {
+  let seed = 11;
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  let woods = '';
+  for (let x = -3300; x < 2400; x += 120 + rand() * 150) {
+    const w = 230 + rand() * 190, h = w * (0.2 + rand() * 0.07), flip = rand() > 0.5;
+    const left = Math.round(x), top = Math.round(606 - h);
+    woods += `<use href="#sc-oak" width="${Math.round(w)}" height="${Math.round(h)}" transform="translate(${flip ? left + Math.round(w) : left} ${top})${flip ? ' scale(-1 1)' : ''}"/>`;
+  }
+  let blooms = '';
+  const petals = ['#e08fb0', '#f2c14e', '#f6e7c3', '#d977a0'];
+  for (let i = 0; i < 46; i++) {
+    const x = -900 + rand() * 3200, y = 900 + rand() * 330;
+    blooms += `<circle cx="${Math.round(x)}" cy="${Math.round(y)}" r="${Math.round(7 + rand() * 12)}" fill="${petals[i % 4]}" opacity="${(0.35 + rand() * 0.4).toFixed(2)}"/>`;
+  }
+  return `<div class="scene">
+    <svg class="scene-bg" viewBox="-3200 -700 5600 2000" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="sc-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d6189"/><stop offset=".5" stop-color="#7f9fbb"/><stop offset=".82" stop-color="#d3cdb6"/><stop offset="1" stop-color="#f3d8a2"/></linearGradient>
+        <radialGradient id="sc-sun" gradientUnits="userSpaceOnUse" cx="1560" cy="585" r="1300"><stop offset="0" stop-color="#ffe6b0" stop-opacity=".95"/><stop offset=".3" stop-color="#ffcf8a" stop-opacity=".45"/><stop offset="1" stop-color="#ffcf8a" stop-opacity="0"/></radialGradient>
+        <linearGradient id="sc-field" gradientUnits="userSpaceOnUse" x1="0" y1="590" x2="0" y2="1300"><stop offset="0" stop-color="#bdb16c"/><stop offset=".12" stop-color="#9e9550"/><stop offset=".3" stop-color="#857c3b"/><stop offset=".62" stop-color="#756d33"/><stop offset="1" stop-color="#595326"/></linearGradient>
+        <symbol id="sc-oak" viewBox="70 20 1440 250" preserveAspectRatio="none"><image href="./shed-hero.png" width="1600" height="901"/></symbol>
+        <pattern id="sc-turf" width="520" height="84" patternUnits="userSpaceOnUse"><g id="sc-turf-tile"><svg width="260" height="42" viewBox="335 802 260 42" preserveAspectRatio="none"><image href="./shed-hero.png" width="1600" height="901"/></svg></g><use href="#sc-turf-tile" transform="translate(520 0) scale(-1 1)"/><use href="#sc-turf-tile" transform="translate(0 84) scale(1 -1)"/><use href="#sc-turf-tile" transform="translate(520 84) scale(-1 -1)"/></pattern>
+        <linearGradient id="sc-near" gradientUnits="userSpaceOnUse" x1="0" y1="610" x2="0" y2="760"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>
+        <mask id="sc-nearmask" maskUnits="userSpaceOnUse" x="-3200" y="590" width="5600" height="710"><rect x="-3200" y="590" width="5600" height="710" fill="url(#sc-near)"/></mask>
+        <filter id="sc-haze" x="-5%" y="-20%" width="110%" height="140%"><feGaussianBlur stdDeviation="2.200"/><feColorMatrix type="matrix" values="0.62 0.1 0 0 0.16  0.08 0.62 0 0 0.17  0.05 0.1 0.5 0 0.14  0 0 0 1 0"/></filter>
+        <filter id="sc-turfsoft" x="0" y="0" width="100%" height="100%"><feGaussianBlur stdDeviation="1.300"/></filter>
+        <filter id="sc-soft" x="-5%" y="-50%" width="110%" height="200%"><feGaussianBlur stdDeviation="7"/></filter>
+        <filter id="sc-softer" x="-20%" y="-100%" width="140%" height="300%"><feGaussianBlur stdDeviation="26"/></filter>
+        <filter id="sc-bloom" x="-5%" y="-20%" width="110%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>
+        <filter id="sc-grass" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.004 0.045" numOctaves="4" seed="8"/><feColorMatrix type="matrix" values="0 0 0 0 0.16  0 0 0 0 0.14  0 0 0 0 0.04  1.5 1.2 0 0 -0.95"/></filter>
+        <filter id="sc-light" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.0025 0.02" numOctaves="3" seed="21"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 0.9  0 0 0 0 0.55  0 1.6 0.8 0 -1.05"/></filter>
+      </defs>
+      <rect x="-3200" y="-700" width="5600" height="1300" fill="url(#sc-sky)"/>
+      <rect x="-3200" y="-700" width="5600" height="1300" fill="url(#sc-sun)"/>
+      <g fill="#fff1d6" opacity=".55" filter="url(#sc-softer)"><ellipse cx="250" cy="150" rx="520" ry="34"/><ellipse cx="-700" cy="330" rx="700" ry="40"/><ellipse cx="1750" cy="60" rx="460" ry="30"/><ellipse cx="1050" cy="345" rx="360" ry="22"/><ellipse cx="-1900" cy="120" rx="600" ry="36"/></g>
+      <path d="M-3200 610V548C-2700 505-2250 562-1650 536S-650 500 0 548 900 520 1400 552 2100 522 2400 546V610Z" fill="#8d9d92" filter="url(#sc-soft)"/>
+      <path d="M-3200 615V572C-2500 548-2000 588-1300 566S-200 556 400 580 1500 566 2400 578V615Z" fill="#818a5c" filter="url(#sc-soft)"/>
+      <g filter="url(#sc-haze)">${woods}</g>
+      <rect x="-3200" y="590" width="5600" height="710" fill="url(#sc-field)"/>
+      <g mask="url(#sc-nearmask)"><rect x="-3200" y="590" width="5600" height="710" fill="url(#sc-turf)" filter="url(#sc-turfsoft)" opacity=".9"/></g>
+      <rect x="-3200" y="590" width="5600" height="710" filter="url(#sc-grass)" opacity=".55"/>
+      <rect x="-3200" y="590" width="5600" height="710" filter="url(#sc-light)" opacity=".4"/>
+      <ellipse cx="1300" cy="640" rx="1500" ry="60" fill="#ffe9ad" opacity=".35" filter="url(#sc-softer)"/>
+      <g filter="url(#sc-bloom)">${blooms}</g>
+    </svg>
+    <img class="shed-halo" src="./shed-hero.png" alt="" aria-hidden="true">
+    <img class="shed-hero" src="./shed-hero.png" alt="White Bennett building with a covered porch beneath a spreading oak" width="1600" height="901" fetchpriority="high">
+  </div>`;
+}
+
 function home() {
   const available = lots.filter((u) => u.status === 'Available').length;
   const building = S.sales.length || sampleBuilds.length;
@@ -115,7 +168,7 @@ function home() {
         <button type="button" class="ghostbtn big" onclick="go('orders')">${icon('orders')} Look up an order</button>
       </div>
     </div>
-    <img class="shed-hero" src="./shed-hero.png" alt="White Bennett building with a covered porch beneath a spreading oak" width="1600" height="901" fetchpriority="high">
+    ${heroScene()}
   </section>
   <div class="today" aria-label="Today at a glance">${today
     .map(
