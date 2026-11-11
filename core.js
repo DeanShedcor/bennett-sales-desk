@@ -72,7 +72,6 @@ const phaseNames = [
   "Order approved",
   "Flooring",
   "Walls",
-  "Ceiling / finish",
   "Paint",
   "Roofing",
   "Final QA",
