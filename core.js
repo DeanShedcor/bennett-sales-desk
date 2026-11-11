@@ -1571,7 +1571,7 @@ function stockForm() {
       "Keep the lot ready for the next customer.",
       "This request is separate from the pending customer sale.",
     ) +
-    `<div class="grid2"><section class="panel">${modelMarkup(d.c)}<div class="fields"><label>Destination lot<select onchange="S.stockDraft.location=this.value"><option>${LOT_LOCATION}</option><option>Statesboro</option><option>Vidalia</option></select></label><label>Size<select onchange="S.stockDraft.c.size=this.value;render()">${[...new Set([d.c.size, "10x12", "10x16", "10x20"])].map((x) => `<option ${x === d.c.size ? "selected" : ""}>${x}</option>`).join("")}</select></label><label>Color<select onchange="S.stockDraft.c.color=this.value;render()">${[...new Set([d.c.color, "Clay", "Blue", "Sage", "Slate"])].map((x) => `<option ${x === d.c.color ? "selected" : ""}>${x}</option>`).join("")}</select></label><label>Electrical<select onchange="S.stockDraft.c.electrical=this.value;render()">${[...new Set([d.c.electrical, "None", "Basic", "Workshop"])].map((x) => `<option ${x === d.c.electrical ? "selected" : ""}>${x}</option>`).join("")}</select></label></div><p>Prefilled from ${lots[d.lot].id}. Any edits affect only this stock request.</p>${button("Submit stock request · simulate", "submitStock()")}</section><section class="panel"><h2>Evidence attached to the original match</h2><p>${rows.length} processed exact matches · ${d.days}-day window</p>${recordsTable(rows)}<label><input id="attachEvidence" type="checkbox" checked> Attach these record IDs</label><p class="notice">If you edit the replacement, this evidence still describes the original configuration; it does not become an exact-match forecast.</p><h3>Open policy</h3><p>Pending units are shown as Pending and cannot be sold again in this preview. Jordan must confirm whether they remain publicly visible or reservable.</p></section></div>`
+    `<div class="grid2"><section class="panel">${modelMarkup(d.c)}<div class="fields"><label>Destination lot<select onchange="S.stockDraft.location=this.value"><option>${LOT_LOCATION}</option><option>Statesboro</option><option>Vidalia</option></select></label><label>Size<select onchange="S.stockDraft.c.size=this.value;render()">${[...new Set([d.c.size, "10x12", "10x16", "10x20"])].map((x) => `<option ${x === d.c.size ? "selected" : ""}>${x}</option>`).join("")}</select></label><label>Color<select onchange="S.stockDraft.c.color=this.value;render()">${[...new Set([d.c.color, "Clay", "Blue", "Sage", "Slate"])].map((x) => `<option ${x === d.c.color ? "selected" : ""}>${x}</option>`).join("")}</select></label><label>Electrical<select onchange="S.stockDraft.c.electrical=this.value;render()">${[...new Set([d.c.electrical, "None", "Basic", "Workshop"])].map((x) => `<option ${x === d.c.electrical ? "selected" : ""}>${x}</option>`).join("")}</select></label></div><p>Prefilled from ${lots[d.lot].id}. Any edits affect only this stock request.</p>${button("Submit stock request · simulate", "submitStock()")}${button("Order a custom building instead", "orderCustomStock()", "secondary")}</section><section class="panel"><h2>Evidence attached to the original match</h2><p>${rows.length} processed exact matches · ${d.days}-day window</p>${recordsTable(rows)}<label><input id="attachEvidence" type="checkbox" checked> Attach these record IDs</label><p class="notice">If you edit the replacement, this evidence still describes the original configuration; it does not become an exact-match forecast.</p><h3>Open policy</h3><p>Pending units are shown as Pending and cannot be sold again in this preview. Jordan must confirm whether they remain publicly visible or reservable.</p></section></div>`
   );
 }
 function submitStock() {
@@ -1580,7 +1580,11 @@ function submitStock() {
       id: "STOCK-" + (S.stock.length + 1),
       ...clone(d),
       evidence: $("#attachEvidence").checked ? d.evidence : [],
-      status: "Submitted · simulated",
+      name: lots[d.lot].name,
+      total: lots[d.lot].price,
+      stage: 0,
+      status: "Pending",
+      date: new Date().toISOString(),
     };
   S.stock.push(r);
   go("stock");
