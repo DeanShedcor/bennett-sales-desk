@@ -225,6 +225,13 @@ legend { font-weight: 700; padding: 0 6px; }
 .startgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .startcard a.primary { text-decoration: none; }
 .carport-art { display: block; width: 100%; height: var(--model-h, 170px); }
+.changes { display: grid; gap: 10px; margin-top: 10px; justify-items: start; }
+.changecard { justify-self: stretch; border: 1.5px solid var(--line); border-left: 4px solid var(--amber); border-radius: 12px; padding: 14px 16px; background: var(--surface-2); display: grid; gap: 8px; }
+.changecard small { color: var(--muted); font-size: 12.5px; }
+.changecard .chev { margin-top: 2px; }
+.changetext { font-weight: 600; }
+.secondary.small { padding: 8px 14px; font-size: 13.5px; display: inline-flex; align-items: center; gap: 6px; }
+.changesummary { margin-bottom: 20px; }
 .stockstart { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 20px; }
 .stockstart .source { flex: 1 1 260px; }
 .advicerow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 12px 0; border-top: 1px solid var(--line); margin: 0 !important; }
