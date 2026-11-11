@@ -294,8 +294,9 @@ function lot() {
       'Find the one they came for.',
       `${lots.length} buildings copied from the buybennett.com listing on ${LOT_LISTING_DATE}. Availability here is simulated, so confirm a building is still on the lot before quoting.`
     ) +
+    lotSummaryMarkup() +
     lotFiltersMarkup() +
-    `<label class="searchbar">${icon('orders')}<input id="lot-search" class="search" aria-label="Search lot" placeholder="Search size, style, color or serial" value="${esc(LOT_FILTER.q)}" oninput="setLotFilter('q',this.value)"></label><div class="lotcount"><strong id="lotcount">${lotCountText()}</strong><button type="button" class="link" id="lot-clear" ${lotFiltered() ? '' : 'hidden'} onclick="clearLotFilters()">Clear filters</button></div><div class="cards" id="lotcards">${lotCards()}</div>`
+    `<label class="searchbar">${icon('orders')}<input id="lot-search" class="search" aria-label="Search lot" placeholder="Search size, style, color or serial" value="${esc(LOT_FILTER.q)}" oninput="setLotFilter('q',this.value)"></label><div class="lotcount"><strong id="lotcount">${lotCountText()}</strong><button type="button" class="link" id="lot-clear" ${lotFiltered() ? '' : 'hidden'} onclick="clearLotFilters()">Clear filters</button></div><div class="cards" id="lotcards">${lotCards()}</div>${compareBarMarkup()}`
   );
 }
 
@@ -422,10 +423,10 @@ function lotCards() {
     lotResults()
       .map(
         ({ u, i }) =>
-          `<section class="card lotcard">${unitPhoto(u, i)}<div class="lotcard-head"><span class="pillrow"><span class="pill ${u.status === 'Available' ? 'good' : 'amber'}">${u.status}</span><span class="pill ${u.condition === 'used' ? 'amber' : 'ghost'}">${u.condition === 'used' ? 'Pre-owned' : 'New'}</span>${LOT_FILTER.budget ? `<span class="pill good">${money(LOT_FILTER.budget - lotPay(u))} under budget</span>` : ''}</span></div><div class="lotpay"><strong class="price">${money(payment(u.price, 60))}<small>/mo</small></strong><span>60-month rent-to-own, before tax</span></div><h3>${esc(u.name)}</h3><small class="serial">${u.id}</small><p class="lotfacts">${u.c.size.replace('x', ' × ')} ft · ${esc(u.colors.siding)} siding · ${esc(u.colors.trim)} trim<br>Cash price <strong>${money(u.price)}</strong></p>${button(
-            (u.status === 'Available' ? 'Choose this unit ' : 'View sales record ') + icon('arrow', 18),
-            `pickLot(${i})`
-          )}<button class="link" onclick="S.shown.push({unit:'${u.id}',date:new Date().toISOString()});toast('Shown-to-customer event recorded separately from quotes')">Mark as shown to customer</button>${
+          `<section class="card lotcard"><button type="button" class="photobtn" aria-label="View ${esc(u.name)}" onclick="openUnit(${i})">${unitPhoto(u, i)}</button><div class="lotcard-head"><span class="pillrow">${lotPills(u)}</span><label class="comparebox"><input id="compare-${i}" type="checkbox" ${LOT_COMPARE.includes(i) ? 'checked' : ''} onchange="toggleCompare(${i},this.checked)"> Compare</label></div><div class="lotpay"><strong class="price">${money(payment(u.price, 60))}<small>/mo</small></strong><span>60-month rent-to-own, before tax</span></div><h3>${esc(u.name)}</h3><small class="serial">${u.id}</small><p class="lotfacts">${u.c.size.replace('x', ' × ')} ft · ${esc(u.colors.siding)} siding · ${esc(u.colors.trim)} trim<br>Cash price ${lotCash(u)}</p>${button(
+            (u.status === 'Available' ? 'View building ' : 'View sales record ') + icon('arrow', 18),
+            u.status === 'Available' ? `openUnit(${i})` : `pickLot(${i})`
+          )}<button class="link" onclick="logInterest(${i})">Log an interested customer</button>${
             u.status === 'Pending' ? button('Order another for stock', `restock(${i})`, 'secondary') : ''
           }</section>`
       )
@@ -737,10 +738,7 @@ function configure() {
   let options;
   let stepsNav = '';
   if (S.path === 'lot') {
-    const u = lots[S.lot];
-    options = `<span class="pillrow"><span class="pill">Specific unit · fixed configuration</span><span class="pill ${u.condition === 'used' ? 'amber' : 'ghost'}">${u.condition === 'used' ? 'Pre-owned' : 'New'}</span></span><h1>${esc(u.name)}</h1><p class="serial">${u.id} · ${label(S.c)}</p>${unitPhoto(u, S.lot, 1080)}<section class="panel"><h2>On this building</h2><ul class="included">${[u.colors.siding + ' siding', u.colors.trim + ' trim', u.colors.roof + ' roof', ...u.features]
-      .map((item) => `<li>${icon('check', 16)}${esc(item)}</li>`)
-      .join('')}</ul><p class="notice">Copied from the buybennett.com listing on ${LOT_LISTING_DATE}. The photo shows the actual building, and the 3D model is a reference for its style and colors. Confirm it is still on the lot before quoting.</p></section>`;
+    options = lotSaleMarkup();
   } else {
     const [title, body] = stepBody();
     const last = S.step === steps.length - 1;
@@ -757,7 +755,8 @@ function configure() {
         last ? 'primary big' : 'primary big continue-step'
       )}</div>`;
   }
-  return `<button class="link backlink" onclick="go('start')">${icon('back', 16)} Sale options</button><div class="workspace"><section class="cfg">${stepsNav}${stage}<div class="cfg-options">${options}</div></section>${summary()}</div>`;
+  const back = S.path === 'lot' ? ['openUnit(S.lot)', 'Back to building'] : ["go('start')", 'Sale options'];
+  return `<button class="link backlink" onclick="${back[0]}">${icon('back', 16)} ${back[1]}</button><div class="workspace"><section class="cfg">${stepsNav}${stage}<div class="cfg-options">${options}</div></section>${summary()}</div>`;
 }
 
 /* ---------- Deal bar (price, monthly payment, actions) ---------- */
@@ -782,6 +781,7 @@ function stepsLeft() {
 
 function whenBuildReady(action) {
   const left = stepsLeft();
+  if (!left.length && lotDeliveryMissing().length) return deliveryPrompt();
   if (!left.length) return action();
   const next = S.completed;
   modal(
@@ -803,7 +803,7 @@ function summary() {
   const n = amount();
   const site = S.path === 'site';
   const totalLabel = site ? 'Reference estimate' : 'Building total';
-  const locked = stepsLeft().length > 0;
+  const locked = stepsLeft().length > 0 || lotDeliveryMissing().length > 0;
   const lockedClass = locked ? ' locked' : '';
   const review = catalogReviewItems(S.c);
   const items = S.path === 'lot' ? [{ name: lots[S.lot].name + ' · exact unit', amount: n }] : breakdown();
@@ -881,13 +881,13 @@ function stockList() {
 /* ---------- Render + boot ---------- */
 
 const NAV_GROUP = {
-  home: 'home', receipts: 'home', lot: 'lot', orders: 'orders', sale: 'orders', quote: 'orders',
+  home: 'home', receipts: 'home', lot: 'lot', unit: 'lot', orders: 'orders', sale: 'orders', quote: 'orders',
   performance: 'performance', matches: 'performance', stock: 'stock', restock: 'stock'
 };
 
 function render() {
   const screens = {
-    home, receipts: receiptInbox, start, lot, configure,
+    home, receipts: receiptInbox, start, lot, unit: unitPage, configure,
     quote: () => quoteView(false), customer: () => quoteView(true),
     sale, orders, restock: stockForm, stock: stockList, performance: performanceScreen, notes
   };
