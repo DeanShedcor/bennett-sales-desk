@@ -46,11 +46,26 @@ function head(kicker, title, lede = '') {
   return `<header class="pagehead"><div><div class="eyebrow">${kicker}</div><h1>${title}</h1>${lede ? `<p class="lede">${lede}</p>` : ''}</div><span class="pill ghost">Bennett sells · ShedCor builds</span></header>`;
 }
 
-/* Production stage tracker: nine ShedCor phases, current one named. */
+/* Chevron progress bar: one box per stage with the stage name inside. Finished stages are
+   navy, the current stage is amber (red when it is on hold) and later stages stay grey. */
+function chevronTrack(names, stage, hold = false) {
+  return `<span class="chev n${names.length}" role="img" aria-label="Stage ${stage + 1} of ${names.length}: ${esc(names[stage])}"><span class="chev-row">${names
+    .map((name, i) => `<i class="${i < stage ? 'done' : i === stage ? (hold ? 'now hold' : 'now') : ''}">${esc(name)}</i>`)
+    .join('')}</span></span>`;
+}
+
+/* Production stage tracker: nine ShedCor phases. */
 function stageTrack(stage) {
-  return `<div class="track" role="img" aria-label="Stage ${stage + 1} of ${phaseNames.length}: ${phaseNames[stage]}">${phaseNames
-    .map((_, i) => `<i class="${i < stage ? 'done' : i === stage ? 'now' : ''}"></i>`)
-    .join('')}</div><div class="track-label"><strong>${phaseNames[stage]}</strong><span>Stage ${stage + 1} of ${phaseNames.length}</span></div>`;
+  return chevronTrack(phaseNames, stage) + `<div class="track-label"><strong>${phaseNames[stage]}</strong><span>Stage ${stage + 1} of ${phaseNames.length}</span></div>`;
+}
+
+/* Sale tracker: where a quote or sale stands, from quote to hand-off. */
+function saleTrack(s) {
+  const last = s.path === 'lot' ? 'Delivery' : 'In production';
+  const at = { 'Quote issued': 0, 'Submitted · Awaiting review': 1, 'Correction requested': 1, 'Processed · Sold': 3 }[s.status];
+  if (at === undefined) return '';
+  const hold = s.status === 'Correction requested';
+  return chevronTrack(['Quote issued', hold ? 'Correction needed' : 'Submitted', 'Approved', last], at, hold);
 }
 
 const sampleBuilds = [
@@ -89,7 +104,7 @@ function salesRows(arr = S.sales) {
   return arr
     .map(
       (s) =>
-        `<button class="listrow" onclick="openSale('${s.id}')"><span class="grow"><strong>${esc(s.customer)} · ${s.id}</strong><small>${label(s.c)}</small><span class="pillrow"><span class="pill">${s.status}</span><span class="pill blue">${s.fulfillment}</span></span></span><span class="rowarrow">${icon('arrow', 18)}</span></button>`
+        `<button class="listrow" onclick="openSale('${s.id}')"><span class="grow"><strong>${esc(s.customer)} · ${s.id}</strong><small>${label(s.c)}</small><span class="pillrow"><span class="pill">${s.status}</span><span class="pill blue">${s.fulfillment}</span></span>${saleTrack(s)}</span><span class="rowarrow">${icon('arrow', 18)}</span></button>`
     )
     .join('');
 }
