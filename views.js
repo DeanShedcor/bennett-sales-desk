@@ -49,12 +49,14 @@ function head(kicker, title, lede = '') {
 /* Chevron progress bar: one box per stage with the stage name inside. Finished stages are
    navy, the current stage is amber (red when it is on hold) and later stages stay grey. */
 function chevronTrack(names, stage, hold = false) {
-  return `<span class="chev n${names.length}" role="img" aria-label="Stage ${stage + 1} of ${names.length}: ${esc(names[stage])}"><span class="chev-row">${names
-    .map((name, i) => `<i class="${i < stage ? 'done' : i === stage ? (hold ? 'now hold' : 'now') : ''}">${esc(name)}</i>`)
+  /* Always one row. Each word sits on its own line, and a long tracker in a narrow space turns
+     its labels sideways so every stage still fits. */
+  return `<span class="chev${names.length > 5 ? ' long' : ''}" role="img" aria-label="Stage ${stage + 1} of ${names.length}: ${esc(names[stage])}"><span class="chev-row" style="--n:${names.length}">${names
+    .map((name, i) => `<i class="${i < stage ? 'done' : i === stage ? (hold ? 'now hold' : 'now') : ''}"><span>${esc(name).replace(/ /g, '<br>')}</span></i>`)
     .join('')}</span></span>`;
 }
 
-/* Production stage tracker: nine ShedCor phases. */
+/* Production stage tracker: the ShedCor build phases. */
 function stageTrack(stage) {
   return chevronTrack(phaseNames, stage) + `<div class="track-label"><strong>${phaseNames[stage]}</strong><span>Stage ${stage + 1} of ${phaseNames.length}</span></div>`;
 }
