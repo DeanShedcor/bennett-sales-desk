@@ -294,7 +294,8 @@ function lot() {
       'Find the one they came for.',
       `${lots.length} buildings copied from the buybennett.com listing on ${LOT_LISTING_DATE}. Availability here is simulated, so confirm a building is still on the lot before quoting.`
     ) +
-    `<label class="searchbar">${icon('orders')}<input id="lot-search" class="search" aria-label="Search lot" placeholder="Search size, style, color or serial" oninput="filterLot(this.value)"></label><div class="cards" id="lotcards">${lotCards('')}</div>`
+    lotFiltersMarkup() +
+    `<label class="searchbar">${icon('orders')}<input id="lot-search" class="search" aria-label="Search lot" placeholder="Search size, style, color or serial" value="${esc(LOT_FILTER.q)}" oninput="setLotFilter('q',this.value)"></label><div class="lotcount"><strong id="lotcount">${lotCountText()}</strong><button type="button" class="link" id="lot-clear" ${lotFiltered() ? '' : 'hidden'} onclick="clearLotFilters()">Clear filters</button></div><div class="cards" id="lotcards">${lotCards()}</div>`
   );
 }
 
@@ -305,21 +306,130 @@ function unitPhoto(u, i, width = 640) {
   return `<div class="unitphoto"><img src="${esc(src)}" alt="${esc(u.name)}" loading="lazy" onerror="this.parentNode.outerHTML=modelMarkup(lots[${i}].c,true)"></div>`;
 }
 
-function lotCards(q) {
+/* ---------- Lot filters: payment, size, style, condition, sort and budget match ---------- */
+const LOT_FILTER = { q: '', budget: 0, size: 'All', style: 'All', condition: 'All', sort: 'payment' };
+const LOT_BUDGETS = [150, 200, 250, 350];
+const LOT_SORTS = [
+  ['payment', 'Lowest payment'],
+  ['payment-desc', 'Highest payment'],
+  ['closest', 'Closest to budget'],
+  ['size-desc', 'Biggest size'],
+  ['size', 'Smallest size'],
+  ['newest', 'Newest build'],
+  ['oldest', 'Oldest build']
+];
+const lotStyleName = (s) => (s === 'Lofted' ? 'Lofted Barn' : s);
+const lotPay = (u) => payment(u.price, 60);
+const lotArea = (u) => u.c.size.split('x').reduce((a, b) => a * b, 1);
+/* Build date read from the serial number (…-MMDDYY-…). Pre-owned serials carry no date. */
+function lotBuilt(u) {
+  const m = /-(\d{2})(\d{2})(\d{2})-/.exec(u.id);
+  return m ? Number('20' + m[3] + m[1] + m[2]) : 0;
+}
+
+function lotFiltered() {
+  const f = LOT_FILTER;
+  return Boolean(f.q.trim() || f.budget || f.size !== 'All' || f.style !== 'All' || f.condition !== 'All' || f.sort !== 'payment');
+}
+
+function lotResults() {
+  const f = LOT_FILTER;
+  const q = f.q.trim().toLowerCase();
+  const list = lots
+    .map((u, i) => ({ u, i }))
+    .filter(
+      ({ u }) =>
+        (!q || [u.id, u.name, u.c.size, u.colors.siding, u.condition, lotStyleName(u.c.style)].join(' ').toLowerCase().includes(q)) &&
+        (!f.budget || lotPay(u) <= f.budget) &&
+        (f.size === 'All' || u.c.size === f.size) &&
+        (f.style === 'All' || u.c.style === f.style) &&
+        (f.condition === 'All' || (f.condition === 'used') === (u.condition === 'used'))
+    );
+  const sorts = {
+    payment: (a, b) => lotPay(a.u) - lotPay(b.u),
+    'payment-desc': (a, b) => lotPay(b.u) - lotPay(a.u),
+    closest: (a, b) => (f.budget ? lotPay(b.u) - lotPay(a.u) : lotPay(a.u) - lotPay(b.u)),
+    'size-desc': (a, b) => lotArea(b.u) - lotArea(a.u) || lotPay(a.u) - lotPay(b.u),
+    size: (a, b) => lotArea(a.u) - lotArea(b.u) || lotPay(a.u) - lotPay(b.u),
+    newest: (a, b) => lotBuilt(b.u) - lotBuilt(a.u),
+    oldest: (a, b) => (lotBuilt(a.u) || Infinity) - (lotBuilt(b.u) || Infinity)
+  };
+  return list.sort(sorts[f.sort] || sorts.payment);
+}
+
+function lotCountText() {
+  const n = lotResults().length;
+  const f = LOT_FILTER;
+  return `${n} of ${lots.length} buildings` + (f.budget ? ` at $${f.budget}/mo or less` : '');
+}
+
+function lotFiltersMarkup() {
+  const f = LOT_FILTER;
+  const sizes = [...new Set(lots.map((u) => u.c.size))].sort((a, b) => lotArea({ c: { size: a } }) - lotArea({ c: { size: b } }));
+  const styles = [...new Set(lots.map((u) => u.c.style))];
+  const options = (list, current) => list.map(([value, text]) => `<option value="${esc(value)}" ${value === current ? 'selected' : ''}>${esc(text)}</option>`).join('');
+  return `<section class="panel lotfilters">
+    <div class="lotbudget"><label class="field">Customer's monthly budget<span class="moneyinput"><span>$</span><input id="lot-budget" type="number" inputmode="numeric" min="0" step="5" placeholder="Any" value="${f.budget || ''}" oninput="setLotFilter('budget',this.value)"><span>/mo</span></span></label>
+      <div class="chiprow" role="group" aria-label="Payment shortcuts">${LOT_BUDGETS.map((n) => `<button type="button" class="chipbtn${f.budget === n ? ' on' : ''}" data-budget="${n}" onclick="setLotBudget(${n})">Under $${n}/mo</button>`).join('')}<button type="button" class="chipbtn${f.budget ? '' : ' on'}" data-budget="0" onclick="setLotBudget(0)">Any payment</button></div></div>
+    <div class="fields lotselects">
+      <label>Size<select onchange="setLotFilter('size',this.value)">${options([['All', 'All sizes'], ...sizes.map((s) => [s, s.replace('x', ' × ') + ' ft'])], f.size)}</select></label>
+      <label>Style<select onchange="setLotFilter('style',this.value)">${options([['All', 'All styles'], ...styles.map((s) => [s, lotStyleName(s)])], f.style)}</select></label>
+      <label>New or pre-owned<select onchange="setLotFilter('condition',this.value)">${options([['All', 'New and pre-owned'], ['new', 'New'], ['used', 'Pre-owned']], f.condition)}</select></label>
+      <label>Sort by<select id="lot-sort" onchange="setLotFilter('sort',this.value)">${options(LOT_SORTS, f.sort)}</select></label>
+    </div>
+    <p class="source">Payments are the 60-month rent-to-own estimate before tax. Build dates come from the serial number.</p>
+  </section>`;
+}
+
+/* Updates the results without rebuilding the filter controls, so typing keeps its focus. */
+function setLotFilter(key, value) {
+  const f = LOT_FILTER;
+  if (key === 'budget') {
+    value = Math.max(0, Math.floor(Number(value) || 0));
+    if (value && f.sort === 'payment') f.sort = 'closest';
+    if (!value && f.sort === 'closest') f.sort = 'payment';
+  }
+  f[key] = value;
+  $('#lotcards').innerHTML = lotCards();
+  $('#lotcount').textContent = lotCountText();
+  $('#lot-clear').hidden = !lotFiltered();
+  $('#lot-sort').value = f.sort;
+  document.querySelectorAll('.lotfilters [data-budget]').forEach((b) => b.classList.toggle('on', Number(b.dataset.budget) === f.budget));
+}
+
+function setLotBudget(n) {
+  $('#lot-budget').value = n || '';
+  setLotFilter('budget', n);
+}
+
+function clearLotFilters() {
+  Object.assign(LOT_FILTER, { q: '', budget: 0, size: 'All', style: 'All', condition: 'All', sort: 'payment' });
+  render();
+}
+
+function lotEmptyMarkup() {
+  const f = LOT_FILTER;
+  const lowest = Math.min(...lots.map(lotPay));
+  return `<div class="emptystate lotempty"><strong>No buildings match.</strong><p>${
+    f.budget && f.budget < lowest
+      ? `Nothing on the lot fits $${f.budget}/mo. The lowest payment on the lot is ${money(lowest)}/mo.`
+      : 'Try a higher budget or fewer filters.'
+  }</p><button type="button" class="secondary" onclick="clearLotFilters()">Clear filters</button></div>`;
+}
+
+function lotCards() {
   return (
-    lots
-      .map((u, i) => ({ u, i }))
-      .filter(({ u }) => [u.id, u.name, u.c.size, u.colors.siding, u.condition].join(' ').toLowerCase().includes(q.toLowerCase()))
+    lotResults()
       .map(
         ({ u, i }) =>
-          `<section class="card lotcard">${unitPhoto(u, i)}<div class="lotcard-head"><span class="pillrow"><span class="pill ${u.status === 'Available' ? 'good' : 'amber'}">${u.status}</span><span class="pill ${u.condition === 'used' ? 'amber' : 'ghost'}">${u.condition === 'used' ? 'Pre-owned' : 'New'}</span></span></div><div class="lotpay"><strong class="price">${money(payment(u.price, 60))}<small>/mo</small></strong><span>60-month rent-to-own, before tax</span></div><h3>${esc(u.name)}</h3><small class="serial">${u.id}</small><p class="lotfacts">${u.c.size.replace('x', ' × ')} ft · ${esc(u.colors.siding)} siding · ${esc(u.colors.trim)} trim<br>Cash price <strong>${money(u.price)}</strong></p>${button(
+          `<section class="card lotcard">${unitPhoto(u, i)}<div class="lotcard-head"><span class="pillrow"><span class="pill ${u.status === 'Available' ? 'good' : 'amber'}">${u.status}</span><span class="pill ${u.condition === 'used' ? 'amber' : 'ghost'}">${u.condition === 'used' ? 'Pre-owned' : 'New'}</span>${LOT_FILTER.budget ? `<span class="pill good">${money(LOT_FILTER.budget - lotPay(u))} under budget</span>` : ''}</span></div><div class="lotpay"><strong class="price">${money(payment(u.price, 60))}<small>/mo</small></strong><span>60-month rent-to-own, before tax</span></div><h3>${esc(u.name)}</h3><small class="serial">${u.id}</small><p class="lotfacts">${u.c.size.replace('x', ' × ')} ft · ${esc(u.colors.siding)} siding · ${esc(u.colors.trim)} trim<br>Cash price <strong>${money(u.price)}</strong></p>${button(
             (u.status === 'Available' ? 'Choose this unit ' : 'View sales record ') + icon('arrow', 18),
             `pickLot(${i})`
           )}<button class="link" onclick="S.shown.push({unit:'${u.id}',date:new Date().toISOString()});toast('Shown-to-customer event recorded separately from quotes')">Mark as shown to customer</button>${
             u.status === 'Pending' ? button('Order another for stock', `restock(${i})`, 'secondary') : ''
           }</section>`
       )
-      .join('') || '<p class="empty">No matching units.</p>'
+      .join('') || lotEmptyMarkup()
   );
 }
 
