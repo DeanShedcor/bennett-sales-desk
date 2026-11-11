@@ -51,7 +51,7 @@ function head(kicker, title, lede = '') {
 function chevronTrack(names, stage, hold = false) {
   /* Always one row. Each word sits on its own line, and a long tracker in a narrow space turns
      its labels sideways so every stage still fits. */
-  return `<span class="chev${names.length > 5 ? ' long' : ''}" role="img" aria-label="Stage ${stage + 1} of ${names.length}: ${esc(names[stage])}"><span class="chev-row" style="--n:${names.length}">${names
+  return `<span class="chev${names.length > 5 ? ' long' : ''}" role="img" aria-label="${stage < names.length ? `Stage ${stage + 1} of ${names.length}: ${esc(names[stage])}` : 'All stages complete'}"><span class="chev-row" style="--n:${names.length}">${names
     .map((name, i) => `<i class="${i < stage ? 'done' : i === stage ? (hold ? 'now hold' : 'now') : ''}"><span>${names.length > 5 ? esc(name).replace(/ /g, '<br>') : esc(name)}</span></i>`)
     .join('')}</span></span>`;
 }
@@ -84,8 +84,8 @@ function sampleBuildRows(count = sampleBuilds.length) {
   return sampleBuilds
     .slice(0, count)
     .map(
-      (b) =>
-        `<div class="buildrow"><div class="buildrow-head"><strong>${b.title}</strong><span class="pill ghost">${b.tag}</span></div><small>${b.sub}</small>${stageTrack(b.stage)}${b.note ? `<p class="source">${b.note}</p>` : ''}</div>`
+      (b, i) =>
+        `<div class="buildrow"><div class="buildrow-head"><strong>${b.title}</strong><span class="pill ghost">${b.tag}</span></div><small>${b.sub}</small>${stageTrack(b.stage)}${b.note ? `<p class="source">${b.note}</p>` : ''}${changeOrdersMarkup('B' + i)}</div>`
     )
     .join('');
 }
@@ -106,7 +106,7 @@ function salesRows(arr = S.sales) {
   return arr
     .map(
       (s) =>
-        `<button class="listrow" onclick="openSale('${s.id}')"><span class="grow"><strong>${esc(s.customer)} · ${s.id}</strong><small>${label(s.c)}</small><span class="pillrow"><span class="pill">${s.status}</span><span class="pill blue">${s.fulfillment}</span></span>${saleTrack(s)}</span><span class="rowarrow">${icon('arrow', 18)}</span></button>`
+        `<button class="listrow" onclick="openSale('${s.id}')"><span class="grow"><strong>${esc(s.customer)} · ${s.id}</strong><small>${label(s.c)}</small><span class="pillrow"><span class="pill">${s.status}</span><span class="pill blue">${s.fulfillment}</span>${S.changes.some((c) => c.order === s.id && !c.declined && c.done < 3) ? '<span class="pill amber">Change order open</span>' : ''}</span>${saleTrack(s)}</span><span class="rowarrow">${icon('arrow', 18)}</span></button>`
     )
     .join('');
 }
@@ -875,6 +875,7 @@ function orders() {
   return (
     head('ORDER LOOKUP', 'Find the sale. See the next handoff.', 'Sale and fulfillment statuses stay separate.') +
     `<label class="searchbar">${icon('orders')}<input id="order-search" class="search" aria-label="Search orders" placeholder="Search customer, order or serial" oninput="filterOrders(this.value)"></label>
+    ${changeSummaryMarkup()}
     <section class="panel" id="orderresults">${
       salesRows() ||
       `<div class="emptystate"><strong>No sales in this session yet.</strong><p>Quotes and finalized sales show up here with their review and fulfillment status.</p><button type="button" class="primary" onclick="S.saleLead=null;go('start')">Start a sale ${icon('arrow', 18)}</button></div>`
