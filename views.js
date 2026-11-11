@@ -52,7 +52,7 @@ function chevronTrack(names, stage, hold = false) {
   /* Always one row. Each word sits on its own line, and a long tracker in a narrow space turns
      its labels sideways so every stage still fits. */
   return `<span class="chev${names.length > 5 ? ' long' : ''}" role="img" aria-label="Stage ${stage + 1} of ${names.length}: ${esc(names[stage])}"><span class="chev-row" style="--n:${names.length}">${names
-    .map((name, i) => `<i class="${i < stage ? 'done' : i === stage ? (hold ? 'now hold' : 'now') : ''}"><span>${esc(name).replace(/ /g, '<br>')}</span></i>`)
+    .map((name, i) => `<i class="${i < stage ? 'done' : i === stage ? (hold ? 'now hold' : 'now') : ''}"><span>${names.length > 5 ? esc(name).replace(/ /g, '<br>') : esc(name)}</span></i>`)
     .join('')}</span></span>`;
 }
 
@@ -767,12 +767,12 @@ function configure() {
       .join('')}</nav>`;
     options = `<div class="eyebrow">Step ${S.step + 1} of ${steps.length} · ${series()} series</div><h1>${title}</h1>${body}
       <div class="actions">${S.step ? button(icon('back', 18) + ' Back', 'goStep(S.step-1)', 'secondary') : ''}${button(
-        (last ? (S.path === 'site' ? 'Request a site review ' : 'Review and create quote ') : 'Continue ') + icon('arrow'),
-        last ? 'quoteForm()' : 'goStep(S.step+1)',
+        (last ? (S.path === 'site' ? 'Request a site review ' : S.path === 'stock' ? 'Review stock order ' : 'Review and create quote ') : 'Continue ') + icon('arrow'),
+        last ? (S.path === 'stock' ? 'stockOrderReview()' : 'quoteForm()') : 'goStep(S.step+1)',
         last ? 'primary big' : 'primary big continue-step'
       )}</div>`;
   }
-  const back = S.path === 'lot' ? ['openUnit(S.lot)', 'Back to building'] : ["go('start')", 'Sale options'];
+  const back = S.path === 'lot' ? ['openUnit(S.lot)', 'Back to building'] : S.path === 'stock' ? ["go('stock')", 'Restock'] : ["go('start')", 'Sale options'];
   return `<button class="link backlink" onclick="${back[0]}">${icon('back', 16)} ${back[1]}</button><div class="workspace"><section class="cfg">${stepsNav}${stage}<div class="cfg-options">${options}</div></section>${summary()}</div>`;
 }
 
@@ -858,7 +858,9 @@ function summary() {
       <div class="deal-total"><small>${totalLabel}</small><strong>${money(n)}</strong></div>
       <div class="deal-flags">${budgetStatus(n)}${review.length ? `<button type="button" class="budget warn" onclick="S.expanded=true;refreshSummary()">${icon('alert', 14)} ${review.length} to confirm</button>` : ''}</div>
       <div class="summaryactions">${
-        site
+        S.path === 'stock'
+          ? button((locked ? icon('lock', 16) + ' ' : '') + 'Submit stock order ' + (locked ? '' : icon('arrow', 18)), 'whenBuildReady(stockOrderReview)', 'primary' + lockedClass)
+          : site
           ? button((locked ? icon('lock', 16) + ' ' : '') + 'Request a site review', 'whenBuildReady(startSiteReview)', 'primary' + lockedClass)
           : button((locked ? icon('lock', 16) + ' ' : '') + 'Finalize sale', 'whenBuildReady(finalizeForm)', 'ghostbtn' + lockedClass) +
             button((locked ? icon('lock', 16) + ' ' : '') + 'Create quote ' + (locked ? '' : icon('arrow', 18)), 'whenBuildReady(quoteForm)', 'primary' + lockedClass)
@@ -882,18 +884,7 @@ function orders() {
   );
 }
 
-function stockList() {
-  return (
-    head('MANAGER', 'Stock requests', 'Separate from customer sales and approvals.') +
-    (S.stock
-      .map(
-        (r) =>
-          `<section class="panel"><div class="panelhead"><h2>${r.id} · ${label(r.c)}</h2><span class="pill">${r.status}</span></div><p>Destination: ${r.location}<br>Evidence: ${r.evidence.join(', ') || 'None attached'}</p>${button('Return to pending sale', `openSale('${S.sales.find((s) => s.lot === r.lot)?.id || ''}')`, 'secondary')}</section>`
-      )
-      .join('') ||
-      `<section class="panel"><div class="emptystate"><strong>No stock requests yet.</strong><p>When a lot unit sells, order its replacement from the sale record or the lot card so the lot stays ready.</p><button type="button" class="primary" onclick="go('lot')">Go to my lot ${icon('arrow', 18)}</button></div></section>`)
-  );
-}
+/* The Restock page lives in lot.js (restockPage). */
 
 /* ---------- Render + boot ---------- */
 
@@ -906,7 +897,7 @@ function render() {
   const screens = {
     home, receipts: receiptInbox, start, lot, unit: unitPage, configure,
     quote: () => quoteView(false), customer: () => quoteView(true),
-    sale, orders, restock: stockForm, stock: stockList, performance: performanceScreen, notes
+    sale, orders, restock: stockForm, stock: restockPage, performance: performanceScreen, notes
   };
   $('#app').innerHTML = (screens[S.page] || (() => ''))();
   document.body.dataset.page = S.page;
