@@ -396,6 +396,173 @@ function restockPrompt(i) {
   const u = lots[i];
   modal(
     'Order another like it?',
-    `<p><strong>${esc(u.name)}</strong> is now sale pending and will leave the lot. Keep the lot stocked by ordering the same building.</p><div class="actions">${button('Order another like this ' + icon('arrow', 18), `closeModal();restock(${i})`)}${button('Not now', 'closeModal()', 'secondary')}</div>`
+    `<p><strong>${esc(u.name)}</strong> is now sale pending and will leave the lot. Keep the lot stocked by ordering the same building.</p><div class="actions">${button('Order another like this ' + icon('arrow', 18), `closeModal();restock(${i})`)}${button('Order a custom building', 'closeModal();orderCustomStock()', 'secondary')}${button('Not now', 'closeModal()', 'secondary')}</div>`
+  );
+}
+
+/* ---------- Restock: pending orders, suggestions and custom stock orders ---------- */
+
+const STOCK_STAGES = ['Requested', 'Approved', 'In production', 'On the lot'];
+const SLOW_DAYS = 180; /* A building built longer ago than this counts as slow to sell. */
+const kindKey = (c) => c.style + '|' + c.size;
+const kindName = (c) => `${c.size.replace('x', ' × ')} ${lotStyleName(c.style)}`;
+
+/* Preview data: five lot buildings picked at random (fixed seed, so the same five each visit)
+   and added as pending restocks at different stages. Remove this call to start empty. */
+function seedRestocks() {
+  const pool = lots.map((_, i) => i);
+  let seed = 20261111;
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let n = 0; n < 5; n++) {
+    const i = pool.splice(Math.floor(rand() * pool.length), 1)[0];
+    S.stock.push({
+      id: 'STOCK-' + (S.stock.length + 1),
+      lot: i,
+      c: clone(lots[i].c),
+      name: lots[i].name,
+      total: lots[i].price,
+      location: LOT_LOCATION,
+      evidence: [],
+      stage: n % 3,
+      status: 'Pending',
+      sample: true,
+      date: new Date(Date.now() - (n * 4 + 2) * 864e5).toISOString()
+    });
+  }
+}
+seedRestocks();
+
+/* What sold: the sample sales history plus lot sales made in this session, grouped by style and size. */
+function restockSuggestions() {
+  const groups = {};
+  const add = (c, days, price) => {
+    const g = (groups[kindKey(c)] ||= { c: { style: c.style, size: c.size }, sold: 0, days: [], colors: {}, prices: [] });
+    g.sold++;
+    if (days != null) g.days.push(days);
+    if (c.color) g.colors[c.color] = (g.colors[c.color] || 0) + 1;
+    g.prices.push(price);
+  };
+  history.filter((h) => h.status === 'Processed').forEach((h) => add(h, h.days, h.price));
+  S.sales.filter((s) => s.path === 'lot' && s.submittedAt).forEach((s) => add(s.c, null, s.total));
+  return Object.values(groups)
+    .map((g) => ({
+      ...g,
+      avgDays: g.days.length ? Math.round(g.days.reduce((a, b) => a + b, 0) / g.days.length) : null,
+      color: Object.entries(g.colors).sort((a, b) => b[1] - a[1])[0]?.[0],
+      onLot: lots.filter((u) => u.status === 'Available' && kindKey(u.c) === kindKey(g.c)).length,
+      onOrder: S.stock.filter((r) => r.status === 'Pending' && kindKey(r.c) === kindKey(g.c)).length
+    }))
+    .sort((a, b) => b.sold - a.sold || (a.avgDays ?? 999) - (b.avgDays ?? 999))
+    .slice(0, 4);
+}
+
+/* What not to order: kinds of building already sitting on the lot a long time. */
+function restockWarnings() {
+  const groups = {};
+  lots.forEach((u, i) => {
+    const days = lotDays(u);
+    if (u.status !== 'Available' || days === null) return;
+    const g = (groups[kindKey(u.c)] ||= { c: { style: u.c.style, size: u.c.size }, units: [], oldest: 0 });
+    g.units.push(i);
+    g.oldest = Math.max(g.oldest, days);
+  });
+  return Object.values(groups)
+    .filter((g) => g.oldest > SLOW_DAYS)
+    .sort((a, b) => b.oldest - a.oldest)
+    .slice(0, 5);
+}
+
+/* Advice for one configuration, shown before a stock order is submitted. */
+function stockAdvice(c) {
+  const slow = restockWarnings().find((g) => kindKey(g.c) === kindKey(c));
+  const sells = restockSuggestions().find((g) => kindKey(g.c) === kindKey(c));
+  return (
+    (slow
+      ? `<p class="notice">${icon('alert', 14)} Think twice: ${slow.units.length} ${kindName(c)} ${slow.units.length === 1 ? 'is' : 'are'} already on the lot, the oldest built ${slow.oldest} days ago.</p>`
+      : '') +
+    (sells ? `<p class="deliveryok">${icon('check', 16)} ${kindName(c)} sold ${sells.sold} time${sells.sold === 1 ? '' : 's'} in the sales history${sells.avgDays === null ? '' : `, in ${sells.avgDays} days on average`}.</p>` : '')
+  );
+}
+
+/* Start a custom building for the lot. It uses the same builder as a customer sale and ends in a
+   stock order instead of a quote. */
+function orderCustomStock(style, size, color) {
+  begin('stock');
+  if (style) change('style', style, true);
+  if (size && availableSizes(S.c.style).includes(size)) change('size', size, true);
+  if (color && S.c.style !== 'Silver Bullet' && Object.hasOwn(paintColors, color)) S.c.color = color;
+  render();
+  window.scrollTo(0, 0);
+  toast(style ? `Stock order started: ${kindName(S.c)}. Confirm each step.` : 'Custom building for the lot. Confirm each step.');
+}
+
+function stockOrderReview() {
+  modal(
+    'Submit this stock order?',
+    `<p><strong>${label(S.c)}</strong> for the ${LOT_LOCATION} lot.</p><p>${included(S.c).map(esc).join(' · ')}</p><p>Building total <strong>${money(amount())}</strong></p>${stockAdvice(S.c)}${reviewItemsMarkup(S.c)}<div class="actions">${button('Submit stock order', 'submitCustomStock()')}${button('Keep editing', 'closeModal()', 'secondary')}</div>`
+  );
+}
+
+function submitCustomStock() {
+  S.stock.push({ id: 'STOCK-' + (S.stock.length + 1), lot: null, c: clone(S.c), name: label(S.c), total: amount(), location: LOT_LOCATION, evidence: [], stage: 0, status: 'Pending', custom: true, date: new Date().toISOString() });
+  closeModal();
+  go('stock');
+  toast('Custom stock order submitted.');
+}
+
+function advanceStock(n) {
+  const r = S.stock[n];
+  r.stage = Math.min(STOCK_STAGES.length - 1, (r.stage || 0) + 1);
+  if (r.stage === STOCK_STAGES.length - 1) r.status = 'Received';
+  render();
+}
+
+function cancelStock(n) {
+  S.stock.splice(n, 1);
+  render();
+}
+
+function restockPage() {
+  const suggestions = restockSuggestions();
+  const warnings = restockWarnings();
+  const pending = S.stock.filter((r) => r.status === 'Pending').length;
+  const rows = S.stock
+    .map((r, n) => ({ r, n }))
+    .sort((a, b) => Number(a.r.status !== 'Pending') - Number(b.r.status !== 'Pending') || new Date(b.r.date || 0) - new Date(a.r.date || 0))
+    .map(({ r, n }) => {
+      const u = r.lot == null ? null : lots[r.lot];
+      const stage = r.stage || 0;
+      return `<div class="stockrow"><div class="stockthumb">${u ? unitPhoto(u, r.lot, 384) : modelMarkup(r.c, true)}</div><div class="grow"><div class="buildrow-head"><strong>${esc(r.name || label(r.c))}</strong><span class="pill ${r.status === 'Pending' ? 'amber' : 'good'}">${r.status === 'Pending' ? 'Pending' : esc(r.status)}</span>${r.custom ? '<span class="pill blue">Custom build</span>' : ''}${r.sample ? '<span class="pill ghost">Preview sample</span>' : ''}</div><small>${r.id} · ${label(r.c)} · ${esc(r.location)}${r.total ? ' · ' + money(r.total) : ''}${r.date ? ' · requested ' + new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</small></div><div class="stockprogress">${chevronTrack(STOCK_STAGES, stage)}<div class="stockactions">${
+        stage < STOCK_STAGES.length - 1 ? `<button type="button" class="chipbtn" onclick="advanceStock(${n})">Move to ${STOCK_STAGES[stage + 1].toLowerCase()}</button>` : ''
+      }<button type="button" class="link" onclick="cancelStock(${n})">${r.status === 'Pending' ? 'Cancel order' : 'Remove'}</button></div></div></div>`;
+    })
+    .join('');
+  return (
+    head('MANAGER · RESTOCK', 'Keep the lot stocked.', 'Stock orders are separate from customer sales and approvals.') +
+    `<div class="stockstart">${button('Order a custom building ' + icon('arrow', 18), 'orderCustomStock()', 'primary big')}${button('Reorder a building from my lot', "go('lot')", 'secondary')}<span class="source">A custom order opens the full builder. To reorder a lot building, open it and choose “Order another”.</span></div>
+    <div class="grid2">
+      <section class="panel"><h2>Order more of these</h2><p class="lede-small">What has sold, most often first.</p>${
+        suggestions
+          .map(
+            (g) =>
+              `<div class="advicerow"><span class="grow"><strong>${kindName(g.c)}</strong><small>Sold ${g.sold} time${g.sold === 1 ? '' : 's'}${g.avgDays === null ? '' : ` · ${g.avgDays} days on the lot on average`}${g.color ? ` · most often ${esc(g.color)}` : ''}</small><small>${g.onLot} on the lot now · ${g.onOrder} on order</small></span>${
+                g.onLot + g.onOrder >= g.sold ? '<span class="pill ghost">Covered</span>' : '<span class="pill good">Low stock</span>'
+              }<button type="button" class="chipbtn" onclick="orderCustomStock('${g.c.style}','${g.c.size}','${g.color || ''}')">Order</button></div>`
+          )
+          .join('') || '<p class="empty">No sales history yet.</p>'
+      }<p class="source">From the sample sales history in this preview and lot sales made in this session. Connect real sales data to make these live.</p></section>
+      <section class="panel"><h2>Hold off on these</h2><p class="lede-small">Already on the lot and slow to move.</p>${
+        warnings
+          .map(
+            (g) =>
+              `<div class="advicerow"><span class="grow"><strong>${kindName(g.c)}</strong><small>${g.units.length} on the lot · oldest built ${g.oldest} days ago</small>${g.units
+                .map((i) => `<button type="button" class="link" onclick="openUnit(${i})">${esc(lots[i].name)}</button>`)
+                .join('')}</span><span class="pill red">Don’t reorder</span></div>`
+          )
+          .join('') || '<p class="empty">Nothing on the lot is older than ' + SLOW_DAYS + ' days.</p>'
+      }<p class="source">Buildings built more than ${SLOW_DAYS} days ago. Age is counted from the build date in the serial number.</p></section>
+    </div>
+    <h2 class="sectionhead">Restock orders <span class="pill ${pending ? 'amber' : 'ghost'}">${pending} pending</span></h2>
+    <section class="panel">${rows || '<p class="empty">No stock orders yet.</p>'}</section>`
   );
 }
