@@ -483,6 +483,18 @@ function openingsMarkup() {
   <p class="source">Door add-on prices are from IdeaRoom on a 12 × 16 Basic Utility. Main-door changes use the difference from the included double shed door. Confirm fit and any unpriced option. The 3D model shows reference openings.</p></section>`;
 }
 
+/* Floor joist upgrade, shown on the Size step just under the sidewall height. */
+function floorJoistMarkup(c) {
+  const row = activePackage(c)?.floor
+    ? '<p class="checkrow static"><strong>12-inch-on-center floor joists</strong> · Included in Garage Package</p>'
+    : usesWoodOptions(c)
+      ? `<label class="checkrow boxed"><input id="floor-joists" type="checkbox" ${c.floor ? 'checked' : ''} onchange="change('floor',this.checked)"> <span>12-inch-on-center floor joists</span> <strong>+$375 sample</strong></label>`
+      : '';
+  return row
+    ? '<h3>Floor</h3>' + row + '<p class="source">The reference Utility already has 2×6 joists at 16 inches on center. Upgrade applicability and load ratings need catalog confirmation.</p>'
+    : '';
+}
+
 /* The custom dimensions field only appears after a custom door or opening is picked in the door list. */
 function addCustomDoor() {
   S.c.customOpening = true;
@@ -550,6 +562,7 @@ function stepBody() {
         'Give their plans some room.',
         sizeGroups() +
           wallHeightMarkup(c) +
+          floorJoistMarkup(c) +
           '<p class="draft-note">Sizes follow IdeaRoom. Pricing uses the existing preview estimates. Sizes without a sample adjustment show the base estimate.</p>'
       ];
     case 'Package':
@@ -593,14 +606,7 @@ function stepBody() {
           choice('roof', 'Metal', greenhouse ? 'Clear greenhouse roof' : 'Metal roof', 'Continue without a paid roof upgrade.' + (greenhouse ? '' : roofArt('metal')), 'Included') +
           (greenhouse
             ? ''
-            : choice('roof', 'Shingles', 'Architectural shingles', 'IdeaRoom Basic Utility pricing reference' + roofArt('shingles'), shinglePrice(c) === null ? 'Price to confirm' : '+' + money(shinglePrice(c)))) +
-          '<h3>Floor</h3>' +
-          (activePackage(c)?.floor
-            ? '<p class="checkrow static"><strong>12-inch-on-center floor joists</strong> · Included in Garage Package</p>'
-            : usesWoodOptions(c)
-              ? `<label class="checkrow boxed"><input id="floor-joists" type="checkbox" ${c.floor ? 'checked' : ''} onchange="change('floor',this.checked)"> <span>12-inch-on-center floor joists</span> <strong>+$375 sample</strong></label>`
-              : '') +
-          '<p class="source">The reference Utility already has 2×6 joists at 16 inches on center. Upgrade applicability and load ratings need catalog confirmation.</p>'
+            : choice('roof', 'Shingles', 'Architectural shingles', 'IdeaRoom Basic Utility pricing reference' + roofArt('shingles'), shinglePrice(c) === null ? 'Price to confirm' : '+' + money(shinglePrice(c))))
       ];
     }
   }
