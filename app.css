@@ -225,6 +225,25 @@ legend { font-weight: 700; padding: 0 6px; }
 .startgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .startcard a.primary { text-decoration: none; }
 .carport-art { display: block; width: 100%; height: var(--model-h, 170px); }
+.stockstart { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 20px; }
+.stockstart .source { flex: 1 1 260px; }
+.advicerow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 12px 0; border-top: 1px solid var(--line); margin: 0 !important; }
+.lede-small + .advicerow { margin-top: 10px !important; }
+.advicerow strong, .advicerow small { display: block; }
+.advicerow small { color: var(--muted); font-size: 12.5px; }
+.advicerow .link { display: block; padding: 2px 0; font-size: 12.5px; text-align: left; }
+.stockrow { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-top: 1px solid var(--line); margin: 0 !important; align-items: start; }
+.panel > .stockrow:first-child { border-top: 0; padding-top: 0; }
+.stockrow small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+.stockthumb .reference-model.mini { --model-h: 99px; }
+.stockthumb .unitphoto, .stockthumb .reference-model { border-radius: 10px; overflow: hidden; }
+.stockthumb .planstage.mini { padding: 6px; }
+.stockprogress { grid-column: 1 / -1; }
+.stockprogress .chev { margin-top: 0; }
+.stockactions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 8px; }
+.sectionhead .pill { vertical-align: middle; margin-left: 6px; }
+.modal .deliveryok, .modal .notice .icon { vertical-align: -2px; }
+@media (max-width: 680px) { .stockrow { grid-template-columns: 84px minmax(0, 1fr); gap: 12px; } .stockthumb .reference-model.mini { --model-h: 63px; } }
 .lotsummary { margin-bottom: 16px; }
 .lotsummary .today { margin: 0 0 8px; }
 .lotsummary .kpi { cursor: default; }
