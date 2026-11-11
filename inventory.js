@@ -27,10 +27,40 @@ const LOT_LISTING = String.raw`
 553773|Used 8x12 Elite Series Utility Shed|8|12|Elite Utility (No Package)|3971.2||4147|397.12|51850R|used|for-sale|roof:Black;siding:Clay;trim:Origami White||ecommerce-settings/b4e789bc-49f4-4f5c-b68a-070740bd59ba.jpg
 `;
 
+/* Extra listing photos per listing id, after the main photo.
+   e/ stands for ecommerce-settings/ and i/ for inventory-photos/. */
+const LOT_PHOTOS = Object.fromEntries(
+  String.raw`
+375168=i/89c6e5ea-f3fc-44e4-93d3-c95a868071ae.jpeg,i/35e7e332-240a-418a-8085-622dad44f689.jpeg,i/7ed0c8f8-b857-43db-9637-7ddc771295d5.jpeg
+426270=i/9d1bffa8-788a-4eac-abc2-defb5189dac6.jpg,i/9d1bffa8-788a-4eac-abc2-defb5189dac6.jpg,i/5c2f09f7-f100-4913-b8b4-6cd6d3e33a63.jpg,i/e948fb43-9271-4823-8406-2ac775451bb5.jpg
+440074=e/b8038bed-e350-44bc-9af4-b8d498f38e34.jpg,i/16d63d51-2017-4017-8610-e41130791d4a.jpeg
+441864=i/be1e6c97-95b4-40c3-ae37-c80d2946bdaa.jpeg,i/ffaa0b7c-5420-49ae-9735-5a97c5d42581.jpeg,i/cdc34982-8dcc-48aa-84d0-b151a1bbd261.jpeg,i/31126589-e6e2-4121-a219-16afac6dce37.jpeg
+443517=e/3c46b4ca-81cd-4634-9c26-376f841440fc.jpg,e/a297dc9a-87dd-4c62-b6a6-e7c11cf6ab8c.jpg,i/f9bb7299-82b6-40cb-9480-c5a683e82218.jpeg
+443639=e/9678221c-42da-4f8b-bd37-b16f09aaae0d.jpg,i/b84d1b44-83c2-4cda-a7bc-fceed1a6247f.jpeg,e/0760cbc9-f6b2-4e77-9522-387654007eb8.jpg
+452268=e/20244032-538d-4d2c-84b1-77fcb64d001d.jpg,e/acb73bb3-a128-471b-a490-c643d658f220.jpg,e/7b380935-4a15-4420-95b7-2fdbb981faaa.jpg,i/ac7870a7-2154-47e8-8444-1d407f2dba8f.jpeg
+477276=e/225e72d1-2dc7-4b67-b7dc-c7b27d10cdcd.jpg,i/88e9fd0e-52e5-46f4-b4e7-daee42b1e7e9.jpeg,e/08a1172c-d49d-4fa3-a00a-0a22f03ff232.jpg,i/0229a8c5-7e2f-4266-903d-aac0386f9d31.jpeg
+485273=i/7ba5b141-5e0b-4dd0-a543-4aec5700aad2.jpeg,e/6c7a4676-0aa9-43a0-ba0e-194fe4bc9630.jpg,e/74e3e75b-51b2-4a68-a2e8-6e00a9dd96c1.jpg,e/a33d6272-106a-45ec-baed-778bcf7fceca.jpg,e/a74b794d-71cc-46b7-a611-8125a9625b5f.jpg,i/a4cc2dde-9ff0-4d7c-b925-4362abd6791d.jpeg
+519111=e/2a73c8b7-7c2f-4194-83e8-f32ed6e34e53.jpg,e/d64742e0-cec2-4d7e-9014-d2ede2383122.jpg,e/a693ecf4-543e-4b62-aea0-5468052f7c6b.jpg,i/28ad01d9-c381-460f-a1fc-898a0307a001.jpg
+539292=e/e4354f3b-2561-4bed-b17f-4169b4dd5111.jpg,e/728b05a1-0cb2-46c0-af83-2be3be875747.jpg,i/9ac08cd3-d63c-4865-942e-e0e3c0cf7197.jpg
+539293=e/13b9f27a-5d1c-47ca-b5ca-3f9bc6e9b607.jpg,e/37884c03-7ca1-4b9e-8c79-9734523a5f27.jpg,e/62656bc5-e680-402b-be13-7dc3f872d7b5.jpg
+544579=e/bbf85baa-f93b-4552-87e7-b7a17554bbf6.jpg,e/a1ecce4c-c248-4090-b34a-f4bb2de3f1ed.jpg,e/d9e80ef4-e1c0-4d3f-a00e-d2bbce23a568.jpg
+544631=e/675333b0-0833-460b-aa45-770c8dcf8069.jpg,e/e089a196-9779-4a8b-a25e-1f07e29323df.jpg
+552380=e/13ba8243-c251-44f7-97e1-d8f7590a244f.jpg,e/0802cb6f-4626-465b-b8fc-ccb13656df21.jpg,i/82168056-20fe-4c0c-94f0-71e1c407c0e2.jpg,i/bbbedaff-0b76-4913-a6ce-ed14100cb215.jpg
+553773=
+556813=e/cd6a4bc2-d64f-48d8-b96e-ca84275dc864.jpg,e/fa4185ad-3f36-4f05-a050-9e5c9739d969.jpg,i/4c6c8520-9e96-412a-a59f-0ff88408778a.jpg
+`
+    .trim()
+    .split('\n')
+    .map((line) => {
+      const [id, list] = line.split('=');
+      return [id, list ? list.split(',').map((p) => p.replace(/^e\//, 'ecommerce-settings/').replace(/^i\//, 'inventory-photos/')) : []];
+    })
+);
+
 /* Turn one listing line into a lot unit. `c` is the closest configurator setup, used for the
    3D reference model, the series label and payment estimates. */
 function unitFromListing(line) {
-  const [listingId, title, w, l, model, price, , , down, serial, condition, , colorText, optionText, photo] = line.split('|');
+  const [listingId, title, w, l, model, price, sale, , down, serial, condition, , colorText, optionText, photo] = line.split('|');
   const colors = Object.fromEntries(colorText.split(';').map((c) => c.split(':')));
   const options = optionText ? optionText.split(';') : [];
   const has = (re) => options.some((o) => re.test(o));
@@ -71,17 +101,21 @@ function unitFromListing(line) {
     if (found) found.count++;
     else features.push({ text, count: 1 });
   }
+  /* A sale price below the list price puts the building on sale. */
+  const salePrice = Number(sale) > 0 && Number(sale) < Number(price) ? Number(sale) : null;
   return {
     id: serial,
     listingId,
     name: title,
-    price: Number(price),
+    price: salePrice || Number(price),
+    listPrice: salePrice ? Number(price) : null,
     down: Number(down),
     condition,
     location: LOT_LOCATION,
     source: 'buybennett.com listing · copied ' + LOT_LISTING_DATE,
     url: 'https://shedcor.shedsuite.com/3946/shop-inventory/' + listingId,
     photo: LOT_PHOTO_HOST + photo,
+    photos: [...new Set([photo, ...(LOT_PHOTOS[listingId] || [])])].map((p) => LOT_PHOTO_HOST + p),
     colors: { siding, trim: colors.trim, roof: colors.roof },
     features: features.map((f) => f.text + (f.count > 1 ? ' x' + f.count : '')),
     status: 'Available',
