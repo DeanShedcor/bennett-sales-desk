@@ -465,6 +465,7 @@ function pickLot(i) {
     else toast("This sample unit is on hold. Choose another.");
     return;
   }
+  if (S.lot !== i) S.delivery = null;
   S.lot = i;
   S.path = "lot";
   S.c = clone(u.c);
@@ -1139,6 +1140,7 @@ function issueQuote() {
                 amount: amount(),
                 source: lots[S.lot].source,
               },
+              ...lotDeliveryItems(),
             ]
           : clone(breakdown()),
       term: $("#qterm").value,
@@ -1425,12 +1427,16 @@ function submitSale() {
   reviewCustomer = null;
   s.type = type;
   s.status = "Submitted · Awaiting review";
+  s.submittedAt = new Date().toISOString();
   s.fulfillment = "Review pending";
   s.events.push({ text: "Submitted to administrator · simulated", time: new Date().toLocaleTimeString() });
   if (s.path === "lot") lots[s.lot].status = "Pending";
+  if (s.path === "lot" && S.delivery)
+    s.events.push({ text: "Delivery: " + deliverySummary(), time: new Date().toLocaleTimeString() });
   S.activeSale = s.id;
   closeModal();
   go("sale");
+  if (s.path === "lot") restockPrompt(s.lot);
 }
 function openSale(id) {
   S.activeSale = id;
