@@ -1,0 +1,234 @@
+/* qc.css: styles for the Plant QC side. The few pieces the Sales Desk stylesheet has no class for. Everything here is built
+   from app.css tokens. Inspection answers are big one-tap buttons sized for gloves. */
+
+/* Floor: one card per building */
+.qc-card { display: flex; flex-direction: column; }
+.qc-card .buildrow-head { justify-content: space-between; }
+.qc-card h3 { font-variant-numeric: tabular-nums; }
+.qc-card .qc-open { width: 100%; margin-top: auto; }
+.qc-card .chev { margin-bottom: 14px; }
+.qc-card .pillrow { margin-bottom: 16px; min-height: 26px; }
+.qc-facts { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: var(--muted); }
+.qc-facts strong { color: var(--ink); font-weight: 600; }
+.qc-filter { display: grid; min-width: 0; gap: 10px; margin-bottom: 20px; }
+.qc-filter .searchbar { margin-bottom: 0; }
+.qc-filter > * { min-width: 0; }
+.qc-filter small { display: block; margin-bottom: 4px; font-weight: 600; }
+.kpi[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+div.kpi:hover { border-color: var(--line); }
+
+/* Picture of the 3D model from the sale */
+.qc-thumb { flex: none; display: block; width: 116px; aspect-ratio: 4 / 3; padding: 0; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; background: radial-gradient(ellipse at 50% 35%, var(--stage-a), var(--stage-b)); }
+.qc-thumb:hover { border-color: var(--ink); }
+.qc-thumb img, .qc-modelbig img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.qc-thumb.big { width: 200px; }
+.qc-cardtop { display: flex; gap: 14px; align-items: flex-start; }
+.qc-cardtop h3 { margin-top: 6px; overflow-wrap: anywhere; }
+.qc-cardtop p { margin-top: 4px; }
+.qc-ref { display: flex; gap: 14px 20px; align-items: center; flex-wrap: wrap; }
+.qc-modelbig { border-radius: 12px; overflow: hidden; background: radial-gradient(ellipse at 50% 35%, var(--stage-a), var(--stage-b)); aspect-ratio: 4 / 3; }
+
+/* Inspect: checklist rows */
+.qc-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 18px; align-items: center; border-top: 1px solid var(--line); padding: 12px 0; margin: 0 !important; }
+.panelhead + .qc-item { margin-top: 14px !important; }
+.qc-item > p { font-weight: 600; font-size: 15.5px; }
+.qc-ans { display: grid; grid-template-columns: repeat(3, minmax(88px, 1fr)); gap: 8px; }
+.qc-ans button { min-height: 54px; border: 1.5px solid var(--line-strong); background: var(--surface); border-radius: var(--r-sm); font-weight: 700; font-size: 15.5px; }
+.qc-ans button:hover { border-color: var(--ink); }
+.qc-ans button.on { color: var(--on-dark); }
+.qc-ans button.on.pass { background: var(--good); border-color: var(--good); }
+.qc-ans button.on.fail { background: var(--bad); border-color: var(--bad); }
+.qc-ans button.on.na { background: var(--navy-2); border-color: var(--navy-2); }
+.qc-fail { grid-column: 1 / -1; background: var(--bad-bg); border-radius: var(--r-sm); padding: 14px; display: grid; gap: 12px; }
+.qc-fail h4 { color: var(--bad); }
+.qc-fail .chipbtn { padding: 11px 16px; font-size: 14px; }
+.qc-fail .field { margin: 0; color: var(--ink); }
+.qc-photo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.qc-photo img { width: 84px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line-strong); }
+.qc-photo input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.qc-photo label:focus-within { outline: 3px solid var(--amber-deep); outline-offset: 2px; }
+.qc-missing { color: var(--bad); font-weight: 600; font-size: 13px; }
+.qc-missing:empty { display: none; }
+
+/* Inspect: the bar that finishes the checklist. Stays in reach above the phone tab bar. */
+.qc-bar { position: sticky; bottom: 16px; z-index: 20; display: flex; align-items: center; gap: 14px; margin-top: 20px; background: var(--ink); color: var(--on-dark); border-radius: var(--r); padding: 12px 12px 12px 20px; box-shadow: var(--shadow); }
+.qc-bar strong { display: block; font: 700 17px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+.qc-bar small { color: var(--on-dark-muted); }
+.qc-bar .primary { flex: none; }
+.qc-bar .primary[disabled] { opacity: 1; background: var(--navy-2); color: var(--on-dark-muted); }
+
+/* Rework item and history */
+.qc-rework { border: 1.5px solid var(--line); border-left: 4px solid var(--bad); border-radius: 12px; padding: 14px 16px; background: var(--surface); display: grid; gap: 8px; }
+.qc-rework.closed { border-left-color: var(--good); }
+.qc-rework .actions { margin-top: 4px; }
+.qc-rework > img { width: 120px; height: 90px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line-strong); }
+.qc-log { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 0; }
+.qc-log li { border-top: 1px solid var(--line); padding: 10px 0; display: grid; gap: 2px; font-size: 14px; }
+.qc-pick { display: grid; gap: 10px; }
+.qc-pick .secondary { justify-content: space-between; padding: 16px 18px; }
+.qc-notes li + li { margin-top: 6px; }
+.qc-notes ul { margin: 8px 0 0; padding-left: 20px; }
+.location strong { color: var(--on-dark); font-weight: 600; }
+
+@media (max-width: 980px) {
+  .qc-bar { bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 680px) {
+  .qc-item { grid-template-columns: minmax(0, 1fr); }
+  .qc-ans { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .qc-ans button { min-height: 58px; }
+  .qc-bar { padding: 10px 10px 10px 16px; gap: 10px; }
+  .qc-bar strong { font-size: 15px; }
+  .qc-bar .primary { padding: 14px 16px; }
+  .cards.qc-floor { grid-template-columns: minmax(0, 1fr); }
+}
+
+.qc-group { display: flex; align-items: baseline; gap: 10px; margin: 26px 0 12px; }
+.qc-group:first-child { margin-top: 0; }
+.qc-group small { font: 700 14px/1 var(--body); color: var(--muted); font-variant-numeric: tabular-nums; }
+.appnav { display: none; }
+
+/* =====================================================================================
+   App feel on iPhone and iPad, for the Plant QC side.
+   Applies on narrow screens and on any touch device (so an iPad in landscape gets it too):
+   a fixed top bar, a bottom tab bar, a back button on detail screens, bottom-sheet pop-ups,
+   one-line scrolling filters, and no browser tap flash or zoom-on-focus.
+   Every rule is limited to [data-side="qc"], so the Sales desk side keeps its own layout.
+   ===================================================================================== */
+@keyframes qc-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes qc-push { from { opacity: 0; transform: translateX(28px); } }
+@keyframes qc-sheet { from { transform: translateY(40%); opacity: 0; } }
+
+@media (max-width: 980px), (hover: none) and (pointer: coarse) {
+  html { -webkit-tap-highlight-color: transparent; }
+  [data-side="qc"] #app { overflow-x: clip; }
+  [data-side="qc"] button, [data-side="qc"] label.secondary { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  [data-side="qc"] button:not([disabled]):active, [data-side="qc"] label.secondary:active { opacity: 0.72; }
+  /* 16px stops iOS zooming the page when a field is tapped */
+  [data-side="qc"] input, [data-side="qc"] textarea, [data-side="qc"] select { font-size: 16px; }
+
+  /* Top bar stays put, like an app's navigation bar */
+  body[data-side="qc"]::before { display: block; }
+  [data-side="qc"] .topbar { position: sticky; top: env(safe-area-inset-top, 0px); }
+  [data-side="qc"] .topnav, [data-side="qc"] .location { display: none; }
+  [data-side="qc"] #app.qc-enter { animation: qc-in 0.18s ease-out; }
+  [data-side="qc"] #app.qc-enter-detail > * { animation: qc-push 0.22s ease-out; }
+
+  /* Bottom tab bar (same rules app.css uses on phones, here for wide touch screens too) */
+  [data-side="qc"] .tabbar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); position: fixed; inset: auto 0 0 0; z-index: 25; background: color-mix(in srgb, var(--surface) 88%, transparent); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-top: 1px solid var(--line); padding: 6px max(6px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left, 0px)); }
+  [data-side="qc"] .tabbar button { background: none; border: 0; display: grid; justify-items: center; gap: 2px; padding: 5px 0; font-size: 11px; font-weight: 600; color: var(--muted); border-radius: 10px; min-width: 0; }
+  [data-side="qc"] .tabbar button.active { color: var(--ink); }
+  [data-side="qc"] .tabbar button.active .icon { color: var(--amber-deep); }
+  [data-side="qc"] .tabbar .tab-sale .icon { background: var(--amber); color: var(--ink); border-radius: 50%; padding: 5px; width: 34px; height: 34px; margin-top: -16px; box-shadow: 0 0 0 4px var(--surface); }
+  [data-side="qc"] .tabbar .tab-sale { color: var(--ink); }
+  [data-side="qc"] main { padding-block: 20px calc(110px + env(safe-area-inset-bottom, 0px)); }
+  [data-side="qc"] .qc-bar { bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Detail screens (a building, the notes page): back button and title replace the logo,
+     the tab bar gives way to the screen's own action bar */
+  .qc-detail .brand, .qc-detail .topbar-right { display: none; }
+  .qc-detail .appnav { display: grid; grid-template-columns: minmax(96px, 1fr) minmax(0, auto) minmax(0, 1fr); align-items: center; gap: 12px; width: 100%; min-height: 44px; }
+  .appnav strong { font: 700 16px/1.2 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; color: var(--on-dark); }
+  .appback { justify-self: start; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 10px 0 0; background: none; border: 0; color: var(--amber); font-weight: 600; font-size: 16px; }
+  .qc-detail main .backlink { display: none; }
+  .qc-detail .tabbar { display: none !important; }
+  [data-side="qc"].qc-detail main { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+  [data-side="qc"].qc-detail main:has(.qc-bar) { padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
+  .qc-detail .qc-bar { position: fixed; left: 0; right: 0; bottom: 0; margin: 0; border-radius: 0; z-index: 26; padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+}
+
+@media (max-width: 680px) {
+  /* Filters: one line each, swipe sideways, running to the screen edge */
+  .qc-filter .chiprow { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-left: calc(-1 * var(--gutter-l)); margin-right: calc(-1 * var(--gutter-r)); padding-left: var(--gutter-l); padding-right: var(--gutter-r); scroll-padding-inline: 16px; }
+  .qc-filter .chiprow::-webkit-scrollbar { display: none; }
+  .qc-filter .chipbtn { flex: none; white-space: nowrap; padding: 10px 16px; }
+  /* Pop-ups come up from the bottom as a sheet */
+  [data-side="qc"] .modal-back { place-items: end stretch; padding: 0; }
+  [data-side="qc"] .modal { max-width: none; border-radius: 20px 20px 0 0; padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px)); max-height: 86vh; animation: qc-sheet 0.24s ease-out; }
+  [data-side="qc"] .modal::before { content: ""; display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--line-strong); margin: 0 auto 6px; }
+  .qc-pick .secondary { min-height: 56px; }
+  .qc-group { margin-top: 22px; }
+  .previewstrip-in > strong { display: none; }
+
+  /* Buildings: compact cards, so five or six fit where two did */
+  .qc-card { padding: 14px; }
+  .qc-card .qc-thumb { width: 88px; }
+  .qc-card h3 { font-size: 16px; margin-top: 4px; }
+  .qc-card .chev { margin-bottom: 10px; }
+  .qc-card .chev.long i { min-height: 38px; padding: 4px 2px 4px 9px; }
+  .qc-card .chev.long i span { writing-mode: horizontal-tb; transform: none; white-space: normal; font-size: 8.5px; line-height: 1.05; }
+  .qc-card .pillrow { margin-bottom: 10px; min-height: 0; }
+  .qc-card .qc-open { padding-block: 11px; }
+  .qc-rest .secondary { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #app.qc-enter, #app.qc-enter-detail > *, .modal { animation: none !important; }
+}
+
+/* ---------- Combined app: the Sales desk / Plant QC switch ---------- */
+body:not([data-side="qc"]) [data-for="qc"], body[data-side="qc"] [data-for="sales"] { display: none !important; }
+.sideswitch { display: inline-flex; flex: none; padding: 3px; border-radius: 10px; background: var(--navy-2); gap: 2px; }
+.sideswitch button { border: 0; background: none; color: var(--on-dark-muted); font-weight: 600; font-size: 13.5px; padding: 6px 12px; border-radius: 8px; white-space: nowrap; }
+.sideswitch button:hover { color: var(--on-dark); }
+body:not([data-side="qc"]) .sideswitch [data-side-btn="sales"], body[data-side="qc"] .sideswitch [data-side-btn="qc"] { background: var(--surface); color: var(--ink); }
+.sideswitch.strip { display: none; padding: 2px; }
+.sideswitch.strip button { font-size: 12.5px; padding: 5px 10px; }
+.previewstrip-in { flex-wrap: wrap; row-gap: 6px; }
+body[data-side="qc"][data-page="qc"] .topcta[data-for="qc"] { display: inline-flex; }
+@media (max-width: 980px), (hover: none) and (pointer: coarse) {
+  /* the side switch moves from the top bar to the strip under it */
+  .sideswitch:not(.strip) { display: none; }
+  .sideswitch.strip { display: inline-flex; }
+}
+
+/* Build sheet, the "Yes to the rest" shortcut, and questions left out of an order */
+.qc-sheet { margin-top: 20px; }
+.qc-sheet summary { display: flex; align-items: center; justify-content: space-between; gap: 8px 14px; flex-wrap: wrap; cursor: pointer; list-style: none; }
+.qc-sheet summary::-webkit-details-marker { display: none; }
+.qc-sheet summary h2::after { content: " +"; color: var(--muted); font-weight: 600; }
+.qc-sheet[open] summary h2::after { content: " \2212"; }
+.qc-sheet ul { margin: 14px 0 0; padding-left: 20px; columns: 2 240px; column-gap: 32px; }
+.qc-sheet li { break-inside: avoid; padding: 2px 0; }
+.qc-rest { margin-top: 12px; }
+.qc-skipnote { margin-top: 12px; font-size: 13px; color: var(--muted); }
+.qc-thumb { display: grid; place-items: center; color: var(--steel); }
+.qc-capture { position: fixed; left: 0; top: 0; width: 460px; height: 345px; opacity: 0; pointer-events: none; z-index: -1; }
+.qc-capture .reference-model { --model-h: 345px; background: none; }
+
+/* Rework queue, sign-off, report, change orders */
+.qc-bline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.qc-bline .qc-thumb, .qc-signrow .qc-thumb { width: 84px; }
+.qc-bline strong, .qc-signrow strong { display: block; font-variant-numeric: tabular-nums; }
+.qc-bline small { display: block; color: var(--muted); font-size: 13px; }
+.qc-bline .grow, .qc-signrow .grow { flex: 1 1 150px; min-width: 0; }
+.qc-signlist { padding-block: 6px; }
+.qc-signrow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 0; margin: 0 !important; }
+.qc-signrow + .qc-signrow { border-top: 1px solid var(--line); }
+.qc-signrow small { color: var(--muted); }
+.qc-seclist { margin-top: 12px; }
+.qc-secrow { display: flex; align-items: center; justify-content: space-between; gap: 6px 14px; flex-wrap: wrap; border-top: 1px solid var(--line); padding: 10px 0; }
+.qc-secrow .pillrow { margin-top: 0; }
+.qc-blockers { margin: 12px 0 0; padding-left: 20px; font-weight: 600; }
+.qc-blockers li + li { margin-top: 6px; }
+.changecard .qc-bline { border-bottom: 0; padding-bottom: 0; }
+.changecard .actions { margin-top: 2px; }
+.qc-bars { display: grid; gap: 10px; margin-top: 14px; }
+.qc-barrow { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; font-size: 14px; }
+.qc-barrow strong { font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+.qc-barrow strong small { font-weight: 500; color: var(--muted); }
+.qc-track { height: 14px; border-radius: 4px; background: var(--canvas, var(--line)); overflow: hidden; }
+.qc-track i { display: block; height: 100%; border-radius: 4px; background: var(--navy-2); }
+.kpi strong { white-space: nowrap; }
+@media (max-width: 680px) {
+  .qc-barrow { grid-template-columns: minmax(0, 1fr) auto; }
+  .qc-barrow span { grid-column: 1 / -1; font-weight: 600; }
+  .qc-signrow > button:not(.qc-thumb), .qc-bline > button:not(.qc-thumb) { flex: 1 1 100%; }
+  .kpi.qc-kpitext { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .kpi.qc-kpitext strong { font-size: 21px; }
+}
+
+/* Stage tiles: red where an open failure came from, green once ready to ship */
+.chev i.failed, .chev i.now.failed { background: var(--bad); color: var(--on-dark); font-weight: 800; }
+.chev i.now.ship { background: var(--good); color: var(--on-dark); }
+
+.qc-area { margin: 26px 0 0; }
