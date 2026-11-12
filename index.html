@@ -3,42 +3,76 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Bennett Sales Desk</title>
+<title>Bennett Sales and QC</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="./app.css?v=15">
+<link rel="stylesheet" href="./qc.css?v=1">
+<!-- Add to Home Screen on an iPhone or iPad: opens full screen like an app. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bennett">
+<meta name="theme-color" content="#0c1a28">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="manifest" href="./manifest.webmanifest">
 <script type="module" src="./model-viewer.min.js"></script>
 </head>
 <body>
 <header class="topbar">
   <div class="topbar-in">
     <button class="brand" onclick="go('home')" aria-label="Bennett Buildings home"><img class="brand-logo" src="data:image/webp;base64,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" alt="Bennett Buildings" width="316" height="72"></button>
+    <!-- Combined app: one switch between the dealer's Sales desk and the plant's QC side.
+         Elements marked data-for="sales" or data-for="qc" only show on that side. -->
+    <div class="sideswitch" role="group" aria-label="Which side of the app">
+      <button data-side-btn="sales" onclick="go('home')">Sales desk</button>
+      <button data-side-btn="qc" onclick="go('qc')">Plant QC</button>
+    </div>
+    <div class="appnav" id="appnav"></div>
     <nav class="topnav" aria-label="Main">
-      <button data-nav="home" onclick="go('home')">Home</button>
-      <button data-nav="lot" onclick="go('lot')">My lot</button>
-      <button data-nav="orders" onclick="go('orders')">Orders</button>
-      <button data-nav="performance" onclick="go('performance')">Performance</button>
-      <button data-nav="stock" onclick="go('stock')">Restock</button>
+      <button data-for="sales" data-nav="home" onclick="go('home')">Home</button>
+      <button data-for="sales" data-nav="lot" onclick="go('lot')">My lot</button>
+      <button data-for="sales" data-nav="orders" onclick="go('orders')">Orders</button>
+      <button data-for="sales" data-nav="performance" onclick="go('performance')">Performance</button>
+      <button data-for="sales" data-nav="stock" onclick="go('stock')">Restock</button>
+      <button data-for="qc" data-nav="qc" onclick="go('qc')">Buildings</button>
+      <button data-for="qc" data-nav="qc-rework" onclick="go('qc-rework')">Rework</button>
+      <button data-for="qc" data-nav="qc-signoff" onclick="go('qc-signoff')">Sign-off</button>
+      <button data-for="qc" data-nav="qc-report" onclick="go('qc-report')">Report</button>
+      <button data-for="qc" data-nav="qc-changes" onclick="go('qc-changes')">Change orders</button>
     </nav>
     <div class="topbar-right">
-      <span class="location">Moncks Corner, SC</span>
-      <button class="topcta" onclick="S.saleLead=null;go('start')">Start a sale</button>
+      <span class="location" data-for="sales">Moncks Corner, SC</span>
+      <span class="location" data-for="qc">ShedCor Plant</span>
+      <button class="topcta" data-for="sales" onclick="S.saleLead=null;go('start')">Start a sale</button>
+      <button class="topcta" data-for="qc" onclick="inspectNext()">Inspect next building</button>
     </div>
   </div>
 </header>
 <div class="previewstrip">
-  <div class="previewstrip-in"><strong>Preview</strong><span>Fictional customers · simulated actions</span><button onclick="go('notes')">Sources and open decisions</button></div>
+  <div class="previewstrip-in">
+    <div class="sideswitch strip" role="group" aria-label="Which side of the app">
+      <button data-side-btn="sales" onclick="go('home')">Sales desk</button>
+      <button data-side-btn="qc" onclick="go('qc')">Plant QC</button>
+    </div>
+    <strong>Preview</strong><span data-for="sales">Fictional customers · simulated actions</span><span data-for="qc">Sample buildings · nothing is saved</span><button data-for="sales" onclick="go('notes')">Sources and open decisions</button><button data-for="qc" onclick="go('qc-notes')">What is real and what is not</button></div>
 </div>
 <main id="app"></main>
 <nav class="tabbar" aria-label="Main">
-  <button data-nav="home" onclick="go('home')"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg><span>Home</span></button>
-  <button data-nav="lot" onclick="go('lot')"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 20.5h19"/><path d="M5 20.5V10l7-5 7 5v10.5"/><path d="M10 20.5v-6h4v6"/></svg><span>My lot</span></button>
-  <button class="tab-sale" onclick="S.saleLead=null;go('start')" aria-label="Start a sale"><svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Sale</span></button>
-  <button data-nav="orders" onclick="go('orders')"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span>Orders</span></button>
-  <button data-nav="performance" onclick="go('performance')"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V11"/><path d="M12 20V4"/><path d="M19 20v-7"/></svg><span>Stats</span></button>
-  <button data-nav="stock" onclick="go('stock')"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg><span>Restock</span></button>
+  <button data-for="sales" data-nav="home" onclick="go('home')"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg><span>Home</span></button>
+  <button data-for="sales" data-nav="lot" onclick="go('lot')"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 20.5h19"/><path d="M5 20.5V10l7-5 7 5v10.5"/><path d="M10 20.5v-6h4v6"/></svg><span>My lot</span></button>
+  <button data-for="sales" class="tab-sale" onclick="S.saleLead=null;go('start')" aria-label="Start a sale"><svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Sale</span></button>
+  <button data-for="sales" data-nav="orders" onclick="go('orders')"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span>Orders</span></button>
+  <button data-for="sales" data-nav="performance" onclick="go('performance')"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V11"/><path d="M12 20V4"/><path d="M19 20v-7"/></svg><span>Stats</span></button>
+  <button data-for="sales" data-nav="stock" onclick="go('stock')"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg><span>Restock</span></button>
+  <button data-for="qc" data-nav="qc" data-icon="lot" onclick="go('qc')"><span>Buildings</span></button>
+  <button data-for="qc" data-nav="qc-rework" data-icon="build" onclick="go('qc-rework')"><span>Rework</span></button>
+  <button data-for="qc" class="tab-sale" data-icon="check" onclick="inspectNext()" aria-label="Inspect the next building"><span>Inspect</span></button>
+  <button data-for="qc" data-nav="qc-signoff" data-icon="receipt" onclick="go('qc-signoff')"><span>Sign-off</span></button>
+  <button data-for="qc" data-nav="qc-report" data-icon="chart" onclick="go('qc-report')"><span>Report</span></button>
+  <button data-for="qc" data-nav="qc-changes" data-icon="rotate" onclick="go('qc-changes')"><span>Changes</span></button>
 </nav>
 <div id="toast" role="status" hidden></div>
 <script src="./qr.js"></script>
@@ -50,5 +84,10 @@
 <script src="./lot.js?v=2"></script>
 <script src="./changes.js?v=1"></script>
 <script src="./views.js?v=19"></script>
+<!-- Plant QC side. qc-config.js is the one file to edit for checklists, defect types and rules. -->
+<script src="./qc-config.js?v=1"></script>
+<script src="./qc-sample-data.js?v=1"></script>
+<script src="./qc-app.js?v=1"></script>
+<script src="./qc-screens.js?v=1"></script>
 </body>
 </html>
