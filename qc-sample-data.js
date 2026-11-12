@@ -19,7 +19,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "Ready for QA",
    "days_in_stage": 0,
-   "model_image": "./thumbs/SAMPLE-1016-1001.webp",
+   "model_image": "./SAMPLE-1016-1001.webp",
    "order_options": {
     "windows": 1,
     "electrical": "Basic",
@@ -40,7 +40,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "Ready for QA",
    "days_in_stage": 0,
-   "model_image": "./thumbs/SAMPLE-1220-1002.webp",
+   "model_image": "./SAMPLE-1220-1002.webp",
    "order_options": {
     "windows": 2,
     "electrical": "None",
@@ -59,7 +59,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "Ready for QA",
    "days_in_stage": 1,
-   "model_image": "./thumbs/SAMPLE-812-1003.webp",
+   "model_image": "./SAMPLE-812-1003.webp",
    "order_options": {
     "windows": 0,
     "electrical": "None",
@@ -78,7 +78,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "Ready for QA",
    "days_in_stage": 1,
-   "model_image": "./thumbs/SAMPLE-1020-1004.webp",
+   "model_image": "./SAMPLE-1020-1004.webp",
    "order_options": {
     "windows": 2,
     "electrical": "Basic",
@@ -97,7 +97,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "In rework",
    "days_in_stage": 2,
-   "model_image": "./thumbs/SAMPLE-1224-1005.webp",
+   "model_image": "./SAMPLE-1224-1005.webp",
    "order_options": {
     "windows": 2,
     "electrical": "Expanded",
@@ -116,7 +116,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "In QA",
    "days_in_stage": 0,
-   "model_image": "./thumbs/SAMPLE-1012-1006.webp",
+   "model_image": "./SAMPLE-1012-1006.webp",
    "order_options": {
     "windows": 0,
     "electrical": "Basic",
@@ -135,7 +135,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "Ready for QA",
    "days_in_stage": 2,
-   "model_image": "./thumbs/SAMPLE-810-1007.webp",
+   "model_image": "./SAMPLE-810-1007.webp",
    "order_options": {
     "windows": 1,
     "electrical": "Lights Only",
@@ -154,7 +154,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "Needs sign-off",
    "days_in_stage": 1,
-   "model_image": "./thumbs/SAMPLE-1232-1008.webp",
+   "model_image": "./SAMPLE-1232-1008.webp",
    "order_options": {
     "windows": 3,
     "electrical": "Utility",
@@ -173,7 +173,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "On hold",
    "days_in_stage": 4,
-   "model_image": "./thumbs/SAMPLE-1016-1009.webp",
+   "model_image": "./SAMPLE-1016-1009.webp",
    "order_options": {
     "windows": 1,
     "electrical": "None",
@@ -192,7 +192,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "Ready for QA",
    "days_in_stage": 1,
-   "model_image": "./thumbs/SAMPLE-1216-1010.webp",
+   "model_image": "./SAMPLE-1216-1010.webp",
    "order_options": {
     "windows": 2,
     "electrical": "Basic",
@@ -211,7 +211,7 @@ const QC_SAMPLE = {
    "stage": "QC",
    "qc_status": "In rework",
    "days_in_stage": 3,
-   "model_image": "./thumbs/SAMPLE-1024-1011.webp",
+   "model_image": "./SAMPLE-1024-1011.webp",
    "order_options": {
     "windows": 2,
     "electrical": "Expanded",
@@ -230,7 +230,7 @@ const QC_SAMPLE = {
    "stage": "Ready to ship",
    "qc_status": "Signed off",
    "days_in_stage": 0,
-   "model_image": "./thumbs/SAMPLE-1428-1012.webp",
+   "model_image": "./SAMPLE-1428-1012.webp",
    "order_options": {
     "windows": 2,
     "electrical": "Basic",
