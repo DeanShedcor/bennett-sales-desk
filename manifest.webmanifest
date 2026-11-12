@@ -1,0 +1,20 @@
+{
+ "name": "Bennett Sales and QC",
+ "short_name": "Bennett",
+ "start_url": "./index.html",
+ "display": "standalone",
+ "background_color": "#edf1f4",
+ "theme_color": "#0c1a28",
+ "icons": [
+  {
+   "src": "./icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  },
+  {
+   "src": "./apple-touch-icon.png",
+   "sizes": "180x180",
+   "type": "image/png"
+  }
+ ]
+}
