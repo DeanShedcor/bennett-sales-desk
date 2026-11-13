@@ -16,9 +16,11 @@
      porch and dormer packages on every style that offers them; greenhouse electrical $660.
    Already the same in both and left as they were: windows, shutters, flower boxes, transoms, doors,
    roll-ups, porch and dormer package prices, electrical packages and extras, Silver Bullet colors.
-   Not in Jordan's list, left as before and still marked in the price details: the fuel surcharge,
-   the 36 in full-lite door, the extra side door, the Workshop electrical package, a 6 × 7 garage
-   package and two-tone siding.
+   Two-tone siding is $1.50 per sq ft of building, width × length (a 10 × 16 is 160 sq ft).
+   The fuel surcharge changes sale to sale: it stays out of the total and shows a red STILL NEEDED
+   until Turbo Assist supplies it for the sale.
+   Not in Jordan's list, left as before: the 36 in full-lite door, the extra side door, the Workshop
+   electrical package and a 6 × 7 garage package.
    Loaded right after views.js; wraps the Sales desk's price functions. */
 
 const PRICE_LIST_SOURCE = 'Turbo Assist price list';
@@ -66,10 +68,14 @@ packageAmount = function (c, name = c.package) {
       if (r.name === c.package && packageAmount(c) != null) r.source = PRICE_LIST_SOURCE;
       if (c.style === 'Greenhouse' && /electrical package$/.test(r.name)) Object.assign(r, { name: 'Greenhouse electrical package', amount: 660, source: PRICE_LIST_SOURCE });
       if (/IdeaRoom/.test(r.source) && r.name !== 'Fuel surcharge') r.source = PRICE_LIST_SOURCE;
-      if (r.name === 'Fuel surcharge') r.source = 'Not in the price list · confirm';
+      /* The fuel surcharge changes sale to sale, so no fixed number goes in the total. Turbo Assist has
+         to supply it for each sale; until then the line is flagged STILL NEEDED. */
+      if (r.name === 'Fuel surcharge') Object.assign(r, { amount: 0, needed: true, source: 'Changes sale to sale · still needed from Turbo Assist' });
     }
     if (typeof usesWoodOptions === 'function' && usesWoodOptions(c)) {
       if (c.accentColor && c.accentArea !== 'lower') rows.push({ name: 'Accent gable · ' + c.accentColor, amount: 100, source: PRICE_LIST_SOURCE });
+      /* Two-tone: $1.50 per sq ft of building, width × length (a 10 × 16 is 160 sq ft, $240). */
+      if (c.accentColor && c.accentArea === 'lower') rows.push({ name: 'Two-tone siding · ' + c.accentColor, amount: Math.round(floorArea(c) * 1.5 * 100) / 100, source: PRICE_LIST_SOURCE + ' · $1.50 per sq ft of building' });
       if (c.customPaint) rows.push({ name: 'Custom color · ' + c.customPaint, amount: 100, source: PRICE_LIST_SOURCE });
     }
     if (c.doorColor && c.doorColor !== c.color && !packageOpenings(c).length && !(typeof allDoorsWhiteOnly === 'function' && allDoorsWhiteOnly(c)))
@@ -77,11 +83,11 @@ packageAmount = function (c, name = c.package) {
     return rows;
   };
 }
-/* An accent gable is priced now; two-tone siding still is not in the list. */
+/* Accent gable and two-tone siding are both priced now. */
 {
   const salesReview = catalogReviewItems;
   catalogReviewItems = function (c) {
-    return salesReview(c).filter((x) => !(x === 'Accent finish availability and price' && c.accentArea !== 'lower'));
+    return salesReview(c).filter((x) => x !== 'Accent finish availability and price');
   };
 }
 
@@ -109,6 +115,17 @@ packageAmount = function (c, name = c.package) {
 {
   const salesSummary = summary;
   summary = function () {
-    return salesSummary().replace('Reference base + sample options', 'Base and options from Turbo Assist’s price list; the fuel surcharge is not in that list');
+    return sfFuelFlag(salesSummary().replace('Reference base + sample options', 'Base and options from Turbo Assist’s price list'));
   };
+  const salesQuote = quoteView;
+  quoteView = function (customer) {
+    return sfFuelFlag(salesQuote(customer));
+  };
+}
+/* A big red STILL NEEDED in place of the fuel surcharge's dollar amount, for Jordan to notice. */
+const STILL_NEEDED = '<strong class="still-needed" title="The fuel surcharge changes sale to sale. Turbo Assist has to supply it for each sale.">STILL NEEDED</strong>';
+function sfFuelFlag(html) {
+  return html
+    .replace(/<li><span>Fuel surcharge<\/span><strong>[^<]*<\/strong><\/li>/, `<li class="needed-line"><span>Fuel surcharge<small>Changes sale to sale</small></span>${STILL_NEEDED}</li>`)
+    .replace(/(<td>Fuel surcharge<br><small>[^<]*<\/small><\/td><td>)[^<]*(<\/td>)/, `$1${STILL_NEEDED}$2`);
 }

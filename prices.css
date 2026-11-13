@@ -1,0 +1,4 @@
+/* prices.css: the STILL NEEDED flag on a price line that has no number yet. */
+.still-needed { display: inline-block; background: #c4261d; color: #fff !important; font-weight: 800; font-size: 13px; letter-spacing: .08em; padding: 4px 10px; border-radius: 6px; box-shadow: 0 0 0 3px rgba(196, 38, 29, .18); white-space: nowrap; }
+.pricelines .needed-line { align-items: center; background: #fdecea; border-radius: 8px; padding-left: 8px !important; padding-right: 8px !important; }
+.pricelines .needed-line small { display: block; color: #a3271f; font-size: 12px; font-weight: 600; }
