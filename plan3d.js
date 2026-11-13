@@ -364,25 +364,40 @@ function p3Mesh(c, inside = false, yaw = 0) {
     const ow = vw * 0.64, oy0 = v0 + vh * 0.15, oy1 = v0 + vh * 0.79, bh = (oy1 - oy0) / 4;
     const slot = p3Lum(col.trim) < 0.3 ? '#7a5838' : '#25282b';
     seam = Math.min(seam, v0 - 0.3);
+    /* The plate is a thick frame standing off the wall; the louvers sit back inside its opening, below the
+       face of the frame, each blade sloping down and out but still recessed, as on the plant's buildings. */
+    const PF = 0.13, BACK = 0.015, reveal = p3Shade(col.trim, 0.82);
     for (const [x, s] of [[0, -1], [L, 1]]) {
       const P = (y, up, d) => V(x + s * d, y, F + up), sq = (y0, y1, u0, u1, d, hex) => face([P(y0, u0, d), P(y1, u0, d), P(y1, u1, d), P(y0, u1, d)], hex, false);
-      const arch = Array.from({ length: 13 }, (_, i) => {
-        const t = (i / 12) * 2 - 1;
-        return P(W / 2 - t * vw, v0 + vh * (0.82 + 0.18 * (1 - t * t)), 0.05);
+      const archAt = (t) => [W / 2 - t * vw, v0 + vh * (0.82 + 0.18 * (1 - t * t))];
+      const arch = Array.from({ length: 13 }, (_, i) => archAt((i / 12) * 2 - 1));
+      /* Face of the frame, with the opening left out: a strip each side, one under, and the arched top. */
+      sq(W / 2 - vw, W / 2 + vw, v0, oy0, PF, col.trim);
+      sq(W / 2 - vw, W / 2 - ow, oy0, oy1, PF, col.trim);
+      sq(W / 2 + ow, W / 2 + vw, oy0, oy1, PF, col.trim);
+      face([P(W / 2 - vw, oy1, PF), P(W / 2 + vw, oy1, PF), ...arch.map(([y, u]) => P(y, u, PF))], col.trim, false);
+      /* Its outside edge, back to the wall. */
+      const rim = [[W / 2 - vw, v0], [W / 2 + vw, v0], ...arch];
+      rim.forEach((q, i) => {
+        const r = rim[(i + 1) % rim.length];
+        face([P(q[0], q[1], 0.01), P(r[0], r[1], 0.01), P(r[0], r[1], PF), P(q[0], q[1], PF)], col.trim, false);
       });
-      face([P(W / 2 - vw, v0, 0.05), P(W / 2 + vw, v0, 0.05), ...arch], col.trim);
-      sq(W / 2 - ow, W / 2 + ow, oy0, oy1, 0.055, '#1b1d20');
+      /* Inside the opening: the dark back, the four sides of the recess, then the blades. */
+      sq(W / 2 - ow, W / 2 + ow, oy0, oy1, BACK, '#141618');
+      face([P(W / 2 - ow, oy1, BACK), P(W / 2 + ow, oy1, BACK), P(W / 2 + ow, oy1, PF), P(W / 2 - ow, oy1, PF)], reveal, false);
+      face([P(W / 2 - ow, oy0, BACK), P(W / 2 + ow, oy0, BACK), P(W / 2 + ow, oy0, PF), P(W / 2 - ow, oy0, PF)], reveal, false);
+      for (const y of [W / 2 - ow, W / 2 + ow]) face([P(y, oy0, BACK), P(y, oy1, BACK), P(y, oy1, PF), P(y, oy0, PF)], reveal, false);
       for (let i = 0; i < 4; i++) {
         const yt = oy1 - i * bh;
-        face([P(W / 2 - ow, yt, 0.056), P(W / 2 + ow, yt, 0.056), P(W / 2 + ow, yt - bh * 0.5, 0.12), P(W / 2 - ow, yt - bh * 0.5, 0.12)], col.trim, false);
-        sq(W / 2 - ow, W / 2 + ow, yt - bh * 0.95, yt - bh * 0.5, 0.12, col.trim);
+        face([P(W / 2 - ow, yt - 0.01, 0.03), P(W / 2 + ow, yt - 0.01, 0.03), P(W / 2 + ow, yt - bh * 0.5, 0.09), P(W / 2 - ow, yt - bh * 0.5, 0.09)], col.trim, false);
+        sq(W / 2 - ow, W / 2 + ow, yt - bh * 0.95, yt - bh * 0.5, 0.09, col.trim);
         const gw = (ow * 2 * 0.9) / 4;
         for (let g = 0; g < 4; g++) for (let j = 0; j < 6; j++) {
           const y = W / 2 - ow * 0.9 + gw * g + gw * (0.16 + j * 0.13);
-          sq(y, y + gw * 0.07, yt - bh * 0.88, yt - bh * 0.58, 0.122, slot);
+          sq(y, y + gw * 0.07, yt - bh * 0.88, yt - bh * 0.58, 0.092, slot);
         }
       }
-      for (const [dy, du] of [[-0.78, 0.1], [0.78, 0.1], [-0.78, 0.8], [0.78, 0.8]]) sq(W / 2 + dy * vw - 0.02, W / 2 + dy * vw + 0.02, v0 + du * vh - 0.02, v0 + du * vh + 0.02, 0.06, p3Shade(col.trim, 0.7));
+      for (const [dy, du] of [[-0.78, 0.1], [0.78, 0.1], [-0.78, 0.8], [0.78, 0.8]]) sq(W / 2 + dy * vw - 0.02, W / 2 + dy * vw + 0.02, v0 + du * vh - 0.02, v0 + du * vh + 0.02, PF + 0.003, p3Shade(col.trim, 0.7));
     }
   }
   /* Where the gable sheet of siding meets the wall sheet: a horizontal seam with a Z-flashing lip. */
