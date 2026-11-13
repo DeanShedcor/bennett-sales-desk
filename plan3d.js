@@ -74,7 +74,10 @@ function p3Colors(c) {
 function p3Profile(c, W) {
   const h = Number(c.wallHeight) || (c.style === 'Low-Wall Barn' ? 5 : c.style === 'Lofted' ? 6 : 7);
   if (c.style === 'Studio') return [[0, h], [W, h + 2]];
-  if (c.style === 'Lofted' || c.style === 'Low-Wall Barn') return [[0, h], [W * 0.2, h + W * 0.205], [W / 2, h + W * 0.29], [W * 0.8, h + W * 0.205], [W, h]];
+  /* Lofted, from the engineer drawing: 6 ft sidewalls and the peak 11'-8" above the floor on a 16-wide,
+     so the roof rises 5'-8" (0.354 of the width), scaled to other widths. */
+  if (c.style === 'Lofted') return [[0, h], [W * 0.2, h + W * 0.2504], [W / 2, h + W * (17 / 48)], [W * 0.8, h + W * 0.2504], [W, h]];
+  if (c.style === 'Low-Wall Barn') return [[0, h], [W * 0.2, h + W * 0.205], [W / 2, h + W * 0.29], [W * 0.8, h + W * 0.205], [W, h]];
   /* 5 in 12 roof pitch, from the engineer drawings. */
   return [[0, h], [W / 2, h + (W / 2) * (5 / 12)], [W, h]];
 }
