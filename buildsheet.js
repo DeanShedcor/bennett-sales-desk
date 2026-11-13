@@ -378,6 +378,14 @@ function bsPole(sh) {
     }
   return best;
 }
+/* A light grid over the floor, one square per foot, clipped to the building outline. */
+function bsGrid(sh, P, id, color, width) {
+  const f = (v) => v.toFixed(1), [x0, y0] = P([0, 0]), [x1, y1] = P([sh.L, sh.W]);
+  let d = '';
+  for (let x = 1; x < sh.L; x++) d += `M${f(P([x, 0])[0])} ${f(y0)}V${f(y1)}`;
+  for (let y = 1; y < sh.W; y++) d += `M${f(x0)} ${f(P([0, y])[1])}H${f(x1)}`;
+  return `<clipPath id="${id}"><polygon points="${sh.poly.map((q) => P(q).map(f).join(',')).join(' ')}"/></clipPath><path d="${d}" stroke="${color}" stroke-width="${width}" fill="none" clip-path="url(#${id})"/>`;
+}
 function bsPlan(lay) {
   const { sh, items } = lay, { L, W } = sh;
   const VW = 1040, VH = 392, Sc = Math.min(680 / L, 164 / W, 30);
@@ -389,7 +397,7 @@ function bsPlan(lay) {
   const o = [`<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan of the building from above">`];
   o.push('<defs><pattern id="bsdeck" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 6H6" stroke="#9a9a9a" stroke-width="0.7"/></pattern></defs>');
   if (sh.deck) o.push(`<polygon points="${pts(sh.deck)}" fill="url(#bsdeck)" stroke="#111" stroke-width="1" stroke-dasharray="4 3"/>`);
-  o.push(`<polygon points="${pts(sh.poly)}" fill="#fff" stroke="#111" stroke-width="5" stroke-linejoin="miter"/>`);
+  o.push(`<polygon points="${pts(sh.poly)}" fill="#fff"/>${bsGrid(sh, P, 'bsgridp', '#cfd6dc', 0.6)}<polygon points="${pts(sh.poly)}" fill="none" stroke="#111" stroke-width="5" stroke-linejoin="miter"/>`);
   for (const q of sh.posts) {
     const [x, y] = P(q);
     o.push(`<rect x="${f(x - 4)}" y="${f(y - 4)}" width="8" height="8" fill="#111"/>`);
@@ -471,6 +479,7 @@ function bsPlan(lay) {
   o.push(`<circle cx="504" cy="${ky + 9}" r="6" fill="#fff" stroke="#111" stroke-width="1.5"/><path d="M502 ${ky + 6}v6M506 ${ky + 6}v6" stroke="#111" stroke-width="1.4"/><text x="515" y="${ky + 12.5}" font-size="9">outlet</text>`);
   o.push(`<rect x="556" y="${ky + 3}" width="12" height="12" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="562" y="${ky + 12.6}" text-anchor="middle" font-size="9.5" font-weight="800">S</text><text x="573" y="${ky + 12.5}" font-size="9">switch</text>`);
   if (sh.deck) o.push(`<rect x="614" y="${ky + 5}" width="8" height="8" fill="#111"/><text x="627" y="${ky + 12.5}" font-size="9">porch post</text>`);
+  o.push(`<rect x="${sh.deck ? 700 : 614}" y="${ky + 4}" width="10" height="10" fill="#fff" stroke="#b9c2ca" stroke-width="0.8"/><text x="${sh.deck ? 715 : 629}" y="${ky + 12.5}" font-size="9">grid square = 1 ft</text>`);
   o.push('</svg>');
   return o.join('');
 }
@@ -611,7 +620,7 @@ function bsEdDraw(lay) {
   const pts = (l) => l.map((q) => P(q).map(f).join(',')).join(' ');
   const o = ['<defs><pattern id="bseddeck" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#e9dcc6"/><path d="M0 9H9" stroke="#bfa57f" stroke-width="1"/></pattern></defs>'];
   if (sh.deck) o.push(`<polygon points="${pts(sh.deck)}" fill="url(#bseddeck)" stroke="#8a7350" stroke-width="1.5"/>`);
-  o.push(`<polygon points="${pts(sh.poly)}" fill="#fbf7ee" stroke="#0c1a28" stroke-width="9" stroke-linejoin="miter"/>`);
+  o.push(`<polygon points="${pts(sh.poly)}" fill="#fbf7ee"/>${bsGrid(sh, P, 'bsgride', '#e3d9c4', 1)}<polygon points="${pts(sh.poly)}" fill="none" stroke="#0c1a28" stroke-width="9" stroke-linejoin="miter"/>`);
   for (const q of sh.posts) {
     const [x, y] = P(q);
     o.push(`<rect x="${f(x - 6)}" y="${f(y - 6)}" width="12" height="12" fill="#0c1a28"/>`);
