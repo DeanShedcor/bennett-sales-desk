@@ -67,7 +67,7 @@ function p3Colors(c) {
     body, trim,
     door: paints[c.doorColor] || body,
     roof: c.style === 'Greenhouse' ? '#dfeef2' : c.roof === 'Shingles' ? '#4a4d50' : metalRoofColors[c.roofColor] || metalRoofColors.Charcoal,
-    glass: '#a9d4ea', floor: '#d9c39a', deck: '#9a7650', skid: '#6b5a45',
+    glass: '#a9d4ea', floor: '#d9c39a', deck: '#8f9499', skid: '#6b5a45',
   };
 }
 /* Height of the top of the walls and roof across the width (plan y), measured from the floor. */
@@ -125,10 +125,13 @@ function p3Mesh(c, inside = false, yaw = 0) {
   face([V(-1200, -1200, 0), V(-1200, 1200, 0), V(1200, 1200, 0), V(1200, -1200, 0)], '#6e8f4bG', false);
   /* Floor, porch deck and the frame they sit on. */
   flat(sh.poly, F, col.floor);
-  band(sh.poly, 0, F, col.skid);
+  /* The floor frame is painted with the siding and sits on two skids. */
+  const rim = col.body.slice(0, 7);
+  band(sh.poly, 0.3, F, rim);
+  for (const y of [W * 0.2, W * 0.8]) box(0.1, y - 0.15, L - 0.1, y + 0.15, 0, 0.3, '#c2a57a');
   if (sh.deck) {
     flat(sh.deck, F, col.deck);
-    band(sh.deck, 0, F, col.skid);
+    band(sh.deck, 0.3, F, rim);
   }
 
   /* Walls rise to the roof line, so end walls carry their own gable. */
@@ -172,45 +175,88 @@ function p3Mesh(c, inside = false, yaw = 0) {
       hide = open;
     }
     for (const it of lay.items.filter((x) => x.wi === w.i && x.w)) {
-      const door = it.kind === 'door', roll = /roll/i.test(it.name);
-      let lo = door ? 0 : 3.2, hi = door ? (roll ? 7 : 6.67) : 6.2;
+      const door = it.kind === 'door', roll = /roll/i.test(it.name), house = /lite|fiberglass/i.test(it.name), glassTop = /transom/i.test(it.name);
+      const tall = Number((it.name.match(/×(\d+)/) || [])[1]) || 3;
+      let hi = door ? (roll ? 7 : 6.67) : 6.5, lo = 0;
       if (it.high) (lo = eave + 0.3), (hi = eave + 1.5);
-      hi = Math.min(hi, wallTop - 0.15);
-      lo = Math.min(lo, hi - 1);
-      const p0 = geo.at(it.at), p1 = geo.at(it.at + it.w);
+      else if (door) hi = Math.min(hi, wallTop - 0.5);
+      else (hi = Math.min(hi, wallTop - 0.5)), (lo = Math.max(1.5, hi - tall));
+      const a0 = it.at, a1 = it.at + it.w, black = '#17191c', white = '#f4f4f1', c3 = 0.29;
       for (const side of [-1, 1]) {
-        const off = (p, d) => [p[0] + geo.n[0] * d * side, p[1] + geo.n[1] * d * side];
-        const quad = (a, b, y0, y1, d, hex) => face([V(...off(a, d), F + y0), V(...off(b, d), F + y0), V(...off(b, d), F + y1), V(...off(a, d), F + y1)], hex);
-        quad(geo.at(it.at - 0.17), geo.at(it.at + it.w + 0.17), Math.max(0, lo - (door ? 0 : 0.17)), hi + 0.17, 0.05, col.trim);
-        quad(p0, p1, lo, hi, 0.09, door ? (roll || /lite|fiberglass/i.test(it.name) ? '#f4f4f1' : col.door) : col.glass);
-        if (door && it.w >= 5 && !roll) lines.push(...V(...off(geo.at(it.at + it.w / 2), 0.09), F + lo), ...V(...off(geo.at(it.at + it.w / 2), 0.09), F + hi));
-        const lite = /lite/i.test(it.name), shed = door && !roll && !/lite|fiberglass/i.test(it.name);
-        const seg = (ta, ya, tb, yb, d) => lines.push(...V(...off(geo.at(ta), d), F + ya), ...V(...off(geo.at(tb), d), F + yb));
-        if (shed) {
-          /* Shed doors: a trim frame and a middle rail on each leaf. */
-          const leaves = it.w >= 5 ? 2 : 1, lw = it.w / leaves, b = 0.24;
-          for (let i = 0; i < leaves; i++) {
-            const la = it.at + i * lw, lb = la + lw;
-            for (const [ta, tb, y0, y1] of [[la, la + b, lo, hi], [lb - b, lb, lo, hi], [la, lb, hi - b, hi], [la, lb, lo, lo + b], [la, lb, lo + 3.1, lo + 3.1 + b]]) quad(geo.at(ta), geo.at(tb), y0, y1, 0.12, col.trim);
+        const off = (t, d) => {
+          const q = geo.at(t);
+          return [q[0] + geo.n[0] * d * side, q[1] + geo.n[1] * d * side];
+        };
+        const quad = (ta, tb, y0, y1, d, hex, outline = true) => face([V(...off(ta, d), F + y0), V(...off(tb, d), F + y0), V(...off(tb, d), F + y1), V(...off(ta, d), F + y1)], hex, outline);
+        const seg = (ta, ya, tb, yb, d) => lines.push(...V(...off(ta, d), F + ya), ...V(...off(tb, d), F + yb));
+        const out = side === -1;
+        /* Casing, as built: a board each side, a wider header board with a drip cap, and a sill board under a window. */
+        quad(a0 - c3, a0, lo, hi, 0.07, col.trim);
+        quad(a1, a1 + c3, lo, hi, 0.07, col.trim);
+        quad(a0 - c3 - 0.12, a1 + c3 + 0.12, hi, hi + 0.33, 0.08, col.trim);
+        if (out) quad(a0 - c3 - 0.22, a1 + c3 + 0.22, hi + 0.33, hi + 0.4, 0.12, col.trim, false);
+        if (!door && !it.high) quad(a0 - c3 - 0.12, a1 + c3 + 0.12, lo - 0.33, lo, 0.08, col.trim);
+        if (!door) {
+          quad(a0, a1, lo, hi, 0.06, white);
+          if (it.high) {
+            quad(a0 + 0.07, a1 - 0.07, lo + 0.07, hi - 0.07, 0.09, col.glass);
+            const n = Math.max(2, Math.round(it.w / 0.45));
+            for (let k = 1; k < n; k++) quad(a0 + (it.w * k) / n - 0.02, a0 + (it.w * k) / n + 0.02, lo + 0.07, hi - 0.07, 0.1, white, false);
+          } else {
+            /* Single-hung window: two sashes, each divided two by two. */
+            const mid = (lo + hi) / 2, m = (a0 + a1) / 2;
+            for (const [y0, y1] of [[lo + 0.08, mid - 0.04], [mid + 0.04, hi - 0.08]]) {
+              quad(a0 + 0.08, a1 - 0.08, y0, y1, 0.09, col.glass);
+              quad(m - 0.025, m + 0.025, y0, y1, 0.1, white, false);
+              quad(a0 + 0.08, a1 - 0.08, (y0 + y1) / 2 - 0.025, (y0 + y1) / 2 + 0.025, 0.1, white, false);
+            }
+            /* Shutters: three boards with gaps, held by three battens. */
+            if (out && (/shutter/i.test(it.note || '') || c.shutters)) for (const s0 of [a0 - c3 - 0.06 - 1, a1 + c3 + 0.06]) {
+              for (let i = 0; i < 3; i++) quad(s0 + i * 0.355, s0 + i * 0.355 + 0.29, lo, hi, 0.06, col.trim);
+              for (const y of [lo + (hi - lo) * 0.1, mid - 0.16, hi - (hi - lo) * 0.1 - 0.33]) quad(s0, s0 + 1, y, y + 0.33, 0.1, col.trim);
+            }
           }
-        }
-        if (roll) for (let y = lo + 0.6; y < hi; y += 0.6) seg(it.at, y, it.at + it.w, y, 0.1);
-        if (door && lite) {
+        } else if (roll) {
+          quad(a0, a1, lo, hi, 0.06, white);
+          for (let y = lo + 0.6; y < hi; y += 0.6) seg(a0, y, a1, y, 0.07);
+        } else if (house) {
+          quad(a0, a1, lo, hi, 0.06, white);
           const leaves = it.w >= 5 ? 2 : 1, lw = it.w / leaves;
           for (let i = 0; i < leaves; i++) {
-            const la = it.at + i * lw + 0.45, lb = it.at + (i + 1) * lw - 0.45, y0 = lo + 3.3, y1 = hi - 0.5;
-            quad(geo.at(la), geo.at(lb), y0, y1, 0.12, col.glass);
-            for (const k of [1 / 3, 2 / 3]) seg(la + (lb - la) * k, y0, la + (lb - la) * k, y1, 0.13), seg(la, y0 + (y1 - y0) * k, lb, y0 + (y1 - y0) * k, 0.13);
+            const la = a0 + i * lw + 0.45, lb = a0 + (i + 1) * lw - 0.45, y0 = lo + 3.3, y1 = hi - 0.5;
+            quad(la, lb, y0, y1, 0.09, col.glass);
+            for (const k of [1 / 3, 2 / 3]) seg(la + (lb - la) * k, y0, la + (lb - la) * k, y1, 0.1), seg(la, y0 + (y1 - y0) * k, lb, y0 + (y1 - y0) * k, 0.1);
           }
-        }
-        if (!door) {
-          /* Window bars, and shutters on the outside when the order has them. */
-          seg(it.at + it.w / 2, lo, it.at + it.w / 2, hi, 0.1);
-          seg(it.at, (lo + hi) / 2, it.at + it.w, (lo + hi) / 2, 0.1);
-          if (side === -1 && !it.high && (/shutter/i.test(it.note || '') || c.shutters)) {
-            quad(geo.at(it.at - 0.95), geo.at(it.at - 0.25), lo - 0.1, hi + 0.1, 0.08, col.trim);
-            quad(geo.at(it.at + it.w + 0.25), geo.at(it.at + it.w + 0.95), lo - 0.1, hi + 0.1, 0.08, col.trim);
+          if (leaves === 2) seg(a0 + lw, lo, a0 + lw, hi, 0.07);
+        } else {
+          /* Shed door, as built: siding panel, a trim frame and middle rail on each leaf, an optional row of
+             glass across the top, three black strap hinges per leaf, a T-handle and a tread plate. */
+          quad(a0, a1, lo, hi, 0.06, col.door);
+          const leaves = it.w >= 5 ? 2 : 1, lw = it.w / leaves, rail = 0.44 * hi;
+          for (let i = 0; i < leaves; i++) {
+            const la = a0 + i * lw, lb = la + lw, top = hi - c3 - 1.05;
+            const bars = [[la, la + c3, lo, hi], [lb - c3, lb, lo, hi], [la, lb, hi - c3, hi], [la, lb, lo, lo + c3], [la, lb, rail, rail + c3]];
+            if (glassTop) bars.push([la, lb, top - c3, top]);
+            for (const [ta, tb, y0, y1] of bars) quad(ta, tb, y0, y1, 0.1, col.trim);
+            if (glassTop) {
+              quad(la + c3, lb - c3, top, hi - c3, 0.09, col.glass);
+              const n = leaves === 2 ? 5 : 7;
+              for (let k = 1; k < n; k++) quad(la + c3 + ((lw - 2 * c3) * k) / n - 0.02, la + c3 + ((lw - 2 * c3) * k) / n + 0.02, top, hi - c3, 0.11, white, false);
+            }
+            if (out) {
+              const edge = leaves === 2 && i === 1 ? lb : la, dir = edge === la ? 1 : -1;
+              for (const y of [lo + 0.09, rail + 0.09, hi - 0.21]) {
+                quad(edge, edge + dir * 0.85, y, y + 0.12, 0.13, black, false);
+                quad(edge - dir * 0.22, edge + dir * 0.04, y - 0.1, y + 0.22, 0.13, black, false);
+              }
+              if (leaves === 1 || i === 1) {
+                const h = leaves === 1 ? lb - c3 / 2 : la + c3 / 2;
+                quad(h - 0.05, h + 0.05, rail - 0.04, rail + 0.33, 0.14, black, false);
+              }
+            }
           }
+          if (leaves === 2) seg(a0 + lw, lo, a0 + lw, hi, 0.11);
+          if (out) quad(a0, a1, lo - 0.1, lo + 0.03, 0.13, '#c5cace', false);
         }
       }
     }
@@ -229,11 +275,18 @@ function p3Mesh(c, inside = false, yaw = 0) {
   /* Corner boards, and a vent high in each gable end. */
   for (const [x, y] of sh.poly) box(x - 0.16, y - 0.16, x + 0.16, y + 0.16, F, F + topAt(y) - 0.02, col.trim);
   const peak = Math.max(...prof.map((p) => p[1]));
-  if (c.style !== 'Studio' && c.style !== 'Greenhouse' && peak - eave > 1.7) {
-    const v0 = eave + (peak - eave) * 0.3, v1 = Math.min(v0 + 1.2, peak - 0.45);
+  if (!inside && c.style !== 'Studio' && c.style !== 'Greenhouse' && peak - eave > 1.7) {
+    /* Gable vent, as built: a flat plate with an arched top and a louver set into it. */
+    const k = Math.min(1, (peak - eave - 0.55) / 1.75), vw = 0.68 * k, vh = 1.7 * k, v0 = eave + Math.max(0.15, (peak - eave - vh) * 0.35);
     for (const [x, d] of [[0, -0.07], [L, 0.07]]) {
-      face([V(x + d, W / 2 - 0.5, F + v0), V(x + d, W / 2 + 0.5, F + v0), V(x + d, W / 2 + 0.5, F + v1), V(x + d, W / 2 - 0.5, F + v1)], col.trim);
-      for (let up = v0 + 0.2; up < v1; up += 0.2) lines.push(...V(x + d * 1.2, W / 2 - 0.4, F + up), ...V(x + d * 1.2, W / 2 + 0.4, F + up));
+      const arch = Array.from({ length: 9 }, (_, i) => {
+        const t = (i / 8) * 2 - 1;
+        return V(x + d, W / 2 - t * vw, F + v0 + vh * (0.82 + 0.18 * (1 - t * t)));
+      });
+      face([V(x + d, W / 2 - vw, F + v0), V(x + d, W / 2 + vw, F + v0), ...arch], col.trim);
+      const y0 = W / 2 - vw * 0.66, y1 = W / 2 + vw * 0.66, u0 = v0 + vh * 0.12, u1 = v0 + vh * 0.72, e = x + d * 1.3;
+      for (let i = 0; i <= 5; i++) lines.push(...V(e, y0, F + u0 + ((u1 - u0) * i) / 5), ...V(e, y1, F + u0 + ((u1 - u0) * i) / 5));
+      for (const y of [y0, y1]) lines.push(...V(e, y, F + u0), ...V(e, y, F + u1));
     }
   }
 
@@ -275,24 +328,21 @@ function p3Mesh(c, inside = false, yaw = 0) {
   /* Porch posts and a top rail between them. */
   const posts = sh.posts.map(([x, y]) => [Math.min(Math.max(x, 0.2), L - 0.2), Math.min(Math.max(y, 0.2), W - 0.2)]);
   for (const [x, y] of posts) box(x - 0.17, y - 0.17, x + 0.17, y + 0.17, F, F + topAt(y), col.trim);
-  /* Porch railing along the open edges of the deck, with a gap to walk through on the longest edge. */
+  /* The porches are built without a railing. */
+  /* Decking, as built: grey composite boards running the length of the building, with a border board
+     ("picture frame") along every open edge of the porch. */
   if (sh.deck) {
-    const near = (p, a, b) => {
-      const dx = b[0] - a[0], dy = b[1] - a[1], t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy)));
-      return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy) < 0.03;
-    };
-    const open = sh.deck.map((a, i) => [a, sh.deck[(i + 1) % sh.deck.length]]).filter(([a, b]) => !sh.walls.some((w) => near([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], w.a, w.b)));
-    const longest = open.reduce((m, e) => (Math.hypot(e[1][0] - e[0][0], e[1][1] - e[0][1]) > Math.hypot(m[1][0] - m[0][0], m[1][1] - m[0][1]) ? e : m), open[0]);
-    for (const e of open) {
-      const [a, b] = e, len = Math.hypot(b[0] - a[0], b[1] - a[1]), at = (t) => [a[0] + ((b[0] - a[0]) * t) / len, a[1] + ((b[1] - a[1]) * t) / len];
-      const runs = e === longest && len > 7 ? [[0, len / 2 - 2], [len / 2 + 2, len]] : [[0, len]];
-      for (const [s0, s1] of runs) {
-        for (const [y0, y1] of [[0.3, 0.45], [2.85, 3]]) face([V(...at(s0), F + y0), V(...at(s1), F + y0), V(...at(s1), F + y1), V(...at(s0), F + y1)], col.trim);
-        for (let t = s0 + 0.4; t < s1 - 0.1; t += 0.4) face([V(...at(t - 0.05), F + 0.45), V(...at(t + 0.05), F + 0.45), V(...at(t + 0.05), F + 2.85), V(...at(t - 0.05), F + 2.85)], col.trim, false);
-        if (s0 > 0) box(at(s0)[0] - 0.12, at(s0)[1] - 0.12, at(s0)[0] + 0.12, at(s0)[1] + 0.12, F, F + 3.1, col.trim);
-        if (s1 < len) box(at(s1)[0] - 0.12, at(s1)[1] - 0.12, at(s1)[0] + 0.12, at(s1)[1] + 0.12, F, F + 3.1, col.trim);
-      }
-    }
+    const cx = sh.deck.reduce((t, q) => t + q[0], 0) / sh.deck.length, cy = sh.deck.reduce((t, q) => t + q[1], 0) / sh.deck.length;
+    const onWall = (q) => sh.walls.some((w) => {
+      const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], t = Math.max(0, Math.min(1, ((q[0] - w.a[0]) * dx + (q[1] - w.a[1]) * dy) / (dx * dx + dy * dy)));
+      return Math.hypot(q[0] - w.a[0] - t * dx, q[1] - w.a[1] - t * dy) < 0.03;
+    });
+    sh.deck.forEach((a, i) => {
+      const b = sh.deck[(i + 1) % sh.deck.length], mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      if (onWall(mid)) return;
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = [-(b[1] - a[1]) / len, (b[0] - a[0]) / len], sgn = (cx - mid[0]) * n[0] + (cy - mid[1]) * n[1] > 0 ? 0.46 : -0.46;
+      face([V(a[0], a[1], F + 0.015), V(b[0], b[1], F + 0.015), V(b[0] + n[0] * sgn, b[1] + n[1] * sgn, F + 0.015), V(a[0] + n[0] * sgn, a[1] + n[1] * sgn, F + 0.015)], '#858a8f');
+    });
   }
 
   if (inside) {
