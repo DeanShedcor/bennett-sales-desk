@@ -105,6 +105,7 @@ function orderPage() {
     </div></section>`;
 
   const building = `<section class="panel"><div class="panelhead"><h2>Building</h2>${inv.serial ? `<span class="od-serial">Serial ${esc(inv.serial)}</span>` : '<span class="od-tag">Serial assigned at the plant</span>'}</div>
+    ${modelMarkup(c)}
     <div class="od-finish">${inv.finish.map(([k, v, hex]) => `<div><small>${k}</small><strong>${hex ? `<i style="background:${hex}"></i>` : ''}${esc(v)}</strong></div>`).join('')}</div>
     <table class="od-lines"><thead><tr><th>Description</th><th>Qty</th><th>Total</th></tr></thead><tbody>
       ${inv.lines.map(([d, q, t]) => `<tr><td>${esc(d)}</td><td>${q}</td><td>${t == null ? '<span class="od-inc">Included</span>' : money(t)}</td></tr>`).join('')}
