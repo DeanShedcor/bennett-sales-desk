@@ -11,6 +11,7 @@
 
 const BS = { key: null, edit: false, samples: {} };
 const BS_FR = ['', '⅛', '¼', '⅜', '½', '⅝', '¾', '⅞'];
+const BS_SCALED = 'Porch walls are drawn to scale from the configurator floor plan (4 ft deep, 8 ft long). Measured drawings still to come.';
 
 /* 17.667 -> 17'-8"   (to the nearest eighth of an inch) */
 function bsFeet(v) {
@@ -53,8 +54,8 @@ function bsShape(c) {
     sh.poly = [[p, 0], [L, 0], [L, W], [p, W]];
     sh.deck = [[0, 0], [p, 0], [p, W], [0, W]];
     sh.posts = [[0, 0], [0, W / 2], [0, W]];
-    sh.roles.windows = W >= 10 ? [0, 2, 3] : [0, 2];
-    sh.flags.push('Porch is drawn 4 ft deep across the front. Confirm the plant standard.');
+    sh.roles = { ...sh.roles, windows: W >= 10 ? [0, 2, 3] : [0, 2], winOpt: [{}, {}, W === 12 ? { at: 6.8229 } : { frac: 0.65 }], entryOpt: W === 12 ? { at: 2.1042 } : W >= 10 ? { frac: 0.3 } : {} };
+    if (W !== 12) sh.flags.push('End porch front wall is measured for 12 ft wide. Door and window are placed in proportion for this width.');
   } else if (pkg === 'Deluxe Porch') {
     /* From the plant drawing for a 12 ft wide Deluxe Porch on the right. */
     sh.walls = [
@@ -69,11 +70,11 @@ function bsShape(c) {
     sh.poly = [[4, 0], [L, 0], [L, W], [12, W], [12, W - 4], [6, W - 4], [4, W - 8]];
     sh.deck = [[0, 0], [4, 0], [4, W - 8], [6, W - 4], [12, W - 4], [12, W], [0, W]];
     sh.posts = [[0, 0], [0, W - 8], [0, W], [8, W]];
-    sh.roles = { entry: 3, barn: 1, windows: [6, 5, 4, 2, 0], winOpt: [{}, { at: 1.15625 }, {}, { frac: 2 / 3 }, {}], outlets: [0, 2, 1] };
+    sh.roles = { entry: 3, barn: 1, windows: [6, 5, 4, 2, 0], winOpt: [{}, { at: 1.15625 }, {}, { at: Math.max(1, ((L - 12) * 11) / 12 - 8) }, {}], outlets: [0, 2, 1] };
     if (W !== 12) sh.flags.push('Porch walls are drawn from the 12 ft wide plant drawing. Confirm them for this width.');
     if ((c.porchSide || 'Left') === 'Left') mirror = 'y';
   } else if (pkg === 'Side Porch') {
-    const pl = Math.max(6, 2 * Math.round(L / 4));
+    const pl = 8;
     sh.sides = longFront;
     sh.walls = [
       ['Back wall', [0, 0], [L, 0], 'LEFT END', 'RIGHT END'],
@@ -86,11 +87,11 @@ function bsShape(c) {
     sh.poly = [[0, 0], [L, 0], [L, W - 4], [L - pl, W - 4], [L - pl, W], [0, W]];
     sh.deck = [[L - pl, W - 4], [L, W - 4], [L, W], [L - pl, W]];
     sh.posts = [[L, W], [L - pl / 2, W]];
-    sh.roles = { entry: 2, barn: 5, windows: [2, 4, 0], outlets: [0, 4, 5] };
-    sh.flags.push(`Porch is drawn 4 ft deep and ${pl} ft long. Confirm the plant standard for this size.`);
+    sh.roles = { entry: 2, entryOpt: { at: 4 }, barn: 5, windows: [2, 4, 0], winOpt: [{ at: 1 }], outlets: [0, 4, 5] };
+    sh.flags.push(BS_SCALED);
     if ((c.porchSide || 'Left') === 'Left') mirror = 'x';
   } else if (pkg === 'Middle Porch') {
-    const pl = Math.max(4, 2 * Math.round((L * 3) / 16)), x1 = (L - pl) / 2, x2 = x1 + pl;
+    const pl = 8, x1 = (L - pl) / 2, x2 = x1 + pl;
     sh.sides = longFront;
     sh.walls = [
       ['Back wall', [0, 0], [L, 0], 'LEFT END', 'RIGHT END'],
@@ -105,8 +106,21 @@ function bsShape(c) {
     sh.poly = [[0, 0], [L, 0], [L, W], [x2, W], [x2, W - 4], [x1, W - 4], [x1, W], [0, W]];
     sh.deck = [[x1, W - 4], [x2, W - 4], [x2, W], [x1, W]];
     sh.posts = [[x1, W], [x2, W]];
-    sh.roles = { entry: 4, barn: 7, windows: [6, 2, 0], outlets: [0, 6, 1] };
-    sh.flags.push(`Porch is drawn 4 ft deep and ${pl} ft long, centered. Confirm the plant standard for this size.`);
+    sh.roles = { entry: 4, entryOpt: { at: 1 }, barn: 1, windows: [4, 6, 2], winOpt: [{ at: 5 }], outlets: [0, 6, 7] };
+    sh.flags.push(BS_SCALED + ' The porch is drawn centered on the length.');
+  }
+  if (c.style === 'Studio' && !pkg) {
+    /* From the measured Studio plan: the double door and three transoms are on the long front wall. */
+    sh.sides = longFront;
+    sh.walls = [
+      ['Back wall', [0, 0], [L, 0], 'LEFT END', 'RIGHT END'],
+      ['Right end wall', [L, 0], [L, W], 'BACK', 'FRONT'],
+      ['Front wall', [0, W], [L, W], 'LEFT END', 'RIGHT END'],
+      ['Left end wall', [0, 0], [0, W], 'BACK', 'FRONT'],
+    ];
+    sh.roles = { entry: 2, barn: 1, windows: [0, 1, 3], outlets: [0, 3, 1] };
+    sh.studio = true;
+    if (L !== 12) sh.flags.push('Transoms are measured for a 12 ft long Studio. They are spaced evenly for this length.');
   }
   if (mirror) {
     const m = ([x, y]) => (mirror === 'y' ? [x, W - y] : [L - x, y]);
@@ -165,10 +179,10 @@ function bsLayout(c) {
     wins.slice(2).forEach((w, i) => put[[0, 3][i % 2]].push(w));
     sh.flags.push('Dormer doors and windows are drawn on the right side. Confirm the side.');
   } else {
-    put[r.entry].push(doors[0]);
+    put[r.entry].push({ ...doors[0], ...(r.entryOpt || {}) });
     if (sh.pkg === 'Garage Package' && doors[1]) put[2].push({ ...doors[1], frac: 0.2 });
     else if (mainDoors > 1) put[r.barn].push(doors[1]);
-    wins.forEach((w, i) => put[r.windows[i % r.windows.length]].push({ ...w, ...((i < 5 && r.winOpt?.[i]) || {}) }));
+    wins.forEach((w, i) => put[r.windows[i % r.windows.length]].push({ ...w, ...(r.winOpt?.[i] || {}) }));
   }
   doors.slice(Math.max(mainDoors, 1)).forEach((d, i) => put[spare[i % spare.length]].push(d));
 
@@ -191,11 +205,16 @@ function bsLayout(c) {
     });
   });
 
-  /* Electrical boxes. */
+  if (sh.studio) {
+    const tw = 2 + 5 / 12, gap = (sh.L - 3 * tw) / 4;
+    if (gap > 0) for (let i = 0; i < 3; i++) items.push({ key: 't' + i, kind: 'window', name: 'Transom, horizontal', note: 'high on the wall', w: tw, high: true, wi: 2, at: gap * (i + 1) + tw * i });
+  }
+
+  /* Electrical boxes. Transoms sit high on the wall, so boxes and doors may pass under them. */
   const el = c.electrical;
   if (el && el !== 'None') {
     const count = { 'Lights Only': 0, Minimal: 0, Basic: 1, Expanded: 3, Utility: 3 }[el];
-    const spansOn = (wi) => items.filter((x) => x.wi === wi && x.w).sort((a, b) => a.at - b.at);
+    const spansOn = (wi) => items.filter((x) => x.wi === wi && x.w && !x.high).sort((a, b) => a.at - b.at);
     const clear = (wi, x) => x >= 0.25 && x <= sh.walls[wi].len - 0.25 && !spansOn(wi).some((s) => x > s.at - 0.3 && x < s.at + s.w + 0.3);
     const entry = items.find((x) => x.key === 'd0');
     if (entry) {
@@ -247,6 +266,7 @@ function bsOrder(key) {
     const b = qb.find((x) => x.serial === key.slice(3));
     return b && { c: b.c, serial: b.serial, id: b.order !== b.serial ? b.order : '', customer: b.customer || '', dealer: b.dealer };
   }
+  if (key === 'cfg') return { c: S.c, serial: '', id: 'Quote in progress', customer: S.customer || '', dealer };
   const s = S.sales.find((x) => x.id === key);
   if (s) return { c: s.c, serial: '', id: s.id, customer: s.customer, dealer };
   const b = qb.find((x) => x.order === key);
@@ -384,7 +404,8 @@ function bsPlan(lay) {
     const g = bsWallGeo(sh, w), on = items.filter((x) => x.wi === w.i);
     for (const it of on) {
       const a = P(g.at(it.at)), b = P(g.at(it.at + it.w));
-      if (it.w) {
+      if (it.high) o.push(`<line x1="${f(a[0] - g.n[0] * 7)}" y1="${f(a[1] - g.n[1] * 7)}" x2="${f(b[0] - g.n[0] * 7)}" y2="${f(b[1] - g.n[1] * 7)}" stroke="#111" stroke-width="3.5"/>`);
+      else if (it.w) {
         o.push(`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#fff" stroke-width="7"/>`);
         if (it.kind === 'window') o.push(`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#111" stroke-width="5.5"/><line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#fff" stroke-width="2.4"/>`);
         else o.push(`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#111" stroke-width="1.2" stroke-dasharray="3 2"/>`);
@@ -489,6 +510,11 @@ function bsStrip(lay, w, scale) {
   o.push(`<rect x="${x0}" y="${top}" width="${f(wpx)}" height="${barh}" fill="#d9d9d9" stroke="#111" stroke-width="1.6"/>`);
   for (const it of on) {
     const xs = x0 + it.at * scale, xe = x0 + (it.at + it.w) * scale;
+    if (it.high) {
+      o.push(`<rect x="${f(xs)}" y="${top}" width="${f(xe - xs)}" height="9" fill="#fff" stroke="#111" stroke-width="1.4"/><path d="M${f(xs)} ${top - 4}V${top}M${f(xe)} ${top - 4}V${top}" stroke="#111" stroke-width="1"/>`);
+      o.push(bal((xs + xe) / 2, top - 1, it.n, 7));
+      continue;
+    }
     if (it.w) {
       o.push(`<rect x="${f(xs)}" y="${top}" width="${f(xe - xs)}" height="${barh}" fill="#fff" stroke="#111" stroke-width="1.6"/>`);
       if (it.kind === 'window') o.push(`<line x1="${f(xs)}" y1="${top + barh / 2}" x2="${f(xe)}" y2="${top + barh / 2}" stroke="#111" stroke-width="1"/>`);
@@ -540,32 +566,184 @@ function bsPages(o) {
     </section>`;
 }
 
-/* ---------- Moving items (sales manager) ---------- */
-function bsEditor(o) {
-  const lay = bsLayout(o.c);
-  const rows = lay.items
-    .map((it) => {
-      const inches = Math.round(it.at * 96) / 8, ft = Math.floor(inches / 12), inch = Math.round((inches - ft * 12) * 8) / 8;
-      return `<div class="bs-editrow">${bsBal(it.n)}<strong>${esc(it.name)}</strong>
-        <label>Wall <select onchange="bsMove('${it.key}','wall',+this.value)">${lay.sh.walls.map((w) => `<option value="${w.i}" ${w.i === it.wi ? 'selected' : ''}>${w.id} · ${esc(w.name)} (${bsFeet(w.len)})</option>`).join('')}</select></label>
-        <label>${it.w ? 'Starts at' : 'Center at'} <input type="number" min="0" step="1" value="${ft}" onchange="bsMove('${it.key}','ft',+this.value)"> ft <input type="number" min="0" max="11.875" step="0.125" value="${inch}" onchange="bsMove('${it.key}','in',+this.value)"> in</label>
-        ${it.moved ? `<button type="button" class="link" onclick="bsMove('${it.key}','reset')">Back to standard</button>` : '<span class="bs-std">standard</span>'}</div>`;
-    })
-    .join('');
-  return `<div class="bs-editor no-print"><h3>Move items</h3><p>Distances are measured from the hook end of the wall, the same as on sheet 2. Moving anything clears the confirmation.</p>${rows || '<p>Nothing to place on this order.</p>'}</div>`;
+/* ---------- Floor plan editor ----------
+   The salesperson drags doors, windows, outlets and the switch along a wall or onto another
+   wall. Positions snap to the inch and openings cannot overlap. What is set here is what the
+   build sheet prints. */
+function bsEdGeom(sh) {
+  /* One drawing unit is one screen pixel, so items stay finger-sized on a phone. */
+  const VW = Math.max(330, Math.min(1000, window.innerWidth - 58)), m = VW < 600 ? 50 : 80, Y0 = VW < 600 ? 64 : 76;
+  const Sc = Math.min((VW - 2 * m) / sh.L, 520 / sh.W, 64);
+  return { VW, Sc, X0: (VW - sh.L * Sc) / 2, Y0, VH: sh.W * Sc + 2 * Y0, side: VW < 600 ? 36 : 52 };
 }
-function bsMove(key, field, value) {
-  const o = bsOrder(BS.key), lay = bsLayout(o.c), it = lay.items.find((x) => x.key === key);
-  if (!it) return;
-  const sheet = (o.c.sheet ||= { pos: {}, ok: null });
-  if (field === 'reset') delete sheet.pos[key];
-  else {
-    const p = (sheet.pos[key] ||= { wall: it.wi, at: it.at });
-    const inches = Math.round(p.at * 96) / 8, ft = Math.floor(inches / 12), inch = inches - ft * 12;
-    if (field === 'wall') p.wall = value;
-    if (field === 'ft') p.at = (Math.max(0, Math.floor(value || 0)) * 12 + inch) / 12;
-    if (field === 'in') p.at = (ft * 12 + Math.max(0, Math.min(11.875, value || 0))) / 12;
+/* Where an item may start on a wall: the spot nearest to `want` that clears the other openings. */
+function bsEdFit(lay, it, wi, want) {
+  const len = lay.sh.walls[wi].len, gap = it.w ? 0.25 : 0.1;
+  const others = lay.items.filter((x) => x !== it && x.wi === wi && x.w && !x.high === !it.high).sort((a, b) => a.at - b.at);
+  const slots = [];
+  let lo = 0;
+  for (const o of others) {
+    slots.push([lo, o.at - gap - it.w]);
+    lo = o.at + o.w + gap;
   }
+  slots.push([lo, len - it.w]);
+  let best = null;
+  for (const [a, b] of slots) {
+    if (b < a - 1e-9) continue;
+    const at = Math.min(Math.max(want, a), b);
+    if (best == null || Math.abs(at - want) < Math.abs(best - want)) best = at;
+  }
+  return best == null ? null : Math.round(best * 96) / 96;
+}
+function bsEdPlace(key, wi, want) {
+  const o = bsOrder(BS.key), lay = bsLayout(o.c), it = lay.items.find((x) => x.key === key);
+  if (!it) return false;
+  const at = bsEdFit(lay, it, wi, Math.round(want * 12) / 12);
+  if (at == null) return false;
+  const sheet = (o.c.sheet ||= { pos: {}, ok: null });
+  sheet.pos[key] = { wall: wi, at };
+  sheet.ok = null;
+  return true;
+}
+function bsEdDraw(lay) {
+  const { sh, items } = lay, g = bsEdGeom(sh), f = (v) => v.toFixed(1);
+  const P = ([x, y]) => [g.X0 + x * g.Sc, g.Y0 + y * g.Sc];
+  const pts = (l) => l.map((q) => P(q).map(f).join(',')).join(' ');
+  const o = ['<defs><pattern id="bseddeck" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#e9dcc6"/><path d="M0 9H9" stroke="#bfa57f" stroke-width="1"/></pattern></defs>'];
+  if (sh.deck) o.push(`<polygon points="${pts(sh.deck)}" fill="url(#bseddeck)" stroke="#8a7350" stroke-width="1.5"/>`);
+  o.push(`<polygon points="${pts(sh.poly)}" fill="#fbf7ee" stroke="#0c1a28" stroke-width="9" stroke-linejoin="miter"/>`);
+  for (const q of sh.posts) {
+    const [x, y] = P(q);
+    o.push(`<rect x="${f(x - 6)}" y="${f(y - 6)}" width="12" height="12" fill="#0c1a28"/>`);
+  }
+  const pole = sh.deck && bsPole(sh);
+  if (pole) {
+    const [x, y] = P(pole);
+    o.push(`<text x="${f(x)}" y="${f(y + 4)}" text-anchor="middle" font-size="13" font-weight="700" fill="#6b5433" letter-spacing="1.5">PORCH</text>`);
+  }
+  const bw = sh.L * g.Sc, bh = sh.W * g.Sc;
+  const side = (x, y, t, rot = 0) => `<text x="${f(x)}" y="${f(y)}" text-anchor="middle" font-size="${g.VW < 600 ? 11 : 15}" font-weight="800" letter-spacing="2" fill="#566879" ${rot ? `transform="rotate(${rot} ${f(x)} ${f(y)})"` : ''}>${t}</text>`;
+  o.push(side(g.X0 + bw / 2, 22, sh.sides.top), side(g.X0 + bw / 2, g.VH - 10, sh.sides.bottom), side(g.X0 - g.side, g.Y0 + bh / 2, sh.sides.left, -90), side(g.X0 + bw + g.side, g.Y0 + bh / 2, sh.sides.right, 90));
+  for (const w of sh.walls) {
+    const geo = bsWallGeo(sh, w), on = items.filter((x) => x.wi === w.i);
+    const cuts = [0, ...on.map((x) => (x.w ? [x.at, x.at + x.w] : [x.at - 0.5, x.at + 0.5])).sort((a, b) => a[0] - b[0]).flat(), w.len];
+    let best = [0, 0];
+    for (let i = 0; i < cuts.length; i += 2) if (cuts[i + 1] - cuts[i] > best[1] - best[0]) best = [cuts[i], cuts[i + 1]];
+    const [tx, ty] = P(geo.at((best[0] + best[1]) / 2)), tag = [tx + geo.n[0] * 22, ty + geo.n[1] * 22];
+    o.push(`<text x="${f(tag[0])}" y="${f(tag[1] + 5)}" text-anchor="middle" font-size="14" font-weight="800" fill="#93a1ae">${w.id}</text>`);
+    for (const it of on) {
+      const a = P(geo.at(it.at)), b = P(geo.at(it.at + it.w)), mid = P(geo.at(it.at + it.w / 2)), sel = BS.sel === it.key;
+      const line = (stroke, width, extra = '') => `<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="${stroke}" stroke-width="${width}" ${extra}/>`;
+      const out = [mid[0] - geo.n[0] * 26, mid[1] - geo.n[1] * 26];
+      let art;
+      if (it.high) {
+        const up = (q) => [q[0] - geo.n[0] * 10, q[1] - geo.n[1] * 10], a2 = up(a), b2 = up(b);
+        const hl = (stroke, width) => `<line x1="${f(a2[0])}" y1="${f(a2[1])}" x2="${f(b2[0])}" y2="${f(b2[1])}" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round"/>`;
+        art = (sel ? hl('#ffb703', 18) : '') + hl('#0c1a28', 7) + hl('#bfe3f5', 3) + hl('transparent', 30);
+      } else if (it.w) {
+        art = (sel ? line('#ffb703', 22, 'stroke-linecap="round"') : '') + line('#fbf7ee', 11);
+        art += it.kind === 'window' ? line('#0c1a28', 9) + line('#bfe3f5', 4) : line('#8a5a2b', 7) + line('#e7c79c', 3);
+        art += line('transparent', 40, 'stroke-linecap="round"');
+      } else {
+        const c = [a[0] + geo.n[0] * 18, a[1] + geo.n[1] * 18];
+        art = `${sel ? `<circle cx="${f(c[0])}" cy="${f(c[1])}" r="17" fill="#ffb703"/>` : ''}<circle cx="${f(c[0])}" cy="${f(c[1])}" r="11" fill="#fff" stroke="#0c1a28" stroke-width="2"/>`;
+        art += it.kind === 'outlet' ? `<path d="M${f(c[0] - 3)} ${f(c[1] - 4)}v8M${f(c[0] + 3)} ${f(c[1] - 4)}v8" stroke="#0c1a28" stroke-width="2"/>` : `<text x="${f(c[0])}" y="${f(c[1] + 4.5)}" text-anchor="middle" font-size="12" font-weight="800">S</text>`;
+        art += `<circle cx="${f(c[0])}" cy="${f(c[1])}" r="24" fill="transparent"/>`;
+      }
+      o.push(`<g data-key="${it.key}" class="bs-edit-item">${art}<circle cx="${f(out[0])}" cy="${f(out[1])}" r="11" fill="${sel ? '#ffb703' : '#0c1a28'}"/><text x="${f(out[0])}" y="${f(out[1] + 4)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="${sel ? '#0c1a28' : '#fff'}">${it.n}</text></g>`);
+      if (sel) {
+        /* Distance to each end of the wall, drawn just outside it. */
+        const off = (q, d) => [q[0] - geo.n[0] * d, q[1] - geo.n[1] * d];
+        const s0 = P(w.a), s1 = P(w.b);
+        for (const [p, q, text] of [[s0, a, bsFeet(it.at)], [b, s1, bsFeet(w.len - it.at - it.w)]]) {
+          const p1 = off(p, 46), q1 = off(q, 46), m = [(p1[0] + q1[0]) / 2, (p1[1] + q1[1]) / 2];
+          if (Math.hypot(q[0] - p[0], q[1] - p[1]) < 4) continue;
+          o.push(`<path d="M${f(p1[0])} ${f(p1[1])}L${f(q1[0])} ${f(q1[1])}M${f(off(p, 38)[0])} ${f(off(p, 38)[1])}L${f(off(p, 54)[0])} ${f(off(p, 54)[1])}M${f(off(q, 38)[0])} ${f(off(q, 38)[1])}L${f(off(q, 54)[0])} ${f(off(q, 54)[1])}" stroke="#b3362e" stroke-width="1.5" fill="none"/>`);
+          o.push(`<rect x="${f(m[0] - 30)}" y="${f(m[1] - 10)}" width="60" height="20" rx="4" fill="#fff"/><text x="${f(m[0])}" y="${f(m[1] + 4.5)}" text-anchor="middle" font-size="13" font-weight="800" fill="#b3362e">${text}</text>`);
+        }
+      }
+    }
+  }
+  return o.join('');
+}
+function bsEdInfo(lay) {
+  const it = lay.items.find((x) => x.key === BS.sel);
+  if (!it) return `<p class="bs-edhint">Tap a door, window, outlet or the switch, then drag it along the wall or onto another wall.</p>`;
+  const w = lay.sh.walls[it.wi];
+  const nudge = (d, t) => `<button type="button" class="chipbtn" onclick="bsEdNudge(${d})">${t}</button>`;
+  return `<div class="bs-edcard"><div class="bs-edwhat">${bsBal(it.n)}<div><strong>${esc(it.name)}</strong><small>${bsTag(w.id)} ${esc(w.name)} · ${it.w ? 'starts' : 'center'} <b>${bsFeet(it.at)}</b> from the ${esc(w.hook.toLowerCase())}</small></div></div>
+    <div class="bs-ednudge">${nudge(-1, '− 1 ft')}${nudge(-1 / 12, '− 1 in')}${nudge(1 / 12, '+ 1 in')}${nudge(1, '+ 1 ft')}</div>
+    <label class="bs-edwall">Wall <select onchange="bsEdToWall(+this.value)">${lay.sh.walls.map((x) => `<option value="${x.i}" ${x.i === it.wi ? 'selected' : ''}>${x.id} · ${esc(x.name)}</option>`).join('')}</select></label>
+    ${it.moved ? `<button type="button" class="link" onclick="bsEdReset('${it.key}')">Back to standard spot</button>` : '<span class="bs-std">Standard spot</span>'}</div>`;
+}
+function bsEditor(o) {
+  const lay = bsLayout(o.c), g = bsEdGeom(lay.sh);
+  const moved = lay.items.filter((x) => x.moved).length;
+  return `<div class="bs-editor no-print"><div class="bs-edhead"><div><h3>Floor plan editor</h3><p>Drag items where the customer wants them. They snap to the inch and cannot overlap. The build sheet below follows this plan.</p></div>
+      ${moved ? `<button type="button" class="link" onclick="bsEdReset()">Reset all ${moved} moved</button>` : ''}</div>
+    <svg id="bs-edsvg" class="bs-edsvg" viewBox="0 0 ${g.VW} ${g.VH.toFixed(0)}" xmlns="http://www.w3.org/2000/svg">${bsEdDraw(lay)}</svg>
+    <div id="bs-edinfo">${bsEdInfo(lay)}</div></div>`;
+}
+/* Redraw only the editor while dragging; the sheets below are redrawn when the drag ends. */
+function bsEdRefresh() {
+  const o = bsOrder(BS.key), lay = bsLayout(o.c), svg = document.getElementById('bs-edsvg');
+  if (!svg) return;
+  svg.innerHTML = bsEdDraw(lay);
+  document.getElementById('bs-edinfo').innerHTML = bsEdInfo(lay);
+}
+function bsEdWire() {
+  const svg = document.getElementById('bs-edsvg');
+  if (!svg) return;
+  const feet = (e) => {
+    const lay = bsLayout(bsOrder(BS.key).c), g = bsEdGeom(lay.sh), m = svg.getScreenCTM().inverse();
+    const x = e.clientX * m.a + e.clientY * m.c + m.e, y = e.clientX * m.b + e.clientY * m.d + m.f;
+    return { lay, p: [(x - g.X0) / g.Sc, (y - g.Y0) / g.Sc] };
+  };
+  svg.onpointerdown = (e) => {
+    const hit = e.target.closest('[data-key]');
+    BS.sel = hit ? hit.dataset.key : null;
+    BS.drag = hit ? { key: BS.sel, moved: false } : null;
+    if (hit) svg.setPointerCapture(e.pointerId);
+    bsEdRefresh();
+  };
+  svg.onpointermove = (e) => {
+    if (!BS.drag) return;
+    const { lay, p } = feet(e), it = lay.items.find((x) => x.key === BS.drag.key);
+    if (!it) return;
+    /* Nearest wall to the finger; the current wall wins unless another is clearly closer. */
+    let pick = null;
+    for (const w of lay.sh.walls) {
+      const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1];
+      const t = Math.max(0, Math.min(w.len, ((p[0] - w.a[0]) * dx + (p[1] - w.a[1]) * dy) / w.len));
+      const d = Math.hypot(p[0] - w.a[0] - (dx * t) / w.len, p[1] - w.a[1] - (dy * t) / w.len) - (w.i === it.wi ? 0.75 : 0);
+      if (!pick || d < pick.d) pick = { d, w, t };
+    }
+    if (pick.w.len < it.w) return;
+    if (bsEdPlace(it.key, pick.w.i, pick.t - it.w / 2)) {
+      BS.drag.moved = true;
+      bsEdRefresh();
+    }
+  };
+  svg.onpointerup = svg.onpointercancel = () => {
+    const moved = BS.drag?.moved;
+    BS.drag = null;
+    if (moved) bsRender();
+  };
+}
+function bsEdNudge(d) {
+  const lay = bsLayout(bsOrder(BS.key).c), it = lay.items.find((x) => x.key === BS.sel);
+  if (it && bsEdPlace(it.key, it.wi, it.at + d)) bsRender();
+}
+function bsEdToWall(wi) {
+  const lay = bsLayout(bsOrder(BS.key).c), it = lay.items.find((x) => x.key === BS.sel), len = lay.sh.walls[wi].len;
+  if (it && len >= it.w && bsEdPlace(it.key, wi, (len - it.w) / 2)) bsRender();
+  else toast('That item does not fit on that wall.');
+}
+function bsEdReset(key) {
+  const sheet = bsOrder(BS.key).c.sheet;
+  if (!sheet) return;
+  if (key) delete sheet.pos[key];
+  else sheet.pos = {};
   sheet.ok = null;
   bsRender();
 }
@@ -593,7 +771,7 @@ function bsRender() {
       <button type="button" class="secondary small" onclick="closeBuildSheet()">← Back</button>
       <strong>Build sheet · ${esc(o.c.size)} ${esc(o.customer || o.serial || '')}</strong>
       <span class="bs-grow"></span>
-      <button type="button" class="secondary small" onclick="BS.edit=!BS.edit;bsRender()">${BS.edit ? 'Done moving' : 'Move items'}</button>
+      <button type="button" class="secondary small" onclick="BS.edit=!BS.edit;bsRender()">${BS.edit ? 'Done editing' : 'Edit floor plan'}</button>
       ${ok ? '<span class="pill good">Layout confirmed</span>' : '<button type="button" class="primary small" onclick="bsConfirm()">Confirm layout</button>'}
       <button type="button" class="secondary small" onclick="window.print()">Print</button>
     </div>
@@ -608,11 +786,13 @@ function bsRender() {
       fit.style.zoom = ((parseFloat(fit.style.zoom) || 1) * (room / h) * 0.985).toFixed(3);
     }
   }
+  bsEdWire();
   root.scrollTop = keep;
 }
-function openBuildSheet(key) {
+function openBuildSheet(key, edit = false) {
   BS.key = key;
-  BS.edit = false;
+  BS.edit = edit;
+  BS.sel = null;
   document.body.classList.add('bs-open');
   bsRender();
   document.getElementById('bsheet').scrollTop = 0;
@@ -622,7 +802,13 @@ function closeBuildSheet() {
   document.body.classList.remove('bs-open');
   document.getElementById('bsheet')?.remove();
 }
-window.addEventListener('resize', () => document.querySelector('.bs-pages')?.style.setProperty('--z', Math.min(1, (window.innerWidth - 24) / 1056).toFixed(3)));
+let bsWide = window.innerWidth;
+window.addEventListener('resize', () => {
+  document.querySelector('.bs-pages')?.style.setProperty('--z', Math.min(1, (window.innerWidth - 24) / 1056).toFixed(3));
+  /* Redraw the editor only when the width changes, so a phone keyboard does not reset it. */
+  if (BS.key && BS.edit && window.innerWidth !== bsWide) bsRender();
+  bsWide = window.innerWidth;
+});
 
 /* ---------- A build sheet button on every order ---------- */
 const bsButton = (key) => `<button type="button" class="secondary small bs-open-btn" onclick="openBuildSheet('${key}')">Build sheet</button>`;
@@ -631,6 +817,13 @@ const bsButton = (key) => `<button type="button" class="secondary small bs-open-
   changeOrdersMarkup = function (key) {
     const html = salesChanges(key);
     return S.page === 'home' ? html : html.replace(/<\/div>$/, bsButton(key) + '</div>');
+  };
+  /* While configuring: place the doors, windows and electrical on the floor plan. */
+  const salesStep = stepBody;
+  stepBody = function () {
+    const [title, body] = salesStep();
+    if (!['Openings', 'Electrical'].includes(steps[S.step])) return [title, body];
+    return [title, body + `<div class="bs-cfgplan"><div><strong>Where does everything go?</strong><small>Drag the doors, windows and electrical into place on the floor plan.</small></div><button type="button" class="primary small" onclick="openBuildSheet('cfg', true)">Open floor plan</button></div>`];
   };
   if (typeof buildSheet === 'function') {
     const qcSheet = buildSheet;
