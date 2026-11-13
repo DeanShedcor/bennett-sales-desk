@@ -22,6 +22,8 @@ body.bs-open { overflow: hidden; }
 .bs-edwall { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 13.5px; font-weight: 600; }
 .bs-edwall select { width: auto; padding: 8px 10px; font-size: 14px; border: 1.5px solid #b4c0cc; border-radius: 8px; background: #fff; }
 .bs-std { font-size: 12.5px; color: #6b7783; }
+.bs-edfree { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid #e3e8ec; font-size: 14px; font-weight: 600; color: #0c1a28; }
+.bs-edfree input { width: 20px; height: 20px; flex: none; }
 .bs-cfgplan { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; background: #0c1a28; color: #fff; border-radius: 12px; padding: 14px 16px; margin-top: 16px; }
 .bs-cfgplan small { display: block; color: #a9bccd; font-size: 13px; }
 .bs-pages { zoom: var(--z, 1); width: 1056px; margin: 0 auto; }
