@@ -203,12 +203,11 @@ function p3Mesh(c, inside = false, yaw = 0) {
             const n = Math.max(2, Math.round(it.w / 0.45));
             for (let k = 1; k < n; k++) quad(a0 + (it.w * k) / n - 0.02, a0 + (it.w * k) / n + 0.02, lo + 0.07, hi - 0.07, 0.1, white, false);
           } else {
-            /* Single-hung window: two sashes, each divided two by two. */
+            /* Single-hung window, 2-over-2: two sashes, each split into two panes side by side. */
             const mid = (lo + hi) / 2, m = (a0 + a1) / 2;
             for (const [y0, y1] of [[lo + 0.08, mid - 0.04], [mid + 0.04, hi - 0.08]]) {
               quad(a0 + 0.08, a1 - 0.08, y0, y1, 0.09, col.glass);
               quad(m - 0.025, m + 0.025, y0, y1, 0.1, white, false);
-              quad(a0 + 0.08, a1 - 0.08, (y0 + y1) / 2 - 0.025, (y0 + y1) / 2 + 0.025, 0.1, white, false);
             }
             /* Shutters: three boards with gaps, held by three battens. */
             if (out && (/shutter/i.test(it.note || '') || c.shutters)) for (const s0 of [a0 - c3 - 0.06 - 1, a1 + c3 + 0.06]) {

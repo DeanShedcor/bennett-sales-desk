@@ -43,7 +43,7 @@ const ORDER_SAMPLE = {
   },
   rtoApp: {
     provider: 'JMAG LLC', signedOn: '11/06/2026', term: 60,
-    a: { dl: 'SAMPLE-000000', dlState: 'SC', dob: '1980-01-01', ssn4: '0000', phone2: '(843) 555-0143', billingSame: true, employer: 'Sample Employer', employerPhone: '(843) 555-0100',
+    a: { dlState: 'SC', dlGiven: true, dobGiven: true, ssn4: '0000', phone2: '(843) 555-0143', billingSame: true, employer: 'Sample Employer', employerPhone: '(843) 555-0100',
       r1name: 'Jamie Avery', r1phone: '(843) 555-0111', r1rel: 'Spouse', r1state: 'SC', r2name: 'Riley Stone', r2phone: '(843) 555-0122', r2rel: 'Friend', r2state: 'SC',
       idPhoto: 'sample-license.jpg', property: 'Owns the property', cosigner: false },
   },
@@ -218,10 +218,14 @@ const RTO_STATES = 'AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD 
 const RTO_STEPS = ['From the invoice', 'Identity', 'Contact and work', 'Property', 'References', 'Co-signer', 'Finish'];
 const RTO_LAST = RTO_STEPS.length - 1;
 let RTOF = { step: 0, a: {} };
+/* Fields whose answer is never kept: the license number and birth date (only that they were entered),
+   and the Social Security number (only its last 4 digits). */
+const RTO_SECRET = { dl: 'dlGiven', dob: 'dobGiven', ssn: 'ssn4', csDl: 'csDlGiven', csDob: 'csDobGiven', csSsn: 'csSsn4' };
 function rtoField(label, name, o = {}) {
-  const v = RTOF.a[name] ?? '';
+  if (RTO_SECRET[name] && RTOF.a[RTO_SECRET[name]]) o = { ...o, entered: true };
+  const v = RTO_SECRET[name] ? '' : RTOF.a[name] ?? '';
   if (o.options) return `<label>${label}<select name="${name}">${o.options.map((x) => `<option ${x === (v || o.value) ? 'selected' : ''}>${x}</option>`).join('')}</select></label>`;
-  return `<label>${label}${o.optional ? ' (optional)' : ''}<input name="${name}" type="${o.type || 'text'}" value="${esc(v)}" ${o.optional ? '' : 'required'} ${o.attrs || ''}></label>`;
+  return `<label>${label}${o.entered ? ' · entered, type again to change' : o.optional ? ' (optional)' : ''}<input name="${name}" type="${o.type || 'text'}" value="${esc(v)}" ${o.optional || o.entered ? '' : 'required'} ${o.attrs || ''}></label>`;
 }
 function rtoApply(step) {
   const s = S.sales.find((x) => x.id === S.activeSale), inv = orderInvoice(s);
@@ -234,7 +238,7 @@ function rtoApply(step) {
      <p class="source">Five short parts are left: identity, contact and work, the property, two references and an optional co-signer.</p>`,
     `<div class="fields">${rtoField("Driver's license number", 'dl')}${rtoField('License state', 'dlState', { options: RTO_STATES, value: 'SC' })}${rtoField('Birth date', 'dob', { type: 'date' })}${rtoField('Social Security number', 'ssn', { type: 'password', attrs: 'inputmode="numeric" autocomplete="off" placeholder="###-##-####"' })}</div>
      <label class="field">Photo of the driver's license${RTOF.a.idPhoto ? ` · on file: ${esc(RTOF.a.idPhoto)}` : ''}<input type="file" name="idPhoto" accept="image/*" capture="environment" ${RTOF.a.idPhoto ? '' : 'required'}></label>
-     <p class="notice">Preview only: please do not type a real license or Social Security number or upload a real ID. Only the last 4 digits of the Social Security number and the name of the photo file are kept.</p>`,
+     <p class="notice">Preview only: please do not type a real license or Social Security number or upload a real ID. Only the license state, the last 4 digits of the Social Security number and the name of the photo file are kept. The license number and birth date are not kept.</p>`,
     `<div class="fields">${rtoField('Secondary phone', 'phone2', { type: 'tel', optional: true })}${rtoField('Employer', 'employer')}${rtoField("Employer's phone", 'employerPhone', { type: 'tel', optional: true })}</div>
      <p class="source">For employer, "Retired" or "Self-employed" is fine.</p>
      <label class="field"><input type="checkbox" name="billingSame" ${RTOF.a.billingSame ? 'checked' : ''} onchange="document.getElementById('rto-billing').hidden=this.checked"> Billing address is the same as the delivery address on the invoice</label>
@@ -262,6 +266,7 @@ function rtoKeep() {
     if (el.type === 'checkbox') RTOF.a[el.name] = el.checked;
     else if (el.type === 'file') { if (el.files[0]) RTOF.a[el.name] = el.files[0].name; }
     else if (el.name === 'ssn' || el.name === 'csSsn') { if (el.value) RTOF.a[el.name + '4'] = el.value.replace(/\D/g, '').slice(-4); }
+    else if (RTO_SECRET[el.name]) { if (el.value.trim()) RTOF.a[RTO_SECRET[el.name]] = true; }
     else RTOF.a[el.name] = el.value.trim();
   }
 }
@@ -284,12 +289,12 @@ function rtoDownload() {
   const text = [
     'CUSTOMER DATA SHEET', '',
     `Lessee / rental customer: ${inv.shipTo.name}`, `Primary phone: ${inv.shipTo.phone}`, `Secondary phone: ${a.phone2 || ''}`, `Email: ${inv.shipTo.email}`,
-    `Driver's license: ${a.dlState} ${a.dl}`, `Birth date: ${a.dob}`, `Social Security number: ***-**-${a.ssn4 || '____'}`,
+    `Driver's license: ${a.dlState} · number ${a.dlGiven ? 'entered, not kept in this preview' : 'not entered'}`, `Birth date: ${a.dobGiven ? 'entered, not kept in this preview' : 'not entered'}`, `Social Security number: ***-**-${a.ssn4 || '____'}`,
     `Employer: ${a.employer}`, `Employer's phone: ${a.employerPhone || ''}`,
     `Delivery address: ${inv.shipTo.street}, ${inv.shipTo.city}`, `Billing address: ${a.billingSame ? 'Same as delivery' : a.billing || ''}`, '',
     `Photo of ID: ${a.idPhoto || 'not provided'}`, `Delivery property: ${a.property || ''}${a.landlord ? ' · landlord ' + a.landlord + (a.landlordPhone ? ', ' + a.landlordPhone : '') : ''}`, '',
     `Reference 1: ${a.r1name}, ${a.r1phone}, ${a.r1rel}, ${a.r1state}`, `Reference 2: ${a.r2name}, ${a.r2phone}, ${a.r2rel}, ${a.r2state}`,
-    a.cosigner ? `Co-signer: ${a.csName}, ${a.csPhone}, ${a.csRel}, license ${a.csDlState} ${a.csDl}, born ${a.csDob}, SSN ***-**-${a.csSsn4 || '____'}` : 'Co-signer: none', '',
+    a.cosigner ? `Co-signer: ${a.csName}, ${a.csPhone}, ${a.csRel}, license ${a.csDlState} (number ${a.csDlGiven ? 'entered, not kept' : 'not entered'}), birth date ${a.csDobGiven ? 'entered, not kept' : 'not entered'}, SSN ***-**-${a.csSsn4 || '____'}` : 'Co-signer: none', '',
     'Payment due day: TO BE CONFIRMED', '',
     'RENTAL PURCHASE AGREEMENT (summary)', '',
     `Owner / lessor: ${app.provider}`, `Date: ${app.signedOn}`, `Property: ${inv.lines[0][0]}${inv.serial ? ', serial ' + inv.serial : ''}`,

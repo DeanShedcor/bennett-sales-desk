@@ -218,6 +218,14 @@ function bsLayout(c) {
     if (gap > 0) for (let i = 0; i < 3; i++) items.push({ key: 't' + i, kind: 'window', name: 'Transom, horizontal', note: 'high on the wall', w: tw, high: true, wi: 2, at: gap * (i + 1) + tw * i });
   }
 
+  /* The light switch goes on the stud next to the main door's king stud: the side after the door first,
+     the other side if that is blocked. Returns [spot, direction to look for the stud]. */
+  const switchSpot = (entry) => {
+    const len = sh.walls[entry.wi].len, spans = items.filter((x) => x.wi === entry.wi && x.w && !x.high);
+    const tries = [[entry.at + entry.w + 0.2, 1], [entry.at - 0.2, -1], [0.115, 1], [len - 0.115, -1]];
+    return tries.find(([t]) => t > 0.05 && t < len - 0.05 && !spans.some((s) => t > s.at - 0.05 && t < s.at + s.w + 0.05));
+  };
+
   /* Electrical boxes. Transoms sit high on the wall, so boxes and doors may pass under them. */
   const el = c.electrical;
   if (el && el !== 'None') {
@@ -226,10 +234,8 @@ function bsLayout(c) {
     const clear = (wi, x) => x >= 0.25 && x <= sh.walls[wi].len - 0.25 && !spansOn(wi).some((s) => x > s.at - 0.3 && x < s.at + s.w + 0.3);
     const entry = items.find((x) => x.key === 'd0');
     if (entry) {
-      const len = sh.walls[entry.wi].len;
-      const tries = [entry.at + entry.w + 0.667, entry.at - 0.667, 0.115, len - 0.115];
-      const x = tries.find((t) => t > 0.05 && t < len - 0.05 && !spansOn(entry.wi).some((s) => t > s.at - 0.05 && t < s.at + s.w + 0.05));
-      if (x != null) items.push({ key: 's0', kind: 'switch', name: 'Light switch', note: 'by the main door', w: 0, wi: entry.wi, at: x });
+      const x = switchSpot(entry);
+      if (x != null) items.push({ key: 's0', kind: 'switch', name: 'Light switch', note: 'by the main door', w: 0, wi: entry.wi, at: x[0], dir: x[1] });
       else loose.push('Light switch: no room beside the main door. Location not set.');
     }
     if (count == null) loose.push(`${el} electrical: the number of outlets is not known. Outlets are not placed.`);
@@ -270,6 +276,14 @@ function bsLayout(c) {
       it.moved = true;
     }
   }
+  /* If the main door was moved and the switch was not, the switch follows the door. */
+  {
+    const sw = items.find((x) => x.key === 's0'), door = items.find((x) => x.key === 'd0');
+    if (sw && door && !sw.moved && door.moved) {
+      const x = switchSpot(door);
+      if (x) [sw.wi, sw.at, sw.dir] = [door.wi, x[0], x[1]];
+    }
+  }
   /* Outlets and switches mount on a stud: a standard spot goes to the next free stud along the wall,
      and one the sales manager moved goes to the free stud nearest where it was dropped. */
   const taken = {}, hung = [];
@@ -287,7 +301,7 @@ function bsLayout(c) {
     if (it.kind !== 'outlet' && it.kind !== 'switch') continue;
     const studs = bsStuds(sh, sh.walls[it.wi], items).map((s) => s.x).filter((x) => !(taken[it.wi] || []).includes(x));
     if (!studs.length) continue;
-    const next = it.moved ? null : studs.find((x) => x >= it.at - 0.03);
+    const next = it.moved ? null : it.dir < 0 ? studs.filter((x) => x <= it.at + 0.03).pop() : studs.find((x) => x >= it.at - 0.03);
     it.at = next ?? studs.reduce((m, x) => (Math.abs(x - it.at) < Math.abs(m - it.at) ? x : m));
     (taken[it.wi] ||= []).push(it.at);
   }
@@ -765,7 +779,7 @@ function bsEdInfo(lay) {
   if (it.kind === 'light') {
     const free = bsLightsFree(lay.c, lay.sh), nd = (dx, dy, t) => `<button type="button" class="chipbtn" onclick="bsEdNudge(${dx},${dy})">${t}</button>`;
     return `<div class="bs-edcard"><div class="bs-edwhat">${bsBal(it.n)}<div><strong>Light</strong><small>Ceiling · <b>${bsWhere(it, lay.sh)}</b>${free ? '' : ' · on the center line'}</small></div></div>
-      <div class="bs-ednudge">${nd(-1, 0, '← 1 ft')}${nd(-1 / 12, 0, '← 1 in')}${nd(1 / 12, 0, '1 in →')}${nd(1, 0, '1 ft →')}${free ? nd(0, -1 / 12, '↑ 1 in') + nd(0, 1 / 12, '↓ 1 in') + nd(0, -1, '↑ 1 ft') + nd(0, 1, '↓ 1 ft') : ''}</div>
+      <div class="bs-ednudge">${nd(-1, 0, '← 1 truss (2 ft)')}${nd(1, 0, '1 truss (2 ft) →')}${free ? nd(0, -1 / 12, '↑ 1 in') + nd(0, 1 / 12, '↓ 1 in') + nd(0, -1, '↑ 1 ft') + nd(0, 1, '↓ 1 ft') : ''}</div>
       ${it.moved ? `<button type="button" class="link" onclick="bsEdReset('${it.key}')">Back to standard spot</button>` : '<span class="bs-std">Standard spot</span>'}</div>`;
   }
   const w = lay.sh.walls[it.wi];
