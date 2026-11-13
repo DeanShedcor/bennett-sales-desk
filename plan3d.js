@@ -158,11 +158,54 @@ function p3Mesh(c) {
   };
   rp[0] = stretch(rp[0], rp[1]);
   rp[rp.length - 1] = stretch(rp[rp.length - 1], rp[rp.length - 2]);
-  for (let i = 1; i < rp.length; i++) face([V(-ov, rp[i - 1][0], F + rp[i - 1][1] + 0.08), V(L + ov, rp[i - 1][0], F + rp[i - 1][1] + 0.08), V(L + ov, rp[i][0], F + rp[i][1] + 0.08), V(-ov, rp[i][0], F + rp[i][1] + 0.08)], col.roof);
+  /* A dormer opens the right-hand roof slope: the main roof stops where the dormer begins. */
+  let dorm = null;
+  if (sh.pkg === 'Dormer Package') {
+    const d0 = lay.items.find((x) => x.key === 'd0'), len = Math.min(c.dormerGable ? 12 : Number(c.dormerLength) || 8, L - 1);
+    const mid = d0 && d0.wi === 2 ? d0.at + d0.w / 2 : L / 2, x0 = Math.max(0.5, Math.min(mid - len / 2, L - len - 0.5));
+    const back = (height) => {
+      for (let y = W; y >= W / 2; y -= 0.05) if (topAt(y) >= height) return y;
+      return W / 2;
+    };
+    dorm = { len, x0, x1: x0 + len, back, cut: back(eave + (c.dormerGable ? 0.5 : 1.95)) };
+  }
+  const slope = (xa, xb, p, q) => face([V(xa, p[0], F + p[1] + 0.08), V(xb, p[0], F + p[1] + 0.08), V(xb, q[0], F + q[1] + 0.08), V(xa, q[0], F + q[1] + 0.08)], col.roof);
+  for (let i = 1; i < rp.length; i++) {
+    if (!dorm || i < rp.length - 1) {
+      slope(-ov, L + ov, rp[i - 1], rp[i]);
+      continue;
+    }
+    slope(-ov, dorm.x0, rp[i - 1], rp[i]);
+    slope(dorm.x1, L + ov, rp[i - 1], rp[i]);
+    if (dorm.cut > rp[i - 1][0] + 0.05) slope(dorm.x0, dorm.x1, rp[i - 1], [dorm.cut, topAt(dorm.cut)]);
+  }
 
   /* Porch posts and a top rail between them. */
   const posts = sh.posts.map(([x, y]) => [Math.min(Math.max(x, 0.2), L - 0.2), Math.min(Math.max(y, 0.2), W - 0.2)]);
   for (const [x, y] of posts) box(x - 0.17, y - 0.17, x + 0.17, y + 0.17, F, F + topAt(y), col.trim);
+
+  /* Dormer on the right roof slope, centered over the dormer doors. */
+  if (dorm) {
+    const { len, x0, x1, back } = dorm, xm = (x0 + x1) / 2;
+    const up = (height) => F + height + 0.12;
+    if (c.dormerGable) {
+      const knee = eave + 0.5, peak = Math.max(...prof.map((p) => p[1])) - 0.1, yk = back(knee), yp = back(peak);
+      face([V(x0, W, F + eave), V(x1, W, F + eave), V(x1, W, F + knee), V(xm, W, F + peak), V(x0, W, F + knee)], col.body);
+      for (const x of [x0, x1]) face([V(x, W, F + eave), V(x, W, F + knee), V(x, yk, F + knee)], col.body);
+      for (const [xe, out] of [[x0, -0.4], [x1, 0.4]]) face([V(xe + out, W + ov, up(knee) - 0.2), V(xm, W + ov, up(peak)), V(xm, yp, up(peak)), V(xe + out, yk, up(knee) - 0.2)], col.roof);
+    } else {
+      const front = eave + 1.6, yb = back(front + 0.35), count = len >= 12 ? 4 : 3, tw = 1.9, gap = (len - count * tw) / (count + 1);
+      face([V(x0, W, F + eave), V(x1, W, F + eave), V(x1, W, F + front), V(x0, W, F + front)], col.body);
+      for (const x of [x0, x1]) face([V(x, W, F + eave), V(x, W, F + front), V(x, yb, F + topAt(yb))], col.body);
+      face([V(x0 - 0.4, W + ov, up(front) - 0.06), V(x1 + 0.4, W + ov, up(front) - 0.06), V(x1 + 0.4, yb, up(front + 0.35)), V(x0 - 0.4, yb, up(front + 0.35))], col.roof);
+      /* The row of transom windows across the front of the dormer. */
+      for (let i = 0; i < count; i++) {
+        const a = x0 + gap * (i + 1) + tw * i, pane = (x, y0, y1, d, hex) => face([V(a - x, W + d, F + eave + y0), V(a + tw + x, W + d, F + eave + y0), V(a + tw + x, W + d, F + eave + y1), V(a - x, W + d, F + eave + y1)], hex);
+        pane(0.12, 0.3, 1.3, 0.05, col.trim);
+        pane(0, 0.42, 1.18, 0.09, col.glass);
+      }
+    }
+  }
 
   const high = Math.max(...prof.map((p) => p[1])) + F;
   return {
