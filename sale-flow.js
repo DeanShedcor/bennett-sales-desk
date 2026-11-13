@@ -398,13 +398,44 @@ const sfBackTo = (key) => (key === 'cfg' ? 'the building' : String(key).startsWi
   };
   const sheetConfirm = bsConfirm;
   bsConfirm = function () {
+    const key = BS.key;
     sheetConfirm();
     const root = document.getElementById('bsheet');
     if (root) root.scrollTop = 0;
+    sfGuide(key);
   };
   const sheetClose = closeBuildSheet;
   closeBuildSheet = function () {
+    document.querySelector('.sf-guide')?.remove();
+    const guided = S.sfGuided;
+    S.sfGuided = false;
     sheetClose();
     if (S.page === 'sale' || S.page === 'configure') render();
+    /* Coming back from Confirm layout: bring the next step into view and make it stand out. */
+    if (guided && S.page === 'sale') {
+      const now = document.querySelector('.sf-step.now') || document.querySelector('.sf-panel');
+      now?.scrollIntoView({ block: 'center' });
+      now?.classList.add('sf-flash');
+    }
   };
+}
+/* Right after Confirm layout: a dialog over the sheet that says what happened and what comes next,
+   with one big button back. "Stay on the build sheet" closes it and leaves the green banner. */
+function sfGuide(key) {
+  const to = sfBackTo(key), s = S.sales.find((x) => x.id === key);
+  let next = '';
+  if (s) {
+    const { desk, handoff } = sfSteps(s), n = [...desk, ...handoff].find((x) => !x.on && !x.optional);
+    if (n) next = n.title;
+  } else if (key === 'cfg') next = 'Finish the building, then complete the sale or create a quote';
+  document.querySelector('.sf-guide')?.remove();
+  document.body.insertAdjacentHTML('beforeend', `<div class="sf-guide no-print" role="dialog" aria-modal="true" aria-label="Layout confirmed"><section>
+    <span class="sf-guide-check">${icon('check', 34)}</span>
+    <h2>Layout confirmed</h2>
+    <p>The plant will build from this floor plan.</p>
+    ${next ? `<div class="sf-guide-next"><small>Next ${to === 'the order' ? 'on the order' : ''}</small><strong>${esc(next)}</strong></div>` : ''}
+    <button type="button" class="primary big" onclick="S.sfGuided=true;closeBuildSheet()">Back to ${to} ${icon('arrow', 18)}</button>
+    <button type="button" class="link" onclick="this.closest('.sf-guide').remove()">Stay on the build sheet</button>
+  </section></div>`);
+  document.querySelector('.sf-guide .primary')?.focus();
 }
