@@ -767,14 +767,16 @@ function configure() {
       .join('')}</nav>`;
     options = `<div class="eyebrow">Step ${S.step + 1} of ${steps.length} · ${series()} series</div><h1>${title}</h1>${body}
       <div class="actions">${S.step ? button(icon('back', 18) + ' Back', 'goStep(S.step-1)', 'secondary') : ''}${
-        /* Last step of a customer sale: complete the sale (the finalize flow, which hands it to admin
-           review) or quote it. The two stay together on the right. */
-        last && !['site', 'stock'].includes(S.path) ? '<span class="final-pair">' + button('Complete the sale', 'whenBuildReady(finalizeForm)', 'secondary complete-sale') : ''
-      }${button(
-        (last ? (S.path === 'site' ? 'Request a site review ' : S.path === 'stock' ? 'Review stock order ' : 'Review and create quote ') : 'Continue ') + icon('arrow'),
-        last ? (S.path === 'stock' ? 'stockOrderReview()' : 'quoteForm()') : 'goStep(S.step+1)',
-        last ? 'primary big' : 'primary big continue-step'
-      )}${last && !['site', 'stock'].includes(S.path) ? '</span>' : ''}</div>`;
+        /* Last step of a customer sale: quote it, or complete the sale (the finalize flow, which hands it
+           to admin review). Completing the sale is the main button; the two stay together on the right. */
+        last && !['site', 'stock'].includes(S.path)
+          ? '<span class="final-pair">' + button('Review and create quote', 'quoteForm()', 'secondary final-secondary') + button('Complete the sale ' + icon('arrow'), 'whenBuildReady(finalizeForm)', 'primary big') + '</span>'
+          : button(
+              (last ? (S.path === 'site' ? 'Request a site review ' : S.path === 'stock' ? 'Review stock order ' : 'Review and create quote ') : 'Continue ') + icon('arrow'),
+              last ? (S.path === 'stock' ? 'stockOrderReview()' : 'quoteForm()') : 'goStep(S.step+1)',
+              last ? 'primary big' : 'primary big continue-step'
+            )
+      }</div>`;
   }
   const back = S.path === 'lot' ? ['openUnit(S.lot)', 'Back to building'] : S.path === 'stock' ? ["go('stock')", 'Restock'] : ["go('start')", 'Sale options'];
   return `<button class="link backlink" onclick="${back[0]}">${icon('back', 16)} ${back[1]}</button><div class="workspace"><section class="cfg">${stepsNav}${stage}<div class="cfg-options">${options}</div></section>${summary()}</div>`;
@@ -866,8 +868,8 @@ function summary() {
           ? button((locked ? icon('lock', 16) + ' ' : '') + 'Submit stock order ' + (locked ? '' : icon('arrow', 18)), 'whenBuildReady(stockOrderReview)', 'primary' + lockedClass)
           : site
           ? button((locked ? icon('lock', 16) + ' ' : '') + 'Request a site review', 'whenBuildReady(startSiteReview)', 'primary' + lockedClass)
-          : button((locked ? icon('lock', 16) + ' ' : '') + 'Complete the sale', 'whenBuildReady(finalizeForm)', 'ghostbtn' + lockedClass) +
-            button((locked ? icon('lock', 16) + ' ' : '') + 'Create quote ' + (locked ? '' : icon('arrow', 18)), 'whenBuildReady(quoteForm)', 'primary' + lockedClass)
+          : button((locked ? icon('lock', 16) + ' ' : '') + 'Create quote', 'whenBuildReady(quoteForm)', 'ghostbtn' + lockedClass) +
+            button((locked ? icon('lock', 16) + ' ' : '') + 'Complete the sale ' + (locked ? '' : icon('arrow', 18)), 'whenBuildReady(finalizeForm)', 'primary' + lockedClass)
       }</div>
     </div>
   </aside>`;
