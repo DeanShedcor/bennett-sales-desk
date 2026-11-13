@@ -7,7 +7,7 @@
    One hidden WebGL canvas does the drawing and each view on the page is a copy of its picture,
    so any number of views can be shown. Loaded last. */
 
-const P3 = { views: {}, angles: { editor: { yaw: -0.72, pitch: 0.95 } }, inside: { editor: true }, seq: 0, gl: null };
+const P3 = { views: {}, angles: { editor: { yaw: -0.72, pitch: 0.95 } }, inside: { editor: true }, zoom: {}, seq: 0, gl: null };
 
 /* ---------- Small vector and matrix helpers (column-major 4x4) ---------- */
 const p3Sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -24,7 +24,7 @@ function p3Mul(a, b) {
 function p3Camera(eye, center, aspect) {
   const f = p3Norm(p3Sub(center, eye)), s = p3Norm(p3Cross(f, [0, 1, 0])), u = p3Cross(s, f);
   const view = [s[0], u[0], -f[0], 0, s[1], u[1], -f[1], 0, s[2], u[2], -f[2], 0, -(s[0] * eye[0] + s[1] * eye[1] + s[2] * eye[2]), -(u[0] * eye[0] + u[1] * eye[1] + u[2] * eye[2]), f[0] * eye[0] + f[1] * eye[1] + f[2] * eye[2], 1];
-  const t = 1 / Math.tan((28 * Math.PI) / 360), near = 5, far = 2600;
+  const t = 1 / Math.tan((28 * Math.PI) / 360), near = 2, far = 2600;
   const proj = [t / aspect, 0, 0, 0, 0, t, 0, 0, 0, 0, (far + near) / (near - far), -1, 0, 0, (2 * far * near) / (near - far), 0];
   return p3Mul(proj, view);
 }
@@ -433,7 +433,7 @@ function p3Draw(el) {
   ctx.clearRect(0, 0, w, h);
   if (!m) return;
   const ang = (P3.angles[view.slot] ||= { yaw: -0.72, pitch: 0.4 });
-  const dist = (m.radius / Math.sin((14 * Math.PI) / 180)) * Math.max(1, h / w) * (w / h > 2 ? 0.7 : w / h > 1.5 ? 0.82 : 0.98) * (P3.inside[view.slot] ? 1.25 : 1);
+  const dist = (m.radius / Math.sin((14 * Math.PI) / 180)) * Math.max(1, h / w) * (w / h > 2 ? 0.7 : w / h > 1.5 ? 0.82 : 0.98) * (P3.inside[view.slot] ? 1.25 : 1) / (P3.zoom[view.slot] || 1);
   const eye = [m.center[0] + dist * Math.cos(ang.pitch) * Math.sin(ang.yaw), m.center[1] + dist * Math.sin(ang.pitch), m.center[2] + dist * Math.cos(ang.pitch) * Math.cos(ang.yaw)];
   const M = p3Camera(eye, m.center, w / h), light = p3Norm([Math.sin(ang.yaw - 0.95) * 0.66, 0.75, Math.cos(ang.yaw - 0.95) * 0.66]), sun = p3Sun(m.center, m.radius, light), { gl, canvas, prog, depth, fbo, tex, buf } = G;
   if (canvas.width !== w || canvas.height !== h) (canvas.width = w), (canvas.height = h);
@@ -534,11 +534,25 @@ function p3Paint(force = false) {
     if (!view.wired) {
       view.wired = true;
       let last = null;
+      /* Zoom: mouse wheel, two-finger pinch, or the + and - buttons. */
+      const pts = new Map(), spread = () => (pts.size === 2 ? Math.hypot(...[0, 1].map((i) => [...pts.values()][0][i] - [...pts.values()][1][i])) : 0);
+      el.onwheel = (e) => {
+        if (p3Zoom(view.slot, e.deltaY < 0 ? 1.15 : 1 / 1.15)) e.preventDefault();
+      };
       el.onpointerdown = (e) => {
+        pts.set(e.pointerId, [e.clientX, e.clientY]);
         last = [e.clientX, e.clientY];
         el.setPointerCapture(e.pointerId);
       };
       el.onpointermove = (e) => {
+        if (pts.has(e.pointerId)) {
+          const before = spread();
+          pts.set(e.pointerId, [e.clientX, e.clientY]);
+          if (pts.size === 2) {
+            if (before > 0) p3Zoom(view.slot, spread() / before);
+            return;
+          }
+        }
         if (!last) return;
         const a = (P3.angles[view.slot] ||= { yaw: -0.72, pitch: 0.4 });
         a.yaw -= (e.clientX - last[0]) * 0.01;
@@ -546,7 +560,10 @@ function p3Paint(force = false) {
         last = [e.clientX, e.clientY];
         p3Draw(el);
       };
-      el.onpointerup = el.onpointercancel = () => (last = null);
+      el.onpointerup = el.onpointercancel = (e) => {
+        pts.delete(e.pointerId);
+        last = null;
+      };
     }
     p3Draw(el);
   }
@@ -565,6 +582,14 @@ function p3Inside(slot) {
   a.pitch = P3.inside[slot] ? Math.max(a.pitch, 0.95) : Math.min(a.pitch, 0.4);
   p3Paint(true);
 }
+/* Move the camera closer or farther. Returns false at either limit, so the page can scroll instead. */
+function p3Zoom(slot, by) {
+  const was = P3.zoom[slot] || 1, now = Math.min(5, Math.max(1, was * by));
+  if (now === was) return false;
+  P3.zoom[slot] = now;
+  p3Paint(true);
+  return true;
+}
 function p3Top(slot) {
   const a = (P3.angles[slot] ||= { yaw: -0.72, pitch: 0.4 });
   a.pitch = a.pitch > 1.2 ? 0.4 : 1.45;
@@ -578,12 +603,12 @@ setInterval(() => document.querySelector('canvas.p3d') && p3Paint(), 400);
   const oldModel = modelMarkup;
   modelMarkup = function (c, small = false, interactive = !small) {
     if (small || !interactive || !c || !c.size || !p3Gl()) return oldModel(c, small, interactive);
-    return `<div class="reference-model p3d-box">${p3dMarkup(c, 'stage')}<div class="p3d-bar"><span>Drawn from the floor plan · drag to turn</span><button type="button" class="chipbtn" onclick="p3Inside('stage')">Inside / outside</button><button type="button" class="chipbtn" onclick="p3Top('stage')">Top / angle</button></div></div>`;
+    return `<div class="reference-model p3d-box">${p3dMarkup(c, 'stage')}<div class="p3d-bar"><span>Drawn from the floor plan · drag to turn</span><button type="button" class="chipbtn" aria-label="Zoom out" onclick="p3Zoom('stage', 1 / 1.3)">−</button><button type="button" class="chipbtn" aria-label="Zoom in" onclick="p3Zoom('stage', 1.3)">+</button><button type="button" class="chipbtn" onclick="p3Inside('stage')">Inside / outside</button><button type="button" class="chipbtn" onclick="p3Top('stage')">Top / angle</button></div></div>`;
   };
   /* In the floor plan editor the 3D view sits under the plan and follows every move. */
   const oldEditor = bsEditor;
   bsEditor = function (o) {
-    return oldEditor(o).replace(/<\/div>\s*$/, `<div class="p3d-ed"><div class="p3d-edhead"><strong>3D view</strong><span>Inside view: studs at 16 in on center, electrical on the studs</span><button type="button" class="chipbtn" onclick="p3Inside('editor')">Inside / outside</button><button type="button" class="chipbtn" onclick="p3Top('editor')">Top / angle</button></div>${p3dMarkup(o.c, 'editor')}</div></div>`);
+    return oldEditor(o).replace(/<\/div>\s*$/, `<div class="p3d-ed"><div class="p3d-edhead"><strong>3D view</strong><span>Inside view: studs at 16 in on center, electrical on the studs</span><button type="button" class="chipbtn" aria-label="Zoom out" onclick="p3Zoom('editor', 1 / 1.3)">−</button><button type="button" class="chipbtn" aria-label="Zoom in" onclick="p3Zoom('editor', 1.3)">+</button><button type="button" class="chipbtn" onclick="p3Inside('editor')">Inside / outside</button><button type="button" class="chipbtn" onclick="p3Top('editor')">Top / angle</button></div>${p3dMarkup(o.c, 'editor')}</div></div>`);
   };
   const oldRefresh = bsEdRefresh;
   bsEdRefresh = function () {
