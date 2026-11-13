@@ -44,7 +44,8 @@ const ORDER_SAMPLE = {
   rtoApp: {
     provider: 'JMAG LLC', signedOn: '11/06/2026', term: 60,
     a: { dl: 'SAMPLE-000000', dlState: 'SC', dob: '1980-01-01', ssn4: '0000', phone2: '(843) 555-0143', billingSame: true, employer: 'Sample Employer', employerPhone: '(843) 555-0100',
-      r1name: 'Jamie Avery', r1phone: '(843) 555-0111', r1rel: 'Spouse', r1state: 'SC', r2name: 'Riley Stone', r2phone: '(843) 555-0122', r2rel: 'Friend', r2state: 'SC' },
+      r1name: 'Jamie Avery', r1phone: '(843) 555-0111', r1rel: 'Spouse', r1state: 'SC', r2name: 'Riley Stone', r2phone: '(843) 555-0122', r2rel: 'Friend', r2state: 'SC',
+      idPhoto: 'sample-license.jpg', property: 'Owns the property', cosigner: false },
   },
 };
 if (!S.sales.some((s) => s.id === ORDER_SAMPLE.id)) S.sales.push(ORDER_SAMPLE);
@@ -132,9 +133,12 @@ function orderPage() {
   const part = (title, on, text) => `<div class="od-doc"><span class="od-check ${on ? 'on' : ''}">${on ? icon('check', 16) : ''}</span><div class="grow"><strong>${title}</strong><small>${text}</small></div></div>`;
   const rtoPanel = !rto ? '' : `<section class="panel"><div class="panelhead"><h2>Rent-to-own application</h2><span class="pill ${app ? 'good' : 'amber'}">${app ? 'Complete' : 'Not started'}</span></div>
     <p class="source">Asks only what the invoice does not already answer. Name, phone, email, delivery address, building, price, term and waiver come straight from the invoice.</p>
-    ${part('Identity', app, app ? 'On file' : "Driver's license, birth date, Social Security number")}
+    ${part('Identity and photo of the ID', app, app ? (app.a.idPhoto ? 'On file' : 'On file · ID photo still missing') : "Driver's license, photo of the ID, birth date, Social Security number")}
     ${part('Contact and work', app, app ? 'On file' : 'Second phone, billing address, employer')}
+    ${part('Property', app, app ? 'On file' : 'Owns or rents the delivery property')}
     ${part('Two references', app, app ? '2 of 2 on file' : 'Name, phone, relationship and state for each')}
+    ${part('Co-signer', app, app ? (app.a.cosigner ? 'On file' : 'None on this application') : 'Optional')}
+    <div class="od-todo"><strong>To confirm · Payment due day</strong>Not decided yet: does the customer pick the day, is it always the 15th, or does the RTO provider set it? The application does not ask for a due day until this is confirmed.</div>
     <p class="od-lock">${icon('alert', 16)} Answers are never shown here. Download the contract to see them.</p>
     <div class="actions">${app ? button('Download RTO contract', 'rtoDownload()') + button('Replace answers', 'rtoApply(0)', 'secondary') : button('Start RTO application', 'rtoApply(0)')}</div></section>`;
 
@@ -172,15 +176,17 @@ function orderPage() {
 function orderDoc(kind) {
   const s = S.sales.find((x) => x.id === S.activeSale), inv = orderInvoice(s);
   if (kind !== 'invoice') {
-    const terms = kind === 'terms';
-    return modal(terms ? 'Terms and conditions of sale' : 'Delivery and blocking agreement', `
-      <p class="source">${inv.signed[kind] ? `Signed ${esc(inv.signed[kind])} · Invoice ${esc(inv.number)}` : 'Not signed yet'}</p>
-      <ul class="od-points">${(terms
-        ? ['Buildings on a rent-to-own contract cannot be altered or moved until paid in full.', 'Not for resale or human occupancy.', 'The customer is responsible for permits, setbacks, covenants and zoning.', 'One free delivery attempt within 50 miles of the lot.', 'Cancellation before delivery can carry a restocking fee of up to 15%.', 'Warranty: treated materials against rot for life, termites 20 years, materials and craftsmanship 5 years.']
-        : ['Delivery includes one row of block plus what is needed to level. Nothing is set over 16 inches high.', 'Within 50 miles of the lot: included. 51 to 100 miles: $100. Over 100 miles: priced by the delivery coordinator.', 'Extra rows of block: $75 per layer (2 runners) or $150 per layer (4 runners).', 'Anchors are $100 each.', 'The site needs one foot of clearance each side and 14 feet overhead.', 'One year of free re-leveling.']
-      ).map((x) => `<li>${x}</li>`).join('')}</ul>
-      <p class="source">Summary only. The full signed text is in the PDF.</p>
-      <div class="actions">${button('Download signed PDF · simulated', "toast('In the live version this downloads the signed PDF.')", 'secondary')}</div>`);
+    const terms = kind === 'terms', name = esc(inv.shipTo.name || s.customer);
+    const body = terms
+      ? ORDER_DOCS.terms.map(([h, p]) => `<p><strong>${esc(h)}.</strong> ${esc(p).replace('{name}', name)}</p>`).join('')
+      : ORDER_DOCS.delivery.map(([h, list]) => `<p><strong>${esc(h)}</strong></p><ul>${list.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`).join('');
+    modal(terms ? 'Terms and conditions of sale' : 'Delivery and blocking agreement', `<div class="od-paper od-legal">
+      <div class="od-paperhead"><strong>${terms ? 'Terms and conditions of sale' : 'Delivery and blocking agreement'}</strong><span>Invoice # ${esc(inv.number)}</span></div>
+      ${body}
+      <div class="od-sign"><div><small>Signed by</small><strong>${inv.signed[kind] ? name : 'Not signed yet'}</strong></div><div><small>Date</small><strong>${esc(inv.signed[kind] || '—')}</strong></div></div></div>
+      <div class="actions no-print">${button('Print', 'window.print()', 'secondary')}</div>`);
+    document.querySelector('.modal').classList.add('od-wide');
+    return;
   }
   const taxTotal = inv.taxes ? inv.taxes.reduce((t, x) => t + x[1], 0) : null;
   const who = (title, p, extra = '') => `<div><small>${title}</small><strong>${esc(p.name)}</strong><p>${odParty(p)}${p.phone ? '<br>' + esc(p.phone) : ''}${extra}</p></div>`;
@@ -208,7 +214,8 @@ function orderDoc(kind) {
 
 /* ---------- Rent-to-own application: only what the invoice does not answer ---------- */
 const RTO_STATES = 'AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
-const RTO_STEPS = ['From the invoice', 'Identity', 'Contact and work', 'References', 'Finish'];
+const RTO_STEPS = ['From the invoice', 'Identity', 'Contact and work', 'Property', 'References', 'Co-signer', 'Finish'];
+const RTO_LAST = RTO_STEPS.length - 1;
 let RTOF = { step: 0, a: {} };
 function rtoField(label, name, o = {}) {
   const v = RTOF.a[name] ?? '';
@@ -223,34 +230,43 @@ function rtoApply(step) {
   const body = [
     `<p>Nothing here needs retyping. It is already on invoice ${esc(inv.number)}.</p>
      <div class="od-recap">${odRow('Applicant', esc(inv.shipTo.name))}${odRow('Primary phone', esc(inv.shipTo.phone || '—'))}${odRow('Email', esc(inv.shipTo.email || '—'))}${odRow('Delivery address', odParty(inv.shipTo).replace('<br>', ', ') || '—')}${odRow('Building', esc(inv.lines[0][0]))}${odRow('Plan', esc(inv.plan))}${inv.monthly != null ? odRow('Monthly payment before taxes', money(inv.monthly)) : ''}${inv.waiver != null ? odRow('Liability waiver', 'Accepted · ' + money(inv.waiver) + ' a month') : ''}</div>
-     <p class="source">Three short parts are left: identity, contact and work, and two references.</p>`,
+     <p class="source">Five short parts are left: identity, contact and work, the property, two references and an optional co-signer.</p>`,
     `<div class="fields">${rtoField("Driver's license number", 'dl')}${rtoField('License state', 'dlState', { options: RTO_STATES, value: 'SC' })}${rtoField('Birth date', 'dob', { type: 'date' })}${rtoField('Social Security number', 'ssn', { type: 'password', attrs: 'inputmode="numeric" autocomplete="off" placeholder="###-##-####"' })}</div>
-     <p class="notice">Preview only: please do not type a real license or Social Security number. Only the last 4 digits of the Social Security number are kept.</p>`,
+     <label class="field">Photo of the driver's license${RTOF.a.idPhoto ? ` · on file: ${esc(RTOF.a.idPhoto)}` : ''}<input type="file" name="idPhoto" accept="image/*" capture="environment" ${RTOF.a.idPhoto ? '' : 'required'}></label>
+     <p class="notice">Preview only: please do not type a real license or Social Security number or upload a real ID. Only the last 4 digits of the Social Security number and the name of the photo file are kept.</p>`,
     `<div class="fields">${rtoField('Secondary phone', 'phone2', { type: 'tel', optional: true })}${rtoField('Employer', 'employer')}${rtoField("Employer's phone", 'employerPhone', { type: 'tel', optional: true })}</div>
      <p class="source">For employer, "Retired" or "Self-employed" is fine.</p>
      <label class="field"><input type="checkbox" name="billingSame" ${RTOF.a.billingSame ? 'checked' : ''} onchange="document.getElementById('rto-billing').hidden=this.checked"> Billing address is the same as the delivery address on the invoice</label>
      <div id="rto-billing" ${RTOF.a.billingSame ? 'hidden' : ''}>${rtoField('Billing address', 'billing', { optional: true })}</div>`,
+    `<div class="fields">${rtoField('Who owns the delivery property?', 'property', { options: ['Owns the property', 'Rents the property'], value: 'Owns the property' })}</div>
+     <p class="source">If the customer rents, add the landlord so the building can be placed with permission.</p>
+     <div class="fields">${rtoField("Landlord's name", 'landlord', { optional: true })}${rtoField("Landlord's phone", 'landlordPhone', { type: 'tel', optional: true })}</div>`,
     ref(1) + ref(2),
+    `<label class="field"><input type="checkbox" name="cosigner" ${RTOF.a.cosigner ? 'checked' : ''} onchange="const f=document.getElementById('rto-cs');f.hidden=f.disabled=!this.checked"> Add a co-signer to this application</label>
+     <fieldset id="rto-cs" class="od-fieldset" ${RTOF.a.cosigner ? '' : 'hidden disabled'}><div class="fields">${rtoField('Full name', 'csName')}${rtoField('Phone', 'csPhone', { type: 'tel' })}${rtoField('Relationship to the applicant', 'csRel')}${rtoField("Driver's license number", 'csDl')}${rtoField('License state', 'csDlState', { options: RTO_STATES, value: 'SC' })}${rtoField('Birth date', 'csDob', { type: 'date' })}${rtoField('Social Security number', 'csSsn', { type: 'password', attrs: 'inputmode="numeric" autocomplete="off" placeholder="###-##-####"' })}</div></fieldset>
+     <p class="source">Leave the box empty if there is no co-signer.</p>`,
     `<p>Ready to save. The contract is made from these answers plus the invoice.</p>
-     <div class="od-recap">${odRow('Identity', 'Entered')}${odRow('Contact and work', 'Entered')}${odRow('References', '2 of 2')}</div>
+     <div class="od-recap">${odRow('Identity', RTOF.a.idPhoto ? 'Entered, with ID photo' : 'Entered · ID photo missing')}${odRow('Contact and work', 'Entered')}${odRow('Property', esc(RTOF.a.property || ''))}${odRow('References', '2 of 2')}${odRow('Co-signer', RTOF.a.cosigner ? esc(RTOF.a.csName || 'Added') : 'None')}</div>
+     <div class="od-todo"><strong>To confirm · Payment due day</strong>Not decided yet. This application does not ask for it.</div>
      <p class="od-lock">${icon('alert', 16)} After saving, these answers are not shown on the order page. They can only be seen by downloading the contract.</p>`,
   ][step];
   modal('Rent-to-own application', `<div class="od-steps">${chevronTrack(RTO_STEPS, step)}</div>
     <form id="rtoForm" onsubmit="event.preventDefault();rtoNext()"><h3 class="od-stephead">${RTO_STEPS[step]}</h3>${body}
-    <div class="actions">${step ? button('← Back', `rtoKeep();rtoApply(${step - 1})`, 'secondary').replace('<button', '<button type="button"') : ''}<button class="primary" type="submit">${step === 4 ? 'Save application' : step === 0 ? 'Start' : 'Continue →'}</button></div></form>`);
+    <div class="actions">${step ? button('← Back', `rtoKeep();rtoApply(${step - 1})`, 'secondary').replace('<button', '<button type="button"') : ''}<button class="primary" type="submit">${step === RTO_LAST ? 'Save application' : step === 0 ? 'Start' : 'Continue →'}</button></div></form>`);
 }
 function rtoKeep() {
   const form = document.getElementById('rtoForm');
   for (const el of form.elements) {
     if (!el.name) continue;
     if (el.type === 'checkbox') RTOF.a[el.name] = el.checked;
-    else if (el.name === 'ssn') { if (el.value) RTOF.a.ssn4 = el.value.replace(/\D/g, '').slice(-4); }
+    else if (el.type === 'file') { if (el.files[0]) RTOF.a[el.name] = el.files[0].name; }
+    else if (el.name === 'ssn' || el.name === 'csSsn') { if (el.value) RTOF.a[el.name + '4'] = el.value.replace(/\D/g, '').slice(-4); }
     else RTOF.a[el.name] = el.value.trim();
   }
 }
 function rtoNext() {
   rtoKeep();
-  if (RTOF.step < 4) return rtoApply(RTOF.step + 1);
+  if (RTOF.step < RTO_LAST) return rtoApply(RTOF.step + 1);
   const s = S.sales.find((x) => x.id === S.activeSale);
   s.rtoApp = { provider: 'RTO provider', signedOn: odToday(), term: s.billing?.term || 60, a: { ...RTOF.a } };
   s.rto = true;
@@ -270,7 +286,10 @@ function rtoDownload() {
     `Driver's license: ${a.dlState} ${a.dl}`, `Birth date: ${a.dob}`, `Social Security number: ***-**-${a.ssn4 || '____'}`,
     `Employer: ${a.employer}`, `Employer's phone: ${a.employerPhone || ''}`,
     `Delivery address: ${inv.shipTo.street}, ${inv.shipTo.city}`, `Billing address: ${a.billingSame ? 'Same as delivery' : a.billing || ''}`, '',
-    `Reference 1: ${a.r1name}, ${a.r1phone}, ${a.r1rel}, ${a.r1state}`, `Reference 2: ${a.r2name}, ${a.r2phone}, ${a.r2rel}, ${a.r2state}`, '',
+    `Photo of ID: ${a.idPhoto || 'not provided'}`, `Delivery property: ${a.property || ''}${a.landlord ? ' · landlord ' + a.landlord + (a.landlordPhone ? ', ' + a.landlordPhone : '') : ''}`, '',
+    `Reference 1: ${a.r1name}, ${a.r1phone}, ${a.r1rel}, ${a.r1state}`, `Reference 2: ${a.r2name}, ${a.r2phone}, ${a.r2rel}, ${a.r2state}`,
+    a.cosigner ? `Co-signer: ${a.csName}, ${a.csPhone}, ${a.csRel}, license ${a.csDlState} ${a.csDl}, born ${a.csDob}, SSN ***-**-${a.csSsn4 || '____'}` : 'Co-signer: none', '',
+    'Payment due day: TO BE CONFIRMED', '',
     'RENTAL PURCHASE AGREEMENT (summary)', '',
     `Owner / lessor: ${app.provider}`, `Date: ${app.signedOn}`, `Property: ${inv.lines[0][0]}${inv.serial ? ', serial ' + inv.serial : ''}`,
     ...inv.lines.slice(1).map((l) => `  Add-on: ${l[0]}`),
