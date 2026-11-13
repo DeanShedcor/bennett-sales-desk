@@ -98,6 +98,8 @@ function p3Mesh(c, inside = false, yaw = 0) {
     col.roof += 'r';
     col.glass += 'g';
     col.deck += 'd';
+    col.accent = typeof usesWoodOptions === 'function' && usesWoodOptions(c) && c.accentColor && ({ ...paintColors, ...stainColors }[c.accentColor] || null);
+    if (col.accent) col.accent += 'b';
   }
   const topAt = (y) => {
     for (let i = 1; i < prof.length; i++) if (y <= prof[i][0] + 1e-9) return prof[i - 1][1] + ((prof[i][1] - prof[i - 1][1]) * (y - prof[i - 1][0])) / (prof[i][0] - prof[i - 1][0]);
@@ -130,6 +132,32 @@ function p3Mesh(c, inside = false, yaw = 0) {
     q.forEach((a) => edges.push(...V(a[0], a[1], lo), ...V(a[0], a[1], hi)));
   };
 
+  /* Accent siding, over the plain wall: the gable above the eave, or the lower 3 ft with a trim board on top
+     (two-tone). The wall is cut at that height and the accent part laid just proud of it. */
+  const LOWER = 3;
+  const cut = (pts, h, above) => {
+    const out = [], inn = (p) => (above ? p[1] >= h : p[1] <= h);
+    pts.forEach((p, i) => {
+      const q = pts[(i + 1) % pts.length];
+      if (inn(p)) out.push(p);
+      if (inn(p) !== inn(q)) {
+        const t = (h - p[1]) / (q[1] - p[1]);
+        out.push([p[0] + (q[0] - p[0]) * t, h, p[2] + (q[2] - p[2]) * t]);
+      }
+    });
+    /* Drop repeated points, so the face's lighting direction is worked out from three distinct corners. */
+    return out.filter((p, i) => Math.hypot(...p3Sub(p, out[(i + out.length - 1) % out.length])) > 1e-6);
+  };
+  const accent = (pts, n) => {
+    if (!col.accent) return;
+    const lower = c.accentArea === 'lower', part = cut(pts, F + (lower ? LOWER : eave), !lower), o = 0.004;
+    if (part.length >= 3 && !hide) face(part.map((p) => [p[0] - n[0] * o, p[1], p[2] - n[1] * o]), col.accent, false);
+    if (lower && !hide) {
+      const band = cut(cut(pts, F + LOWER - 0.15, true), F + LOWER + 0.15, false);
+      if (band.length >= 3) face(band.map((p) => [p[0] - n[0] * 0.03, p[1], p[2] - n[1] * 0.03]), col.trim);
+    }
+  };
+
   /* The ground the building sits on. */
   face([V(-1200, -1200, 0), V(-1200, 1200, 0), V(1200, 1200, 0), V(1200, -1200, 0)], '#6e8f4bG', false);
   /* Floor, porch deck and the frame they sit on. */
@@ -153,6 +181,7 @@ function p3Mesh(c, inside = false, yaw = 0) {
     const open = inside && -(bsWallGeo(sh, w).n[0] * Math.sin(yaw) + bsWallGeo(sh, w).n[1] * Math.cos(yaw)) > 0.25;
     hide = open;
     face([V(ax, ay, F), V(bx, by, F), ...top], col.body);
+    accent([V(ax, ay, F), V(bx, by, F), ...top], bsWallGeo(sh, w).n);
 
     /* Doors and windows sit just proud of the wall on both faces. */
     const geo = bsWallGeo(sh, w), wallTop = Math.min(topAt(ay), topAt(by));
@@ -321,7 +350,7 @@ function p3Mesh(c, inside = false, yaw = 0) {
     const pts = [...prof.filter((p) => p[1] > low + 1e-6 || p[0] === 0 || p[0] === W).map((p) => V(x, p[0], F + p[1]))];
     if (prof[0][1] > low + 1e-6) pts.unshift(V(x, 0, F + low));
     if (prof[prof.length - 1][1] > low + 1e-6) pts.push(V(x, W, F + low));
-    if (pts.length >= 3) face(pts, col.body);
+    if (pts.length >= 3) face(pts, c.accentArea === 'lower' || !col.accent ? col.body : col.accent);
   }
   /* Corner boards, and a vent high in each gable end. */
   for (const [x, y] of sh.poly) box(x - 0.16, y - 0.16, x + 0.16, y + 0.16, F, F + topAt(y) - 0.02, col.trim);
@@ -802,6 +831,17 @@ setInterval(() => document.querySelector('canvas.p3d') && p3Paint(), 400);
   const oldEditor = bsEditor;
   bsEditor = function (o) {
     return oldEditor(o).replace(/<\/div>\s*$/, `<div class="p3d-ed"><div class="p3d-edhead"><strong>3D view</strong><span>Inside view: studs at 16 in on center, electrical on the studs</span><button type="button" class="chipbtn" aria-label="Zoom out" onclick="p3Zoom('editor', 1 / 1.3)">−</button><button type="button" class="chipbtn" aria-label="Zoom in" onclick="p3Zoom('editor', 1.3)">+</button><button type="button" class="chipbtn" onclick="p3Inside('editor')">Inside / outside</button><button type="button" class="chipbtn" onclick="p3Top('editor')">Top / angle</button></div>${p3dMarkup(o.c, 'editor')}</div></div>`);
+  };
+  /* While choosing colors the page is not redrawn, so point the 3D views at the new choices and repaint
+     them at once: the model shows each color as it is picked. */
+  const oldChange = change;
+  change = function (...args) {
+    const before = S.c, out = oldChange.apply(this, args);
+    if (S.c !== before) {
+      for (const v of Object.values(P3.views)) if (v.c === before) v.c = S.c;
+      p3Paint();
+    }
+    return out;
   };
   const oldRefresh = bsEdRefresh;
   bsEdRefresh = function () {
