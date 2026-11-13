@@ -377,3 +377,32 @@ if (typeof syncDealer === 'function') {
     for (const s of S.sales) if (keep.has(s.id)) s.fulfillment = keep.get(s.id);
   };
 }
+
+/* ---------- After Confirm layout: the next step is to go back ----------
+   Once the layout is confirmed, the build sheet shows a green banner with one big button back to where
+   the salesperson came from (the order, the building being configured, or Plant QC), and the bar's
+   Back button turns into the same button. Going back redraws the order so its check mark shows. */
+const sfBackTo = (key) => (key === 'cfg' ? 'the building' : String(key).startsWith('qc:') ? 'Plant QC' : 'the order');
+{
+  const sheetRender = bsRender;
+  bsRender = function () {
+    sheetRender();
+    const root = document.getElementById('bsheet'), o = BS.key && bsOrder(BS.key);
+    if (!root || !o?.c.sheet?.ok) return;
+    const to = sfBackTo(BS.key);
+    const back = root.querySelector('.bs-bar button[onclick="closeBuildSheet()"]');
+    if (back) (back.className = 'primary small'), (back.textContent = `← Back to ${to}`);
+    root.querySelector('.bs-bar')?.insertAdjacentHTML('afterend', `<div class="sf-sheetdone no-print"><span class="od-check on">${icon('check', 16)}</span><div class="grow"><strong>Layout confirmed</strong><small>The plant will build from this sheet. Next: go back to ${to}${to === 'the order' ? ' and carry on with Next steps' : ''}.</small></div><button type="button" class="primary" onclick="closeBuildSheet()">Back to ${to} ${icon('arrow', 18)}</button></div>`);
+  };
+  const sheetConfirm = bsConfirm;
+  bsConfirm = function () {
+    sheetConfirm();
+    const root = document.getElementById('bsheet');
+    if (root) root.scrollTop = 0;
+  };
+  const sheetClose = closeBuildSheet;
+  closeBuildSheet = function () {
+    sheetClose();
+    if (S.page === 'sale' || S.page === 'configure') render();
+  };
+}

@@ -891,7 +891,7 @@ function bsConfirm() {
   (o.c.sheet ||= { pos: {}, ok: null }).ok = Date.now();
   BS.edit = false;
   bsRender();
-  toast('Layout confirmed. The build sheet now shows it as confirmed.');
+  toast('Layout confirmed.');
 }
 
 /* ---------- Opening the sheet ---------- */
