@@ -87,7 +87,10 @@ packageAmount = function (c, name = c.package) {
 {
   const salesReview = catalogReviewItems;
   catalogReviewItems = function (c) {
-    return salesReview(c).filter((x) => x !== 'Accent finish availability and price');
+    /* Garage and dormer packages have a list price now; only the fit is left to confirm. */
+    return salesReview(c)
+      .filter((x) => x !== 'Accent finish availability and price')
+      .map((x) => (packageAmount(c) != null ? x.replace(' and package pricing for the selected size', ' for the selected size') : x));
   };
 }
 

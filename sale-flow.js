@@ -57,6 +57,7 @@ showSaleReview = function () {
     salesSubmit();
     const s = sfSale();
     if (!s || s.status !== 'Submitted · Awaiting review' || s.signed) return;
+    s.toConfirm = catalogReviewItems(s.c);
     s.status = 'Sold · Awaiting signatures';
     s.fulfillment = 'Waiting on customer signatures';
     s.signed = {};
@@ -65,6 +66,29 @@ showSaleReview = function () {
     if (last && /Submitted to administrator/.test(last.text)) s.events.pop();
     sfLog(s, before < S.sales.length ? 'Order created · waiting on customer signatures' : 'Quote finalized · waiting on customer signatures');
     render();
+  };
+}
+
+/* ---------- Complete the sale never turns into a quote ----------
+   The Sales desk used to open the quote form when anything was marked "confirm before quoting".
+   Now the salesperson sees the list and chooses: go back to the building, or complete the sale with
+   those items carried onto the order for the office to confirm at admin review. */
+{
+  const salesFinalize = finalizeForm;
+  finalizeForm = function (details) {
+    const items = catalogReviewItems(S.c), key = JSON.stringify(S.c);
+    if (!items.length || S.sfAck === key) return salesFinalize(details);
+    modal('Before you complete the sale', `<p>These are not settled for this building yet:</p>
+      <ul class="sf-confirm-list">${items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
+      <p>You can change the building, or complete the sale now. The office confirms these during admin review, and they show in red on the order until then.</p>
+      <div class="actions">${button('← Back to the building', 'closeModal()', 'secondary')}${button('Complete the sale ' + icon('arrow', 18), 'S.sfAck=JSON.stringify(S.c);closeModal();finalizeForm()')}</div>`);
+  };
+  const run = finalizeForm;
+  finalizeForm = function (details) {
+    if (S.sfAck !== JSON.stringify(S.c) || !catalogReviewItems(S.c).length) return run(details);
+    const real = catalogReviewItems;
+    catalogReviewItems = () => [];
+    try { return run(details); } finally { catalogReviewItems = real; }
   };
 }
 
@@ -309,6 +333,7 @@ function sfRow(x, now) {
 function sfPanel(s) {
   const { desk, handoff } = sfSteps(s), all = [...desk, ...handoff], now = all.find((x) => !x.on && !x.optional), done = all.filter((x) => x.on).length;
   return `<section class="panel sf-panel"><div class="panelhead"><h2>Next steps</h2><span class="sf-headr"><button type="button" class="link" onclick="S.sfNotes=S.sfNotes===false;render()">${S.sfNotes === false ? 'Show' : 'Hide'} product notes</button><span class="pill ${now ? 'amber' : 'good'}">${now ? `${done} of ${all.length} done` : 'Complete'}</span></span></div>
+    ${s.toConfirm?.length && !['Processed · Sold', 'Delivered'].includes(s.status) ? `<div class="sf-toconfirm"><strong>Office confirms at admin review</strong><ul>${s.toConfirm.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
     <h3 class="sf-group">At the desk</h3>${desk.map((x) => sfRow(x, x === now)).join('')}
     <h3 class="sf-group">Handoffs <small>other apps do these; the desk shows where the order is</small></h3>${handoff.map((x) => sfRow(x, x === now)).join('')}
     ${sfStandins(s)}
