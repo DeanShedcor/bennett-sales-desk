@@ -145,6 +145,31 @@ const QC_CONFIG = {
     },
   ],
 
+  /* Draft. Questions asked in the building's own words. The key is a question from the
+     checklists above, exactly as written there. The function gets the building (b) and returns
+     the wording the inspector sees, filled in from that building's order. A question with no
+     entry here, or whose function returns nothing, keeps its general wording.
+     b.serial, b.siding_color, b.trim_color and b.roof are plain text. b.c is the order's setup
+     (b.c.windows, b.c.door, b.c.electrical, b.c.package ...). */
+  specific: {
+    "Is the color the correct paint or urethane per the build sheet?": (b) => `Is the siding ${b.siding_color}, in the correct paint or urethane?`,
+    "Is the trim the correct color?": (b) => `Is the trim ${b.trim_color}?`,
+    "Is the roof the correct color and material?": (b) => `Is the roof ${b.roof.toLowerCase()}?`,
+    "Is the serial number verified?": (b) => `Does the serial number on the building read ${b.serial}?`,
+    "Is the serial number written on the top plate above the door?": (b) => `Is ${b.serial} written on the top plate above the door?`,
+    "Are the door type, size and location correct?": (b) =>
+      b.c.package ? "" : `Is the main door a ${doorName(b.c.door).toLowerCase()}, the right size and in the right place?`,
+    "Are the window type, size and location correct?": (b) => {
+      const n = Number(b.c.windows);
+      if (b.c.package || !n) return "";
+      return n === 1 ? "Is the 1 window the right type and size, and in the right place?" : `Are ${n === 2 ? "both" : `all ${n}`} windows the right type and size, and in the right places?`;
+    },
+    "Is the proper electrical package or components installed?": (b) => {
+      const extras = electricalExtras(b.c).map((e) => e.label);
+      return `Is the ${b.c.electrical} electrical package installed${extras.length ? `, plus ${extras.join(", ")}` : ""}?`;
+    },
+  },
+
   /* Draft. A photo is required on every failure except for these questions, where a photo
      proves nothing. */
   photoNotNeeded: [
