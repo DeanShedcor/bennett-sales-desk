@@ -44,11 +44,12 @@ continueBilling = function (form) {
 };
 showSaleReview = function () {
   const d = reviewCustomer, b = reviewBilling, rto = b.type === 'Rent-to-own';
-  const next = [...SF_DOCS.map(([, t]) => `The customer signs the ${t.toLowerCase()}`), ...(rto ? ['The customer completes the rent-to-own application'] : []), 'You submit it for admin review'];
+  /* Rent-to-own: the application starts as soon as the order is created, then the signatures. */
+  const next = [...(rto ? ['The customer fills in the rent-to-own application (it opens next)'] : []), ...SF_DOCS.map(([, t]) => `The customer signs the ${t.toLowerCase()}`), 'You submit it for admin review'];
   modal('Complete the sale · create the order', `<p><strong>${esc(d.firstName + ' ' + d.lastName)}</strong><br>${esc(d.email)} · ${esc(d.phone)}</p><p>${d.same ? 'Delivery address matches billing.' : 'Separate delivery address provided.'}</p>
     <p><strong>${b.type}</strong> · ${money(amount())} building subtotal<br>Deposit recorded: ${money(b.deposit)}${rto ? `<br>${b.term} months · ${money(payment(amount(), b.term))}/mo before tax` : `<br>Remaining building subtotal: ${money(amount() - b.deposit)}`}</p>
-    <h3>Next, on the order page</h3><ol class="sf-next">${next.map((x) => `<li>${x}</li>`).join('')}</ol>
-    <div class="actions">${button('← Billing', 'openBilling()', 'secondary')}${button('Create the order →', 'submitSale()')}</div>`);
+    <h3>${rto ? 'Next' : 'Next, on the order page'}</h3><ol class="sf-next">${next.map((x) => `<li>${x}</li>`).join('')}</ol>
+    <div class="actions">${button('← Billing', 'openBilling()', 'secondary')}${button(rto ? 'Create the order and start the RTO application →' : 'Create the order →', 'submitSale()')}</div>`);
 };
 {
   const salesSubmit = submitSale;
@@ -66,6 +67,7 @@ showSaleReview = function () {
     if (last && /Submitted to administrator/.test(last.text)) s.events.pop();
     sfLog(s, before < S.sales.length ? 'Order created · waiting on customer signatures' : 'Quote finalized · waiting on customer signatures');
     render();
+    if (s.type === 'Rent-to-own' && !s.rtoApp) rtoApply(0);
   };
 }
 
@@ -297,10 +299,10 @@ function sfSteps(s) {
   const lot = s.path === 'lot', signing = SF_SIGNING.includes(s.status), after = ['Processed · Sold', 'Delivered'].includes(s.status);
   const reviewing = s.status === 'Submitted · Awaiting review', rto = s.type === 'Rent-to-own';
   const desk = [], handoff = [], signed = sfSigned(s);
-  for (const [k, t] of SF_DOCS)
-    desk.push({ title: `Customer signs the ${t.toLowerCase()}`, on: signed[k], text: signed[k] ? `Signed ${signed[k]} by ${esc(s.signatures?.[k]?.name || s.customer)}` : 'Read it with the customer, then they sign', act: signing && !signed[k] ? `<button type="button" class="secondary small" onclick="sfSignDoc('${k}')">Sign</button>` : '', hook: SF_HOOK.sign, only: SF_ONLY.sign });
   if (rto)
     desk.push({ title: 'Rent-to-own application', on: s.rtoApp, text: s.rtoApp ? 'All parts done' : `${Math.max(0, Math.min((s.rtoStep || 0) - 1, 5))} of 5 parts done`, act: signing && !s.rtoApp ? button(s.rtoStep > 1 && RTOF.sale === s.id ? 'Continue' : 'Start', s.rtoStep > 1 && RTOF.sale === s.id ? `rtoApply(${Math.min(s.rtoStep, RTO_LAST)})` : 'rtoApply(0)', 'secondary small') : '', hook: SF_HOOK.rto, only: SF_ONLY.rto });
+  for (const [k, t] of SF_DOCS)
+    desk.push({ title: `Customer signs the ${t.toLowerCase()}`, on: signed[k], text: signed[k] ? `Signed ${signed[k]} by ${esc(s.signatures?.[k]?.name || s.customer)}` : 'Read it with the customer, then they sign', act: signing && !signed[k] ? `<button type="button" class="secondary small" onclick="sfSignDoc('${k}')">Sign</button>` : '', hook: SF_HOOK.sign, only: SF_ONLY.sign });
   if (!lot)
     desk.push({ title: 'Customer checks the floor plan', on: s.c.sheet?.ok, optional: true, text: s.c.sheet?.ok ? 'Layout confirmed' : 'Optional: walk the customer through where everything goes', act: !s.c.sheet?.ok && !after ? `<button type="button" class="secondary small" onclick="openBuildSheet('${s.id}')">Open floor plan</button>` : '', hook: SF_HOOK.plan, only: SF_ONLY.plan });
   const missing = sfMissing(s);
