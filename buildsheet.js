@@ -270,6 +270,17 @@ function bsLayout(c) {
       it.moved = true;
     }
   }
+  /* Outlets and switches mount on a stud: a standard spot goes to the next free stud along the wall,
+     and one the sales manager moved goes to the free stud nearest where it was dropped. */
+  const taken = {};
+  for (const it of items) {
+    if (it.kind !== 'outlet' && it.kind !== 'switch') continue;
+    const studs = bsStuds(sh, sh.walls[it.wi], items).map((s) => s.x).filter((x) => !(taken[it.wi] || []).includes(x));
+    if (!studs.length) continue;
+    const next = it.moved ? null : studs.find((x) => x >= it.at - 0.03);
+    it.at = next ?? studs.reduce((m, x) => (Math.abs(x - it.at) < Math.abs(m - it.at) ? x : m));
+    (taken[it.wi] ||= []).push(it.at);
+  }
   items.sort((a, b) => (a.wi < 0 ? 99 : a.wi) - (b.wi < 0 ? 99 : b.wi) || a.at - b.at);
   items.forEach((it, i) => (it.n = i + 1));
 
@@ -359,6 +370,18 @@ function bsInside(poly, [x, y]) {
     if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
   }
   return inside;
+}
+/* Wall studs, from the engineer drawings: 2x4 studs at 16 in on center measured from the start of the
+   wall, a stud at each end, and a king stud each side of every door and window. Positions are the
+   stud centers, in feet along the wall. */
+function bsStuds(sh, w, items) {
+  const spans = items.filter((x) => x.wi === w.i && x.w && !x.high), out = [];
+  const add = (x, king = false) => x > 0.03 && x < w.len - 0.03 && !spans.some((s) => x > s.at - 0.02 && x < s.at + s.w + 0.02) && !out.some((s) => Math.abs(s.x - x) < 0.11) && out.push({ x, king });
+  add(0.0625);
+  add(w.len - 0.0625);
+  for (const s of spans) add(s.at - 0.0625, true), add(s.at + s.w + 0.0625, true);
+  for (let x = 4 / 3; x < w.len - 0.1; x += 4 / 3) add(x);
+  return out.sort((a, b) => a.x - b.x);
 }
 function bsWallGeo(sh, w) {
   const d = [(w.b[0] - w.a[0]) / w.len, (w.b[1] - w.a[1]) / w.len];
@@ -663,6 +686,11 @@ function bsEdDraw(lay) {
   o.push(side(g.X0 + bw / 2, 22, sh.sides.top), side(g.X0 + bw / 2, g.VH - 10, sh.sides.bottom), side(g.X0 - g.side, g.Y0 + bh / 2, sh.sides.left, -90), side(g.X0 + bw + g.side, g.Y0 + bh / 2, sh.sides.right, 90));
   for (const w of sh.walls) {
     const geo = bsWallGeo(sh, w), on = items.filter((x) => x.wi === w.i);
+    /* Studs, drawn just inside the wall line, so it is clear where a box can mount. */
+    for (const s of bsStuds(sh, w, items)) {
+      const [x, y] = P(geo.at(s.x)), d = 4.5 + Math.max(5, 0.29 * g.Sc);
+      o.push(`<line x1="${f(x + geo.n[0] * 4.5)}" y1="${f(y + geo.n[1] * 4.5)}" x2="${f(x + geo.n[0] * d)}" y2="${f(y + geo.n[1] * d)}" stroke="#b98a4e" stroke-width="${f(Math.max(2, 0.125 * g.Sc))}"/>`);
+    }
     const cuts = [0, ...on.map((x) => (x.w ? [x.at, x.at + x.w] : [x.at - 0.5, x.at + 0.5])).sort((a, b) => a[0] - b[0]).flat(), w.len];
     let best = [0, 0];
     for (let i = 0; i < cuts.length; i += 2) if (cuts[i + 1] - cuts[i] > best[1] - best[0]) best = [cuts[i], cuts[i + 1]];
@@ -808,6 +836,12 @@ function bsEdFree(on) {
 function bsEdNudge(d, dy = 0) {
   const lay = bsLayout(bsOrder(BS.key).c), it = lay.items.find((x) => x.key === BS.sel);
   if (!it) return;
+  if (it.kind === 'outlet' || it.kind === 'switch') {
+    /* Electrical steps from stud to stud. */
+    const xs = bsStuds(lay.sh, lay.sh.walls[it.wi], lay.items).map((s) => s.x), to = d > 0 ? xs.find((x) => x > it.at + 0.05) : xs.reverse().find((x) => x < it.at - 0.05);
+    if (to != null && bsEdPlace(it.key, it.wi, to)) bsRender();
+    return;
+  }
   if (it.kind === 'light' ? bsEdLight(it.key, it.x + d, it.y + dy) : bsEdPlace(it.key, it.wi, it.at + d)) bsRender();
 }
 function bsEdToWall(wi) {
