@@ -45,6 +45,15 @@ const SKIP_RULE = {};
 QC_CONFIG.skipWhen.forEach((rule) => rule.questions.forEach((text) => (SKIP_RULE[text] = rule)));
 const skipReason = (b, item) => (SKIP_RULE[item.text]?.when(b.c) ? SKIP_RULE[item.text].why : null);
 const itemsFor = (b) => itemsOf(QC).filter((i) => !skipReason(b, i));
+/* The question in this building's own words (rules in qc-config.js, under `specific`).
+   Falls back to the general wording when there is no rule or the order lacks the detail. */
+function askText(b, item) {
+  try {
+    return (b && item && QC_CONFIG.specific?.[item.text]?.(b)) || item.text;
+  } catch {
+    return item.text;
+  }
+}
 const needsPhoto = (id) => !QC_CONFIG.photoNotNeeded.includes(ITEM[id]?.text);
 
 /* ---------- QC state (in memory only; a reload resets it) ---------- */
@@ -503,8 +512,8 @@ function yesToRest(n) {
 function itemRow(i, a) {
   const btn = (r, text) => `<button class="${r}${a?.r === r ? " on" : ""}" aria-pressed="${a?.r === r}" onclick="answer('${i.id}','${r}')">${text}</button>`;
   return `<div class="qc-item" id="row-${i.id}">
-    <p>${esc(i.text)}</p>
-    <div class="qc-ans" role="group" aria-label="${esc(i.text)}">${btn("pass", "Yes")}${btn("fail", "No")}${btn("na", "N/A")}</div>
+    <p>${esc(askText(build(Q.serial), i))}</p>
+    <div class="qc-ans" role="group" aria-label="${esc(askText(build(Q.serial), i))}">${btn("pass", "Yes")}${btn("fail", "No")}${btn("na", "N/A")}</div>
     ${a?.r === "fail" ? failForm(i, a) : ""}
   </div>`;
 }
@@ -577,8 +586,8 @@ function finishInspection() {
   if (t.fails) {
     items.filter((i) => ans[i.id].r === "fail").forEach((i) => {
       const a = ans[i.id];
-      Q.rework.push({ id: "RW-" + ++Q.rwSeq, serial: b.serial, stage: QC, itemId: i.id, item: i.text, defect: a.defect, note: a.note.trim(), photo: a.photo, assigned: null, step: 0, openedAt: Date.now(), by: me().name });
-      record(b.serial, QC, `Failed: ${i.text} (${a.defect}). Sent to rework`);
+      Q.rework.push({ id: "RW-" + ++Q.rwSeq, serial: b.serial, stage: QC, itemId: i.id, item: i.text, ask: askText(b, i), defect: a.defect, note: a.note.trim(), photo: a.photo, assigned: null, step: 0, openedAt: Date.now(), by: me().name });
+      record(b.serial, QC, `Failed: ${askText(b, i)} (${a.defect}). Sent to rework`);
     });
     b.results[QC] = { result: "fail", firstPass: false, by: me().name, at: Date.now(), answers, bulk };
     dealerNote(b, `inspection found ${plural(t.fails, "thing")} to fix before it can ship`);
@@ -610,7 +619,7 @@ function reworkCard(r, withBuilding = false) {
     : button("Re-inspection passed", `reinspect('${r.id}',true)`, "primary") + button("Still failing", `reinspect('${r.id}',false)`, "secondary");
   return `<div class="qc-rework">
     ${withBuilding ? buildingLine(build(r.serial)) : ""}
-    <div class="buildrow-head"><strong class="grow">${esc(r.item)}</strong><span class="pill red">${esc(r.defect)}</span></div>
+    <div class="buildrow-head"><strong class="grow">${esc(r.ask || askText(build(r.serial), ITEM[r.itemId] || { text: r.item }))}</strong><span class="pill red">${esc(r.defect)}</span></div>
     <p>${esc(r.note)}</p>
     ${r.photo ? `<img src="${r.photo}" alt="Photo of the failure">` : `<small>${r.sample ? "No photo on this sample record." : "No photo was needed for this question."}</small>`}
     ${chevronTrack(QC_CONFIG.reworkSteps, r.step)}
