@@ -181,7 +181,8 @@ function age(t) {
 /* A sold custom order becomes a building that is Ready for QA. In this preview that happens as
    soon as the sale is approved; live, it would happen when the plant marks the build complete. */
 function syncSales() {
-  S.sales.filter((s) => s.status === "Processed · Sold" && !["lot", "site", "stock"].includes(s.path) && !build(s.id)).forEach((s) => {
+  /* Only once the plant has marked the build complete on the order (s.built). */
+  S.sales.filter((s) => s.status === "Processed · Sold" && s.built && !["lot", "site", "stock"].includes(s.path) && !build(s.id)).forEach((s) => {
     const b = {
       serial: s.id, order: s.id, saleId: s.id, customer: s.customer, c: s.c,
       size: s.c.size, style: label(s.c).replace(s.c.size, "").trim(), dealer: `Bennett Buildings of ${LOT_LOCATION}`,
@@ -190,7 +191,7 @@ function syncSales() {
       stage: 0, days_in_stage: 0, results: {}, superseded: [], attempts: {}, hold: null, model_image: null,
     };
     Q.builds.push(b);
-    record(b.serial, QC, "Out of the plant and ready for QA (simulated: sold on the Sales desk in this tab)", Date.now(), "Sample record");
+    record(b.serial, QC, "Build complete and ready for QA (marked on the Sales desk order in this tab)", Date.now(), "Sample record");
     captureThumb(b);
   });
 }

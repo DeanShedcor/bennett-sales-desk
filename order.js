@@ -130,18 +130,19 @@ function orderPage() {
     ${rto ? doc('Rent-to-own contract', s.rtoApp?.signedOn, s.rtoApp ? `<button type="button" class="secondary small" onclick="rtoDownload()">Download</button>` : '', 'Waiting on the RTO application') : ''}
     ${rto ? `<p class="od-lock">${icon('alert', 16)} The rent-to-own contract cannot be opened on this page. It has to be downloaded.</p>` : ''}</section>`;
 
-  const app = s.rtoApp;
+  /* Each part ticks as soon as its step of the application is done (s.rtoStep counts finished steps). */
+  const app = s.rtoApp, prog = s.rtoStep || 0, done = (k) => !!app || prog > k;
   const part = (title, on, text) => `<div class="od-doc"><span class="od-check ${on ? 'on' : ''}">${on ? icon('check', 16) : ''}</span><div class="grow"><strong>${title}</strong><small>${text}</small></div></div>`;
-  const rtoPanel = !rto ? '' : `<section class="panel"><div class="panelhead"><h2>Rent-to-own application</h2><span class="pill ${app ? 'good' : 'amber'}">${app ? 'Complete' : 'Not started'}</span></div>
+  const rtoPanel = !rto ? '' : `<section class="panel"><div class="panelhead"><h2>Rent-to-own application</h2><span class="pill ${app ? 'good' : 'amber'}">${app ? 'Complete' : prog ? `${Math.min(prog - 1, 5)} of 5 parts done` : 'Not started'}</span></div>
     <p class="source">Asks only what the invoice does not already answer. Name, phone, email, delivery address, building, price, term and waiver come straight from the invoice.</p>
-    ${part('Identity and photo of the ID', app, app ? (app.a.idPhoto ? 'On file' : 'On file · ID photo still missing') : "Driver's license, photo of the ID, birth date, Social Security number")}
-    ${part('Contact and work', app, app ? 'On file' : 'Second phone, billing address, employer')}
-    ${part('Property', app, app ? 'On file' : 'Owns or rents the delivery property')}
-    ${part('Two references', app, app ? '2 of 2 on file' : 'Name, phone, relationship and state for each')}
-    ${part('Co-signer', app, app ? (app.a.cosigner ? 'On file' : 'None on this application') : 'Optional')}
+    ${part('Identity and photo of the ID', done(1), done(1) ? ((app ? app.a : RTOF.a).idPhoto ? 'On file' : 'On file · ID photo still missing') : "Driver's license, photo of the ID, birth date, Social Security number")}
+    ${part('Contact and work', done(2), done(2) ? 'On file' : 'Second phone, billing address, employer')}
+    ${part('Property', done(3), done(3) ? 'On file' : 'Owns or rents the delivery property')}
+    ${part('Two references', done(4), done(4) ? '2 of 2 on file' : 'Name, phone, relationship and state for each')}
+    ${part('Co-signer', done(5), app ? (app.a.cosigner ? 'On file' : 'None on this application') : done(5) ? 'Answered' : 'Optional')}
     <div class="od-todo"><strong>To confirm · Payment due day</strong>Not decided yet: does the customer pick the day, is it always the 15th, or does the RTO provider set it? The application does not ask for a due day until this is confirmed.</div>
     <p class="od-lock">${icon('alert', 16)} Answers are never shown here. Download the contract to see them.</p>
-    <div class="actions">${app ? button('Download RTO contract', 'rtoDownload()') + button('Replace answers', 'rtoApply(0)', 'secondary') : button('Start RTO application', 'rtoApply(0)')}</div></section>`;
+    <div class="actions">${app ? button('Download RTO contract', 'rtoDownload()') + button('Replace answers', 'rtoApply(0)', 'secondary') : prog > 1 && RTOF.sale === s.id ? button('Continue RTO application', `rtoApply(${Math.min(prog, RTO_LAST)})`) : button('Start RTO application', 'rtoApply(0)')}</div></section>`;
 
   const sold = `<section class="panel"><h2>Sale details</h2>
     <div class="od-two">
