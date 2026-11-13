@@ -130,9 +130,18 @@ function bsShape(c) {
     sh.posts = sh.posts.map(m);
   }
   sh.walls = sh.walls.map(([name, a, b, hook, far], i) => ({ i, id: 'ABCDEFGHJK'[i], name, a, b, hook, far, len: Math.hypot(b[0] - a[0], b[1] - a[1]) }));
-  return { ...sh, L, W, pkg };
+  return { ...sh, L, W, pkg, minX: Math.min(...sh.poly.map((q) => q[0])) };
 }
 
+/* Lights hang from the ceiling: on the center line of the building, unless it is a Studio or
+   the salesperson lifts that rule for the order. They keep 6 inches clear of the walls. */
+const bsLightsFree = (c, sh) => !!sh.studio || !!c.sheet?.lightsFree;
+function bsLightSpot(sh, free, x, y) {
+  const q = [Math.round(x * 12) / 12, free ? Math.round(y * 12) / 12 : sh.W / 2];
+  return [[0.49, 0], [-0.49, 0], [0, 0.49], [0, -0.49]].every(([dx, dy]) => bsInside(sh.poly, [q[0] + dx, q[1] + dy])) ? q : null;
+}
+const bsBulb = (x, y, k, color = '#0c1a28') =>
+  `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${k})" fill="none" stroke="${color}" stroke-width="${(1.8 / k).toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"><path d="M-3.4 2.6a5.6 5.6 0 1 1 6.8 0c-.9.8-1.3 1.6-1.3 2.6h-4.200c0-1-.4-1.800-1.300-2.600z"/><path d="M-2 7.800h4M-1.100 10h2.200"/></g>`;
 function bsDoorWidth(name) {
   const m = name.match(/(\d+)\s*[x×]\s*\d+/);
   return m ? +m[1] : /double|barn/i.test(name) ? 6 : 3;
@@ -232,15 +241,29 @@ function bsLayout(c) {
       if (x != null) items.push({ key: 'o' + i, kind: 'outlet', name: 'Outlet', note: '', w: 0, wi, at: x });
       else loose.push(`Outlet ${i + 1}: no clear spot on the ${sh.walls[wi].name.toLowerCase()}. Location not set.`);
     }
-    loose.push('Light with bulb: location is not on the order.');
+    {
+      const count = 1 + (Number(c.extraLights) || 0), mid = sh.W / 2;
+      let xa = null, xb = null;
+      for (let x = 0.5; x <= sh.L - 0.5; x += 0.25) if (bsLightSpot(sh, false, x, mid)) (xa ??= x), (xb = x);
+      for (let i = 0; i < count && xa != null; i++) {
+        const x = Math.round((xa + ((xb - xa) * (i + 1)) / (count + 1)) * 12) / 12;
+        items.push({ key: 'l' + i, kind: 'light', name: 'Light', note: 'ceiling', w: 0, wi: -1, at: x, x, y: mid });
+      }
+      if (xa == null) loose.push('Light: no clear spot on the center line. Location not set.');
+    }
     loose.push(el === 'Utility' ? 'Six-space breaker box: location is not on the order.' : 'Pigtail (drop-cord adapter): location is not on the order.');
-    for (const e of electricalExtras(c)) loose.push(`${e.label[0].toUpperCase() + e.label.slice(1)}: location is not on the order.`);
+    for (const e of electricalExtras(c)) if (e.key !== 'extraLights') loose.push(`${e.label[0].toUpperCase() + e.label.slice(1)}: location is not on the order.`);
   }
 
   /* Moves made by the sales manager. */
   const pos = c.sheet?.pos || {};
   for (const it of items) {
     const p = pos[it.key];
+    if (it.kind === 'light') {
+      const q = p && p.x != null && bsLightSpot(sh, bsLightsFree(c, sh), p.x, p.y);
+      if (q) [it.x, it.y, it.at, it.moved] = [q[0], q[1], q[0], true];
+      continue;
+    }
     it.std = { wi: it.wi, at: it.at };
     if (p && sh.walls[p.wall]) {
       it.wi = p.wall;
@@ -248,7 +271,7 @@ function bsLayout(c) {
       it.moved = true;
     }
   }
-  items.sort((a, b) => a.wi - b.wi || a.at - b.at);
+  items.sort((a, b) => (a.wi < 0 ? 99 : a.wi) - (b.wi < 0 ? 99 : b.wi) || a.at - b.at);
   items.forEach((it, i) => (it.n = i + 1));
 
   if (doors.length) loose.push('Door swing and handle side are not on the order.');
@@ -462,6 +485,10 @@ function bsPlan(lay) {
       o.push(`<line x1="${f(l.x)}" y1="${f(l.y)}" x2="${f(cx)}" y2="${f(cy)}" stroke="#111" stroke-width="0.9"/>${bal(cx, cy, l.it.n)}${text(l, side === 'left' ? cx - 14 : cx + 14, cy, side === 'left' ? 'end' : 'start')}`);
     }
   }
+  for (const it of items.filter((x) => x.kind === 'light')) {
+    const [x, y] = P([it.x, it.y]);
+    o.push(`<circle cx="${f(x)}" cy="${f(y)}" r="8" fill="#fff" stroke="#111" stroke-width="1.5"/>${bsBulb(x, y - 1.5, 0.62, '#111')}${bal(x + 18, y, it.n, 8)}`);
+  }
   for (const w of sh.walls) o.push(`<rect x="${f(w.tagAt[0] - 9)}" y="${f(w.tagAt[1] - 9)}" width="18" height="18" fill="#fff" stroke="#111" stroke-width="1.6"/><text x="${f(w.tagAt[0])}" y="${f(w.tagAt[1] + 4)}" text-anchor="middle" font-size="11.5" font-weight="800">${w.id}</text>`);
   /* Side names and overall size. */
   const name = (x, y, t, a = 'middle') => `<text x="${f(x)}" y="${f(y)}" text-anchor="${a}" font-size="13" font-weight="800" letter-spacing="2">${t}</text>`;
@@ -480,18 +507,20 @@ function bsPlan(lay) {
   o.push(`<rect x="556" y="${ky + 3}" width="12" height="12" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="562" y="${ky + 12.6}" text-anchor="middle" font-size="9.5" font-weight="800">S</text><text x="573" y="${ky + 12.5}" font-size="9">switch</text>`);
   if (sh.deck) o.push(`<rect x="614" y="${ky + 5}" width="8" height="8" fill="#111"/><text x="627" y="${ky + 12.5}" font-size="9">porch post</text>`);
   o.push(`<rect x="${sh.deck ? 700 : 614}" y="${ky + 4}" width="10" height="10" fill="#fff" stroke="#b9c2ca" stroke-width="0.8"/><text x="${sh.deck ? 715 : 629}" y="${ky + 12.5}" font-size="9">grid square = 1 ft</text>`);
+  if (items.some((x) => x.kind === 'light')) o.push(`<circle cx="${sh.deck ? 826 : 740}" cy="${ky + 9}" r="7" fill="#fff" stroke="#111" stroke-width="1.5"/>${bsBulb(sh.deck ? 826 : 740, ky + 7.7, 0.55, '#111')}<text x="${sh.deck ? 838 : 752}" y="${ky + 12.5}" font-size="9">light</text>`);
   o.push('</svg>');
   return o.join('');
 }
 
-const bsWhere = (it) => (it.w ? `${bsFeet(it.at)} to ${bsFeet(it.at + it.w)}` : `${bsFeet(it.at)} to center`);
+const bsSideWall = (t) => t.toLowerCase() + (/wall|side|end/i.test(t) ? '' : ' wall');
+const bsWhere = (it, sh) => (it.kind === 'light' ? `${bsFeet(it.x - (sh?.minX || 0))} from the ${sh ? bsSideWall(sh.sides.left) : 'front'}, ${bsFeet(it.y)} from the ${sh ? bsSideWall(sh.sides.top) : 'left side'}` : it.w ? `${bsFeet(it.at)} to ${bsFeet(it.at + it.w)}` : `${bsFeet(it.at)} to center`);
 
 function bsSchedule(lay) {
   const half = Math.ceil(lay.items.length / 2);
   const tbl = (list) =>
     list.length
       ? `<table><thead><tr><th>#</th><th>Item</th><th>Wall</th><th>Position on the wall</th></tr></thead><tbody>${list
-          .map((it) => `<tr><td>${bsBal(it.n)}</td><td><b>${esc(it.name)}</b>${it.note ? ' · ' + esc(it.note) : ''}</td><td>${bsTag(lay.sh.walls[it.wi].id)} ${esc(lay.sh.walls[it.wi].name)}</td><td>${bsWhere(it)}${it.moved ? ' · moved' : ''}</td></tr>`)
+          .map((it) => `<tr><td>${bsBal(it.n)}</td><td><b>${esc(it.name)}</b>${it.note ? ' · ' + esc(it.note) : ''}</td><td>${it.wi < 0 ? 'Ceiling' : `${bsTag(lay.sh.walls[it.wi].id)} ${esc(lay.sh.walls[it.wi].name)}`}</td><td>${bsWhere(it, lay.sh)}${it.moved ? ' · moved' : ''}</td></tr>`)
           .join('')}</tbody></table>`
       : '<div></div>';
   return `<h2>What goes where · every position is drawn wall by wall on sheet 2 · open questions are listed on sheet 2</h2><div class="bs-two">${tbl(lay.items.slice(0, half))}${tbl(lay.items.slice(half))}</div>`;
@@ -654,10 +683,14 @@ function bsEdDraw(lay) {
         art += it.kind === 'window' ? line('#0c1a28', 9) + line('#bfe3f5', 4) : line('#8a5a2b', 7) + line('#e7c79c', 3);
         art += line('transparent', 40, 'stroke-linecap="round"');
       } else {
-        const c = [a[0] + geo.n[0] * 18, a[1] + geo.n[1] * 18];
-        art = `${sel ? `<circle cx="${f(c[0])}" cy="${f(c[1])}" r="17" fill="#ffb703"/>` : ''}<circle cx="${f(c[0])}" cy="${f(c[1])}" r="11" fill="#fff" stroke="#0c1a28" stroke-width="2"/>`;
-        art += it.kind === 'outlet' ? `<path d="M${f(c[0] - 3)} ${f(c[1] - 4)}v8M${f(c[0] + 3)} ${f(c[1] - 4)}v8" stroke="#0c1a28" stroke-width="2"/>` : `<text x="${f(c[0])}" y="${f(c[1] + 4.5)}" text-anchor="middle" font-size="12" font-weight="800">S</text>`;
-        art += `<circle cx="${f(c[0])}" cy="${f(c[1])}" r="24" fill="transparent"/>`;
+        /* Teardrop: the round end carries the symbol and the point touches the spot on the wall. */
+        const r = 15, tip = [a[0] + geo.n[0] * 5, a[1] + geo.n[1] * 5], c = [a[0] + geo.n[0] * 31, a[1] + geo.n[1] * 31];
+        const th = Math.atan2(-geo.n[1], -geo.n[0]), al = Math.acos(r / 26);
+        const t1 = [c[0] + r * Math.cos(th + al), c[1] + r * Math.sin(th + al)], t2 = [c[0] + r * Math.cos(th - al), c[1] + r * Math.sin(th - al)];
+        const drop = `M${f(tip[0])} ${f(tip[1])}L${f(t1[0])} ${f(t1[1])}A${r} ${r} 0 1 1 ${f(t2[0])} ${f(t2[1])}Z`;
+        art = `${sel ? `<path d="${drop}" fill="#ffb703" stroke="#ffb703" stroke-width="10" stroke-linejoin="round"/>` : ''}<path d="${drop}" fill="#fff" stroke="#0c1a28" stroke-width="2.2" stroke-linejoin="round"/>`;
+        art += it.kind === 'outlet' ? `<path d="M${f(c[0] - 4)} ${f(c[1] - 8)}v8M${f(c[0] + 4)} ${f(c[1] - 8)}v8" stroke="#0c1a28" stroke-width="2.6" stroke-linecap="round"/><path d="M${f(c[0] - 3)} ${f(c[1] + 9)}v-2.500a3 3 0 0 1 6 0v2.500z" fill="#0c1a28"/>` : `<text x="${f(c[0])}" y="${f(c[1] + 5.5)}" text-anchor="middle" font-size="16" font-weight="800">S</text>`;
+        art += `<circle cx="${f(c[0])}" cy="${f(c[1])}" r="27" fill="transparent"/>`;
       }
       o.push(`<g data-key="${it.key}" class="bs-edit-item">${art}<circle cx="${f(out[0])}" cy="${f(out[1])}" r="11" fill="${sel ? '#ffb703' : '#0c1a28'}"/><text x="${f(out[0])}" y="${f(out[1] + 4)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="${sel ? '#0c1a28' : '#fff'}">${it.n}</text></g>`);
       if (sel) {
@@ -673,11 +706,26 @@ function bsEdDraw(lay) {
       }
     }
   }
+  const lights = items.filter((x) => x.kind === 'light');
+  if (lights.length && !bsLightsFree(lay.c, sh)) {
+    const [lx, ly] = P([0, sh.W / 2]);
+    o.push(`<path d="M${f(lx)} ${f(ly)}H${f(P([sh.L, 0])[0])}" stroke="#d99a00" stroke-width="1.5" stroke-dasharray="7 6" clip-path="url(#bsgride)"/>`);
+  }
+  for (const it of lights) {
+    const [x, y] = P([it.x, it.y]), sel = BS.sel === it.key;
+    o.push(`<g data-key="${it.key}" class="bs-edit-item">${sel ? `<circle cx="${f(x)}" cy="${f(y)}" r="24" fill="#ffb703"/>` : ''}<circle cx="${f(x)}" cy="${f(y)}" r="18" fill="#fff6cf" stroke="#0c1a28" stroke-width="2.2"/>${bsBulb(x, y - 2.5, 1.35)}<circle cx="${f(x)}" cy="${f(y)}" r="28" fill="transparent"/><circle cx="${f(x + 19)}" cy="${f(y - 19)}" r="10" fill="${sel ? '#ffb703' : '#0c1a28'}"/><text x="${f(x + 19)}" y="${f(y - 15)}" text-anchor="middle" font-size="11" font-weight="700" fill="${sel ? '#0c1a28' : '#fff'}">${it.n}</text></g>`);
+  }
   return o.join('');
 }
 function bsEdInfo(lay) {
   const it = lay.items.find((x) => x.key === BS.sel);
-  if (!it) return `<p class="bs-edhint">Tap a door, window, outlet or the switch, then drag it along the wall or onto another wall.</p>`;
+  if (!it) return `<p class="bs-edhint">Tap a door, window, outlet, switch or light, then drag it along the wall or onto another wall. Drag a light across the ceiling.</p>`;
+  if (it.kind === 'light') {
+    const free = bsLightsFree(lay.c, lay.sh), nd = (dx, dy, t) => `<button type="button" class="chipbtn" onclick="bsEdNudge(${dx},${dy})">${t}</button>`;
+    return `<div class="bs-edcard"><div class="bs-edwhat">${bsBal(it.n)}<div><strong>Light</strong><small>Ceiling · <b>${bsWhere(it, lay.sh)}</b>${free ? '' : ' · on the center line'}</small></div></div>
+      <div class="bs-ednudge">${nd(-1, 0, '← 1 ft')}${nd(-1 / 12, 0, '← 1 in')}${nd(1 / 12, 0, '1 in →')}${nd(1, 0, '1 ft →')}${free ? nd(0, -1 / 12, '↑ 1 in') + nd(0, 1 / 12, '↓ 1 in') + nd(0, -1, '↑ 1 ft') + nd(0, 1, '↓ 1 ft') : ''}</div>
+      ${it.moved ? `<button type="button" class="link" onclick="bsEdReset('${it.key}')">Back to standard spot</button>` : '<span class="bs-std">Standard spot</span>'}</div>`;
+  }
   const w = lay.sh.walls[it.wi];
   const nudge = (d, t) => `<button type="button" class="chipbtn" onclick="bsEdNudge(${d})">${t}</button>`;
   return `<div class="bs-edcard"><div class="bs-edwhat">${bsBal(it.n)}<div><strong>${esc(it.name)}</strong><small>${bsTag(w.id)} ${esc(w.name)} · ${it.w ? 'starts' : 'center'} <b>${bsFeet(it.at)}</b> from the ${esc(w.hook.toLowerCase())}</small></div></div>
@@ -691,7 +739,8 @@ function bsEditor(o) {
   return `<div class="bs-editor no-print"><div class="bs-edhead"><div><h3>Floor plan editor</h3><p>Drag items where the customer wants them. They snap to the inch and cannot overlap. The build sheet below follows this plan.</p></div>
       ${moved ? `<button type="button" class="link" onclick="bsEdReset()">Reset all ${moved} moved</button>` : ''}</div>
     <svg id="bs-edsvg" class="bs-edsvg" viewBox="0 0 ${g.VW} ${g.VH.toFixed(0)}" xmlns="http://www.w3.org/2000/svg">${bsEdDraw(lay)}</svg>
-    <div id="bs-edinfo">${bsEdInfo(lay)}</div></div>`;
+    <div id="bs-edinfo">${bsEdInfo(lay)}</div>
+    ${lay.items.some((x) => x.kind === 'light') ? (lay.sh.studio ? '<p class="bs-edfree">Studio: lights can go anywhere on the ceiling.</p>' : `<label class="bs-edfree"><input type="checkbox" ${o.c.sheet?.lightsFree ? 'checked' : ''} onchange="bsEdFree(this.checked)"> Let lights go anywhere, not only on the center line of the building</label>`) : ''}</div>`;
 }
 /* Redraw only the editor while dragging; the sheets below are redrawn when the drag ends. */
 function bsEdRefresh() {
@@ -719,6 +768,10 @@ function bsEdWire() {
     if (!BS.drag) return;
     const { lay, p } = feet(e), it = lay.items.find((x) => x.key === BS.drag.key);
     if (!it) return;
+    if (it.kind === 'light') {
+      if (bsEdLight(it.key, p[0], p[1])) (BS.drag.moved = true), bsEdRefresh();
+      return;
+    }
     /* Nearest wall to the finger; the current wall wins unless another is clearly closer. */
     let pick = null;
     for (const w of lay.sh.walls) {
@@ -739,9 +792,24 @@ function bsEdWire() {
     if (moved) bsRender();
   };
 }
-function bsEdNudge(d) {
+function bsEdLight(key, x, y) {
+  const o = bsOrder(BS.key), sh = bsShape(o.c), q = bsLightSpot(sh, bsLightsFree(o.c, sh), x, y);
+  if (!q) return false;
+  const sheet = (o.c.sheet ||= { pos: {}, ok: null });
+  sheet.pos[key] = { x: q[0], y: q[1] };
+  sheet.ok = null;
+  return true;
+}
+function bsEdFree(on) {
+  const sheet = (bsOrder(BS.key).c.sheet ||= { pos: {}, ok: null });
+  sheet.lightsFree = on;
+  sheet.ok = null;
+  bsRender();
+}
+function bsEdNudge(d, dy = 0) {
   const lay = bsLayout(bsOrder(BS.key).c), it = lay.items.find((x) => x.key === BS.sel);
-  if (it && bsEdPlace(it.key, it.wi, it.at + d)) bsRender();
+  if (!it) return;
+  if (it.kind === 'light' ? bsEdLight(it.key, it.x + d, it.y + dy) : bsEdPlace(it.key, it.wi, it.at + d)) bsRender();
 }
 function bsEdToWall(wi) {
   const lay = bsLayout(bsOrder(BS.key).c), it = lay.items.find((x) => x.key === BS.sel), len = lay.sh.walls[wi].len;
