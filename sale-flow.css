@@ -19,3 +19,20 @@
 .sf-agree { display: flex; gap: 10px; align-items: flex-start; font-weight: 600; margin: 6px 0; }
 .sf-agree input { width: 20px; height: 20px; flex: none; margin-top: 1px; }
 .sf-sigimg { display: block; max-width: 240px; max-height: 70px; margin-top: 6px; }
+/* Desk steps, handoffs, product notes and the stand-in box. */
+.sf-headr { display: inline-flex; gap: 12px; align-items: center; }
+.sf-headr .link { font-size: 13px; }
+.sf-group { margin: 16px 0 2px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sf-group small { text-transform: none; letter-spacing: 0; font-weight: 500; margin-left: 6px; }
+.sf-hook, .sf-only { display: block; margin-top: 5px; font-size: 12px !important; line-height: 1.45; border-radius: 6px; padding: 3px 7px; }
+.sf-hook { background: #eef3f8; color: #3c5368 !important; }
+.sf-only { background: #fff3d6; color: #7a5200 !important; }
+.sf-hook b, .sf-only b { font-weight: 800; margin-right: 4px; }
+.sf-hook code { font-size: 11.5px; background: rgba(12, 26, 40, .07); padding: 0 3px; border-radius: 3px; }
+.sf-phases { margin-top: 8px; max-width: 640px; }
+.sf-phases .chev { font-size: 10px; }
+.sf-standin { margin-top: 16px; border: 2px dashed var(--line-strong); border-radius: 12px; padding: 12px 14px; background: repeating-linear-gradient(135deg, #fafbfc 0 10px, #f3f5f7 10px 20px); }
+.sf-standin > strong { display: block; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+.sf-standin > span { display: block; font-size: 12.5px; color: var(--muted); margin: 2px 0 8px; }
+.sf-standin .actions { margin: 0; flex-wrap: wrap; }
+.sf-standin-note { font-size: 13px; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
