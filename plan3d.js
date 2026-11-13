@@ -71,7 +71,7 @@ function p3Colors(c) {
     door: paints[c.doorColor] || body,
     doorTrim: paints[c.doorTrimColor] || trim,
     roof: c.style === 'Greenhouse' ? '#dfeef2' : c.roof === 'Shingles' ? '#4a4d50' : metalRoofColors[c.roofColor] || metalRoofColors.Charcoal,
-    glass: '#a9d4ea', floor: '#8a7158', deck: '#8f9499', skid: '#cdbf98',
+    glass: '#a9d4ea', floor: '#8a7158', deck: '#7b7b7c', skid: '#cdbf98',
   };
 }
 /* Height of the top of the walls and roof across the width (plan y), measured from the floor. */
@@ -439,20 +439,33 @@ function p3Mesh(c, inside = false, yaw = 0) {
     }
   }
   /* The porches are built without a railing. */
-  /* Decking, as built: grey composite boards running the length of the building, with a border board
-     ("picture frame") along every open edge of the porch. */
+  /* Decking, as built: grey composite boards running the length of the building, wrapped on every open
+     side by a border board ("picture frame") so no board ends show. The border is mitered where two open
+     sides meet, and its edge covers the end grain of the deck down to the painted floor frame. */
   if (sh.deck) {
     const cx = sh.deck.reduce((t, q) => t + q[0], 0) / sh.deck.length, cy = sh.deck.reduce((t, q) => t + q[1], 0) / sh.deck.length;
     const onWall = (q) => sh.walls.some((w) => {
       const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], t = Math.max(0, Math.min(1, ((q[0] - w.a[0]) * dx + (q[1] - w.a[1]) * dy) / (dx * dx + dy * dy)));
       return Math.hypot(q[0] - w.a[0] - t * dx, q[1] - w.a[1] - t * dy) < 0.03;
     });
-    sh.deck.forEach((a, i) => {
-      const b = sh.deck[(i + 1) % sh.deck.length], mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-      if (onWall(mid)) return;
-      const len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = [-(b[1] - a[1]) / len, (b[0] - a[0]) / len], sgn = (cx - mid[0]) * n[0] + (cy - mid[1]) * n[1] > 0 ? 0.46 : -0.46;
-      face([V(a[0], a[1], F + 0.015), V(b[0], b[1], F + 0.015), V(b[0] + n[0] * sgn, b[1] + n[1] * sgn, F + 0.015), V(a[0] + n[0] * sgn, a[1] + n[1] * sgn, F + 0.015)], '#858a8f');
-      const t = Math.sign(sgn) * 0.3, beam = [a, b, [b[0] + n[0] * t, b[1] + n[1] * t], [a[0] + n[0] * t, a[1] + n[1] * t]];
+    const D = sh.deck, N = D.length, open = D.map((q, i) => !onWall([(q[0] + D[(i + 1) % N][0]) / 2, (q[1] + D[(i + 1) % N][1]) / 2]));
+    const frame = '#78797a', bw = 0.46, top = F + 0.02;
+    D.forEach((a, i) => {
+      if (!open[i]) return;
+      const b = D[(i + 1) % N], mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]), d = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+      let n = [-d[1], d[0]];
+      if ((cx - mid[0]) * n[0] + (cy - mid[1]) * n[1] < 0) n = [-n[0], -n[1]];
+      /* Inner corners: mitered (pulled in along the edge) where the next side is open too, square where it meets a wall. */
+      const ia = [a[0] + n[0] * bw + (open[(i + N - 1) % N] ? d[0] * bw : 0), a[1] + n[1] * bw + (open[(i + N - 1) % N] ? d[1] * bw : 0)];
+      const ib = [b[0] + n[0] * bw - (open[(i + 1) % N] ? d[0] * bw : 0), b[1] + n[1] * bw - (open[(i + 1) % N] ? d[1] * bw : 0)];
+      face([V(a[0], a[1], top), V(b[0], b[1], top), V(ib[0], ib[1], top), V(ia[0], ia[1], top)], frame, false);
+      lines.push(...V(ia[0], ia[1], top + 0.002), ...V(ib[0], ib[1], top + 0.002));
+      if (open[(i + N - 1) % N]) lines.push(...V(a[0], a[1], top + 0.002), ...V(ia[0], ia[1], top + 0.002));
+      /* The wrap over the edge of the deck, a little proud of the painted frame below. */
+      const o = 0.015;
+      face([V(a[0] - n[0] * o, a[1] - n[1] * o, F - 0.1), V(b[0] - n[0] * o, b[1] - n[1] * o, F - 0.1), V(b[0] - n[0] * o, b[1] - n[1] * o, top), V(a[0] - n[0] * o, a[1] - n[1] * o, top)], frame);
+      const t = 0.3, beam = [a, b, [b[0] + n[0] * t, b[1] + n[1] * t], [a[0] + n[0] * t, a[1] + n[1] * t]];
       band(beam, F + eave - 0.5, F + eave - 0.02, col.trim);
       flat(beam, F + eave - 0.5, col.trim);
     });
