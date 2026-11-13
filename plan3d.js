@@ -7,7 +7,7 @@
    One hidden WebGL canvas does the drawing and each view on the page is a copy of its picture,
    so any number of views can be shown. Loaded last. */
 
-const P3 = { views: {}, angles: {}, seq: 0, gl: null };
+const P3 = { views: {}, angles: { editor: { yaw: -0.72, pitch: 0.95 } }, inside: { editor: true }, seq: 0, gl: null };
 
 /* ---------- Small vector and matrix helpers (column-major 4x4) ---------- */
 const p3Sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -74,10 +74,12 @@ function p3Colors(c) {
 function p3Profile(c, W) {
   const h = Number(c.wallHeight) || (c.style === 'Low-Wall Barn' ? 5 : c.style === 'Lofted' ? 6 : 7);
   if (c.style === 'Studio') return [[0, h], [W, h + 2]];
-  if (c.style === 'Lofted' || c.style === 'Low-Wall Barn') return [[0, h], [W * 0.2, h + W * 0.28], [W / 2, h + W * 0.4], [W * 0.8, h + W * 0.28], [W, h]];
-  return [[0, h], [W / 2, h + W * 0.19], [W, h]];
+  if (c.style === 'Lofted' || c.style === 'Low-Wall Barn') return [[0, h], [W * 0.2, h + W * 0.205], [W / 2, h + W * 0.29], [W * 0.8, h + W * 0.205], [W, h]];
+  /* 5 in 12 roof pitch, from the engineer drawings. */
+  return [[0, h], [W / 2, h + (W / 2) * (5 / 12)], [W, h]];
 }
-function p3Mesh(c) {
+/* `inside` leaves the roof off and shows the framing: studs, plates, headers, rafters and the electrical. */
+function p3Mesh(c, inside = false, yaw = 0) {
   const lay = bsLayout(c), sh = lay.sh, { L, W } = sh, col = p3Colors(c), F = 0.6;
   const prof = p3Profile(c, W), eave = prof[0][1];
   /* A letter after a color names its surface, so the shader can draw siding, roofing, glass, decking or grass. */
@@ -99,7 +101,9 @@ function p3Mesh(c) {
   const kinds = { b: metal ? 3 : c.siding === 'Lap' ? 2 : 1, r: c.roof === 'Shingles' ? 4 : 3, g: 5, d: 6, G: 7 };
   const V = (x, y, up) => [x, up, y];
   /* A flat, convex face given as 3D points; outlined unless told otherwise. */
+  let hide = false;
   const face = (pts, hex, outline = true, tris = null) => {
+    if (hide) return;
     const n = p3Norm(p3Cross(p3Sub(pts[1], pts[0]), p3Sub(pts[2], pts[0]))), k = p3Hex(hex);
     const order = tris || Array.from({ length: pts.length - 2 }, (_, i) => [0, i + 1, i + 2]).flat();
     for (const i of order) pos.push(...pts[i]), nor.push(...n), rgb.push(...k), mat.push(kinds[hex[7]] || 0);
@@ -133,10 +137,40 @@ function p3Mesh(c) {
     const at = (y) => (Math.abs(by - ay) < 1e-9 ? null : [ax + ((bx - ax) * (y - ay)) / (by - ay), y]);
     const mids = prof.map((p) => p[0]).filter((y) => y > Math.min(ay, by) + 1e-6 && y < Math.max(ay, by) - 1e-6).sort((p, q) => (by > ay ? q - p : p - q));
     top.push(V(bx, by, F + topAt(by)), ...mids.map((y) => V(at(y)[0], y, F + topAt(y))), V(ax, ay, F + topAt(ay)));
+    /* Inside view: a wall that faces the viewer is left as open framing, so the inside is never hidden. */
+    const open = inside && -(bsWallGeo(sh, w).n[0] * Math.sin(yaw) + bsWallGeo(sh, w).n[1] * Math.cos(yaw)) > 0.25;
+    hide = open;
     face([V(ax, ay, F), V(bx, by, F), ...top], col.body);
 
     /* Doors and windows sit just proud of the wall on both faces. */
     const geo = bsWallGeo(sh, w), wallTop = Math.min(topAt(ay), topAt(by));
+    if (inside) {
+      hide = false;
+      const wood = '#d9bc8c';
+      /* A box against the inside of this wall: centered at `t` along it, from `d0` to `d1` off the wall. */
+      const obox = (t, half, d0, d1, lo, hi, hex) => {
+        const p = geo.at(t), cx = p[0] + (geo.n[0] * (d0 + d1)) / 2, cy = p[1] + (geo.n[1] * (d0 + d1)) / 2;
+        const hx = Math.abs(geo.d[0]) * half + (Math.abs(geo.n[0]) * (d1 - d0)) / 2, hy = Math.abs(geo.d[1]) * half + (Math.abs(geo.n[1]) * (d1 - d0)) / 2;
+        box(cx - hx, cy - hy, cx + hx, cy + hy, F + lo, F + hi, hex);
+      };
+      /* The back of the siding, then plates, studs at 16 in on center and a header over each opening. */
+      if (!open) face([V(ax, ay, F), V(bx, by, F), ...top].map((p) => [p[0] + geo.n[0] * 0.02, p[1], p[2] + geo.n[1] * 0.02]), '#b3905f', false);
+      obox(w.len / 2, w.len / 2, 0.02, 0.31, 0, 0.125, wood);
+      obox(w.len / 2, w.len / 2, 0.02, 0.31, wallTop - 0.25, wallTop, wood);
+      for (const s of bsStuds(sh, w, lay.items)) obox(s.x, 0.0625, 0.02, 0.31, 0.125, topAt(geo.at(s.x)[1]) - 0.02, wood);
+      for (const it of lay.items.filter((x) => x.wi === w.i)) {
+        if (it.w && !it.high) {
+          const hi = Math.min(it.kind === 'door' ? (/roll/i.test(it.name) ? 7 : 6.67) : 6.2, wallTop - 0.15) + 0.17;
+          if (wallTop - 0.25 - hi > 0.1) obox(it.at + it.w / 2, it.w / 2 + 0.125, 0.02, 0.31, hi, Math.min(hi + 0.46, wallTop - 0.25), wood);
+        }
+        if (it.kind === 'outlet' || it.kind === 'switch') {
+          /* The box sits on the side of its stud: outlets 18 in off the floor, switches 48 in. */
+          const t = it.at + (it.at + 0.4 < w.len ? 0.16 : -0.16), up = it.kind === 'outlet' ? 1.5 : 4;
+          obox(t, 0.15, 0.03, 0.32, up - 0.24, up + 0.24, it.kind === 'outlet' ? '#2f6fdb' : '#e0a100');
+        }
+      }
+      hide = open;
+    }
     for (const it of lay.items.filter((x) => x.wi === w.i && x.w)) {
       const door = it.kind === 'door', roll = /roll/i.test(it.name);
       let lo = door ? 0 : 3.2, hi = door ? (roll ? 7 : 6.67) : 6.2;
@@ -181,6 +215,7 @@ function p3Mesh(c) {
       }
     }
   }
+  hide = false;
   /* Where an end of the building is open (a porch), close the gable above the eave. */
   for (const x of [0, L]) {
     const covered = sh.walls.filter((w) => Math.abs(w.a[0] - x) < 1e-6 && Math.abs(w.b[0] - x) < 1e-6).reduce((s, w) => s + w.len, 0);
@@ -203,6 +238,7 @@ function p3Mesh(c) {
   }
 
   /* Roof over the whole footprint, porch included, with a small overhang. */
+  hide = inside;
   const ov = 0.6, rp = prof.map((p) => [...p]);
   const stretch = (a, b) => {
     const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -235,6 +271,7 @@ function p3Mesh(c) {
     if (dorm.cut > rp[i - 1][0] + 0.05) slope(dorm.x0, dorm.x1, rp[i - 1], [dorm.cut, topAt(dorm.cut)]);
   }
 
+  hide = false;
   /* Porch posts and a top rail between them. */
   const posts = sh.posts.map(([x, y]) => [Math.min(Math.max(x, 0.2), L - 0.2), Math.min(Math.max(y, 0.2), W - 0.2)]);
   for (const [x, y] of posts) box(x - 0.17, y - 0.17, x + 0.17, y + 0.17, F, F + topAt(y), col.trim);
@@ -258,6 +295,12 @@ function p3Mesh(c) {
     }
   }
 
+  if (inside) {
+    /* Rafters at 24 in on center, drawn as lines so the inside stays in view, and the ceiling lights. */
+    for (let x = 0; x <= L + 0.01; x += 2) for (let i = 1; i < prof.length; i++) lines.push(...V(x, prof[i - 1][0], F + prof[i - 1][1]), ...V(x, prof[i][0], F + prof[i][1]));
+    for (const it of lay.items.filter((x) => x.kind === 'light')) box(it.x - 0.3, it.y - 0.3, it.x + 0.3, it.y + 0.3, F + topAt(it.y) - 0.3, F + topAt(it.y) - 0.12, '#ffe08a');
+  }
+  hide = inside;
   /* Dormer on the right roof slope, centered over the dormer doors. */
   if (dorm) {
     const { len, x0, x1, back } = dorm, xm = (x0 + x1) / 2;
@@ -374,10 +417,11 @@ function p3Gl() {
 function p3Draw(el) {
   const view = P3.views[el.id], G = p3Gl();
   if (!view || !G) return;
-  const key = JSON.stringify(view.c);
+  const turn = P3.inside[view.slot] ? Math.round(((P3.angles[view.slot] ||= { yaw: -0.72, pitch: 0.4 }).yaw * 12) / Math.PI) : 0;
+  const key = JSON.stringify(view.c) + !!P3.inside[view.slot] + turn;
   if (view.key !== key) {
     try {
-      view.mesh = p3Mesh(view.c);
+      view.mesh = p3Mesh(view.c, !!P3.inside[view.slot], (turn * Math.PI) / 12);
     } catch (e) {
       view.mesh = null;
     }
@@ -389,7 +433,7 @@ function p3Draw(el) {
   ctx.clearRect(0, 0, w, h);
   if (!m) return;
   const ang = (P3.angles[view.slot] ||= { yaw: -0.72, pitch: 0.4 });
-  const dist = (m.radius / Math.sin((14 * Math.PI) / 180)) * Math.max(1, h / w) * (w / h > 2 ? 0.7 : w / h > 1.5 ? 0.82 : 0.98);
+  const dist = (m.radius / Math.sin((14 * Math.PI) / 180)) * Math.max(1, h / w) * (w / h > 2 ? 0.7 : w / h > 1.5 ? 0.82 : 0.98) * (P3.inside[view.slot] ? 1.25 : 1);
   const eye = [m.center[0] + dist * Math.cos(ang.pitch) * Math.sin(ang.yaw), m.center[1] + dist * Math.sin(ang.pitch), m.center[2] + dist * Math.cos(ang.pitch) * Math.cos(ang.yaw)];
   const M = p3Camera(eye, m.center, w / h), light = p3Norm([Math.sin(ang.yaw - 0.95) * 0.66, 0.75, Math.cos(ang.yaw - 0.95) * 0.66]), sun = p3Sun(m.center, m.radius, light), { gl, canvas, prog, depth, fbo, tex, buf } = G;
   if (canvas.width !== w || canvas.height !== h) (canvas.width = w), (canvas.height = h);
@@ -484,7 +528,7 @@ function p3Paint(force = false) {
     const view = P3.views[el.id];
     if (!view) continue;
     live.add(el.id);
-    const stamp = JSON.stringify(view.c) + el.clientWidth + 'x' + el.clientHeight;
+    const stamp = JSON.stringify(view.c) + !!P3.inside[view.slot] + el.clientWidth + 'x' + el.clientHeight;
     if (!force && view.stamp === stamp) continue;
     view.stamp = stamp;
     if (!view.wired) {
@@ -514,6 +558,13 @@ function p3dMarkup(c, slot = 'stage') {
   P3.views[id] = { c, slot };
   return `<canvas class="p3d" id="${id}" aria-label="3D view of the building, drawn from the floor plan"></canvas>`;
 }
+/* Switch a view between the outside and the framed inside (roof off, looking down in). */
+function p3Inside(slot) {
+  P3.inside[slot] = !P3.inside[slot];
+  const a = (P3.angles[slot] ||= { yaw: -0.72, pitch: 0.4 });
+  a.pitch = P3.inside[slot] ? Math.max(a.pitch, 0.95) : Math.min(a.pitch, 0.4);
+  p3Paint(true);
+}
 function p3Top(slot) {
   const a = (P3.angles[slot] ||= { yaw: -0.72, pitch: 0.4 });
   a.pitch = a.pitch > 1.2 ? 0.4 : 1.45;
@@ -527,12 +578,12 @@ setInterval(() => document.querySelector('canvas.p3d') && p3Paint(), 400);
   const oldModel = modelMarkup;
   modelMarkup = function (c, small = false, interactive = !small) {
     if (small || !interactive || !c || !c.size || !p3Gl()) return oldModel(c, small, interactive);
-    return `<div class="reference-model p3d-box">${p3dMarkup(c, 'stage')}<div class="p3d-bar"><span>Drawn from the floor plan · drag to turn</span><button type="button" class="chipbtn" onclick="p3Top('stage')">Top / angle</button></div></div>`;
+    return `<div class="reference-model p3d-box">${p3dMarkup(c, 'stage')}<div class="p3d-bar"><span>Drawn from the floor plan · drag to turn</span><button type="button" class="chipbtn" onclick="p3Inside('stage')">Inside / outside</button><button type="button" class="chipbtn" onclick="p3Top('stage')">Top / angle</button></div></div>`;
   };
   /* In the floor plan editor the 3D view sits under the plan and follows every move. */
   const oldEditor = bsEditor;
   bsEditor = function (o) {
-    return oldEditor(o).replace(/<\/div>\s*$/, `<div class="p3d-ed"><div class="p3d-edhead"><strong>3D view</strong><span>Follows the floor plan as you move things</span><button type="button" class="chipbtn" onclick="p3Top('editor')">Top / angle</button></div>${p3dMarkup(o.c, 'editor')}</div></div>`);
+    return oldEditor(o).replace(/<\/div>\s*$/, `<div class="p3d-ed"><div class="p3d-edhead"><strong>3D view</strong><span>Inside view: studs at 16 in on center, electrical on the studs</span><button type="button" class="chipbtn" onclick="p3Inside('editor')">Inside / outside</button><button type="button" class="chipbtn" onclick="p3Top('editor')">Top / angle</button></div>${p3dMarkup(o.c, 'editor')}</div></div>`);
   };
   const oldRefresh = bsEdRefresh;
   bsEdRefresh = function () {
