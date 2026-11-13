@@ -2,7 +2,8 @@
    sheet (buildsheet.js). Nothing is loaded from a model file: walls, roof, porch, doors and
    windows are built from the order, so moving an item on the 2D plan moves it here too.
 
-   Built for usefulness, not looks: flat colors, dark outlines, drag to turn.
+   Drawn to look like the real thing: sunlight and shadows, siding, roofing, glass and grass
+   are all painted by the shader. Drag to turn.
    One hidden WebGL canvas does the drawing and each view on the page is a copy of its picture,
    so any number of views can be shown. Loaded last. */
 
@@ -23,7 +24,7 @@ function p3Mul(a, b) {
 function p3Camera(eye, center, aspect) {
   const f = p3Norm(p3Sub(center, eye)), s = p3Norm(p3Cross(f, [0, 1, 0])), u = p3Cross(s, f);
   const view = [s[0], u[0], -f[0], 0, s[1], u[1], -f[1], 0, s[2], u[2], -f[2], 0, -(s[0] * eye[0] + s[1] * eye[1] + s[2] * eye[2]), -(u[0] * eye[0] + u[1] * eye[1] + u[2] * eye[2]), f[0] * eye[0] + f[1] * eye[1] + f[2] * eye[2], 1];
-  const t = 1 / Math.tan((28 * Math.PI) / 360), near = 1, far = 600;
+  const t = 1 / Math.tan((28 * Math.PI) / 360), near = 5, far = 2600;
   const proj = [t / aspect, 0, 0, 0, 0, t, 0, 0, 0, 0, (far + near) / (near - far), -1, 0, 0, (2 * far * near) / (near - far), 0];
   return p3Mul(proj, view);
 }
@@ -79,25 +80,30 @@ function p3Profile(c, W) {
 function p3Mesh(c) {
   const lay = bsLayout(c), sh = lay.sh, { L, W } = sh, col = p3Colors(c), F = 0.6;
   const prof = p3Profile(c, W), eave = prof[0][1];
+  /* A letter after a color names its surface, so the shader can draw siding, roofing, glass, decking or grass. */
+  {
+    const same = col.door === col.body;
+    col.body += 'b';
+    if (same) col.door = col.body;
+    col.roof += 'r';
+    col.glass += 'g';
+    col.deck += 'd';
+  }
   const topAt = (y) => {
     for (let i = 1; i < prof.length; i++) if (y <= prof[i][0] + 1e-9) return prof[i - 1][1] + ((prof[i][1] - prof[i - 1][1]) * (y - prof[i - 1][0])) / (prof[i][0] - prof[i - 1][0]);
     return prof[prof.length - 1][1];
   };
-  const pos = [], nor = [], rgb = [], lines = [], soft = [], softC = [];
-  /* A faint line in a darker shade of the surface it lies on: siding grooves, roof ribs, slats. */
-  const groove = (p, q, hex) => {
-    const k = p3Hex(hex);
-    soft.push(...p, ...q);
-    softC.push(...k, ...k);
-  };
+  const pos = [], nor = [], rgb = [], mat = [], lines = [], edges = [];
   const metal = c.style === 'Silver Bullet' || c.siding === 'Metal';
+  /* Surface kinds: 0 paint, 1 grooved wood siding, 2 lap siding, 3 ribbed metal, 4 shingles, 5 glass, 6 deck boards, 7 grass. */
+  const kinds = { b: metal ? 3 : c.siding === 'Lap' ? 2 : 1, r: c.roof === 'Shingles' ? 4 : 3, g: 5, d: 6, G: 7 };
   const V = (x, y, up) => [x, up, y];
   /* A flat, convex face given as 3D points; outlined unless told otherwise. */
   const face = (pts, hex, outline = true, tris = null) => {
     const n = p3Norm(p3Cross(p3Sub(pts[1], pts[0]), p3Sub(pts[2], pts[0]))), k = p3Hex(hex);
     const order = tris || Array.from({ length: pts.length - 2 }, (_, i) => [0, i + 1, i + 2]).flat();
-    for (const i of order) pos.push(...pts[i]), nor.push(...n), rgb.push(...k);
-    if (outline) pts.forEach((p, i) => lines.push(...p, ...pts[(i + 1) % pts.length]));
+    for (const i of order) pos.push(...pts[i]), nor.push(...n), rgb.push(...k), mat.push(kinds[hex[7]] || 0);
+    if (outline) pts.forEach((p, i) => edges.push(...p, ...pts[(i + 1) % pts.length]));
   };
   const flat = (poly, up, hex) => face(poly.map(([x, y]) => V(x, y, up)), hex, true, p3Ears(poly));
   const band = (poly, lo, hi, hex) => poly.forEach((a, i) => {
@@ -108,9 +114,11 @@ function p3Mesh(c) {
     const q = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
     band(q, lo, hi, hex);
     flat(q, hi, hex);
-    q.forEach((a) => lines.push(...V(a[0], a[1], lo), ...V(a[0], a[1], hi)));
+    q.forEach((a) => edges.push(...V(a[0], a[1], lo), ...V(a[0], a[1], hi)));
   };
 
+  /* The ground the building sits on. */
+  face([V(-1200, -1200, 0), V(-1200, 1200, 0), V(1200, 1200, 0), V(1200, -1200, 0)], '#6e8f4bG', false);
   /* Floor, porch deck and the frame they sit on. */
   flat(sh.poly, F, col.floor);
   band(sh.poly, 0, F, col.skid);
@@ -126,17 +134,6 @@ function p3Mesh(c) {
     const mids = prof.map((p) => p[0]).filter((y) => y > Math.min(ay, by) + 1e-6 && y < Math.max(ay, by) - 1e-6).sort((p, q) => (by > ay ? q - p : p - q));
     top.push(V(bx, by, F + topAt(by)), ...mids.map((y) => V(at(y)[0], y, F + topAt(y))), V(ax, ay, F + topAt(ay)));
     face([V(ax, ay, F), V(bx, by, F), ...top], col.body);
-    /* Siding: vertical grooves, or horizontal boards for lap siding. */
-    const along = (t) => [ax + ((bx - ax) * t) / w.len, ay + ((by - ay) * t) / w.len];
-    if (c.siding === 'Lap') {
-      for (let up = 0.5; up < Math.max(topAt(ay), topAt(by), ...mids.map(topAt)); up += 0.5) {
-        const ok = Array.from({ length: 41 }, (_, i) => (w.len * i) / 40).filter((t) => topAt(along(t)[1]) >= up);
-        if (ok.length > 1) groove(V(...along(ok[0]), F + up), V(...along(ok[ok.length - 1]), F + up), col.body);
-      }
-    } else {
-      const step = metal ? 0.75 : 0.667;
-      for (let t = step; t < w.len - 0.05; t += step) groove(V(...along(t), F), V(...along(t), F + topAt(along(t)[1])), col.body);
-    }
 
     /* Doors and windows sit just proud of the wall on both faces. */
     const geo = bsWallGeo(sh, w), wallTop = Math.min(topAt(ay), topAt(by));
@@ -216,14 +213,6 @@ function p3Mesh(c) {
   /* Trim boards along the eaves and up the gable edges of the roof. */
   for (const e of [rp[0], rp[rp.length - 1]]) face([V(-ov, e[0], F + e[1] + 0.08), V(L + ov, e[0], F + e[1] + 0.08), V(L + ov, e[0], F + e[1] - 0.3), V(-ov, e[0], F + e[1] - 0.3)], col.trim);
   for (const x of [-ov, L + ov]) for (let i = 1; i < rp.length; i++) face([V(x, rp[i - 1][0], F + rp[i - 1][1] + 0.08), V(x, rp[i][0], F + rp[i][1] + 0.08), V(x, rp[i][0], F + rp[i][1] - 0.3), V(x, rp[i - 1][0], F + rp[i - 1][1] - 0.3)], col.trim);
-  /* Roof lines: ribs running down a metal roof, courses running along a shingle roof. */
-  for (let i = 1; i < rp.length; i++) {
-    const a = rp[i - 1], b = rp[i], up = 0.1;
-    if (c.roof === 'Shingles') {
-      const n = Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1])));
-      for (let k = 1; k < n; k++) groove(V(-ov, a[0] + ((b[0] - a[0]) * k) / n, F + a[1] + ((b[1] - a[1]) * k) / n + up), V(L + ov, a[0] + ((b[0] - a[0]) * k) / n, F + a[1] + ((b[1] - a[1]) * k) / n + up), col.roof);
-    } else for (let x = 0; x <= L + 0.01; x += 1) groove(V(x, a[0], F + a[1] + up), V(x, b[0], F + b[1] + up), col.roof);
-  }
   /* A dormer opens the right-hand roof slope: the main roof stops where the dormer begins. */
   let dorm = null;
   if (sh.pkg === 'Dormer Package') {
@@ -262,7 +251,7 @@ function p3Mesh(c) {
       const runs = e === longest && len > 7 ? [[0, len / 2 - 2], [len / 2 + 2, len]] : [[0, len]];
       for (const [s0, s1] of runs) {
         for (const [y0, y1] of [[0.3, 0.45], [2.85, 3]]) face([V(...at(s0), F + y0), V(...at(s1), F + y0), V(...at(s1), F + y1), V(...at(s0), F + y1)], col.trim);
-        for (let t = s0 + 0.4; t < s1 - 0.1; t += 0.4) lines.push(...V(...at(t), F + 0.45), ...V(...at(t), F + 2.85));
+        for (let t = s0 + 0.4; t < s1 - 0.1; t += 0.4) face([V(...at(t - 0.05), F + 0.45), V(...at(t + 0.05), F + 0.45), V(...at(t + 0.05), F + 2.85), V(...at(t - 0.05), F + 2.85)], col.trim, false);
         if (s0 > 0) box(at(s0)[0] - 0.12, at(s0)[1] - 0.12, at(s0)[0] + 0.12, at(s0)[1] + 0.12, F, F + 3.1, col.trim);
         if (s1 < len) box(at(s1)[0] - 0.12, at(s1)[1] - 0.12, at(s1)[0] + 0.12, at(s1)[1] + 0.12, F, F + 3.1, col.trim);
       }
@@ -294,29 +283,92 @@ function p3Mesh(c) {
 
   const high = Math.max(...prof.map((p) => p[1])) + F;
   return {
-    pos: new Float32Array(pos), nor: new Float32Array(nor), rgb: new Float32Array(rgb), lines: new Float32Array(lines), soft: new Float32Array(soft), softC: new Float32Array(softC),
+    pos: new Float32Array(pos), nor: new Float32Array(nor), rgb: new Float32Array(rgb), mat: new Float32Array(mat), lines: new Float32Array(lines), edges: new Float32Array(edges),
     center: [L / 2, high * 0.45, W / 2], radius: 0.5 * Math.hypot(L + 2, W + 2, high),
     labels: [[sh.sides.left, [-2.2, 0, W / 2]], [sh.sides.right, [L + 2.2, 0, W / 2]], [sh.sides.top, [L / 2, 0, -2.2]], [sh.sides.bottom, [L / 2, 0, W + 2.2]]],
   };
 }
 
 /* ---------- Drawing ---------- */
+/* The sun stays off to the viewer's left as the building turns, like lights around a turntable, so the
+   sides in view are lit and the shadow falls where it can be seen. Shadows come from a depth picture
+   taken from the sun. */
+function p3Sun(center, r, P3_SUN) {
+  const eye = [center[0] + P3_SUN[0] * r * 2, center[1] + P3_SUN[1] * r * 2, center[2] + P3_SUN[2] * r * 2];
+  const f = p3Norm(p3Sub(center, eye)), s = p3Norm(p3Cross(f, [0, 1, 0])), u = p3Cross(s, f), near = 0.1, far = r * 4, k = 1 / (r * 1.2);
+  const view = [s[0], u[0], -f[0], 0, s[1], u[1], -f[1], 0, s[2], u[2], -f[2], 0, -(s[0] * eye[0] + s[1] * eye[1] + s[2] * eye[2]), -(u[0] * eye[0] + u[1] * eye[1] + u[2] * eye[2]), f[0] * eye[0] + f[1] * eye[1] + f[2] * eye[2], 1];
+  return p3Mul([k, 0, 0, 0, 0, k, 0, 0, 0, 0, -2 / (far - near), 0, 0, 0, -(far + near) / (far - near), 1], view);
+}
+const P3_VS = 'attribute vec3 aP;attribute vec3 aN;attribute vec3 aC;attribute float aM;uniform mat4 uM;uniform mat4 uL;varying vec3 vP;varying vec3 vN;varying vec3 vC;varying float vM;varying vec4 vS;void main(){vP=aP;vN=aN;vC=aC;vM=aM;vS=uL*vec4(aP,1.0);gl_Position=uM*vec4(aP,1.0);}';
+const P3_FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec3 vP;varying vec3 vN;varying vec3 vC;varying float vM;varying vec4 vS;
+uniform sampler2D uSh;uniform vec3 uEye;uniform vec3 uSun;uniform vec3 uFog;uniform float uLine;uniform float uAlpha;uniform float uFar;uniform float uPx;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y);}
+float depthAt(vec2 q){return dot(texture2D(uSh,q),vec4(1.0,1.0/255.0,1.0/65025.0,1.0/16581375.0));}
+float shade(float ndl){
+  vec3 s=vS.xyz/vS.w*0.5+0.5;
+  if(s.x<0.0||s.x>1.0||s.y<0.0||s.y>1.0||s.z>1.0)return 1.0;
+  float bias=mix(0.0035,0.0012,ndl),lit=0.0;
+  for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)lit+=s.z-bias>depthAt(s.xy+vec2(float(x),float(y))*1.4/2048.0)?0.0:1.0;
+  return lit/9.0;
+}
+void main(){
+  if(uLine>0.5){gl_FragColor=vec4(vec3(0.05,0.07,0.10)*uAlpha,uAlpha);return;}
+  vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;
+  vec3 t=abs(n.y)>0.99?vec3(1.0,0.0,0.0):normalize(cross(vec3(0.0,1.0,0.0),n));vec3 b=cross(n,t);
+  float u=dot(vP,t),v=dot(vP,b),spec=0.0;
+  vec3 view=normalize(uEye-vP),c=vC;
+  if(vM<0.5){c*=0.96+0.07*noise(vec2(u,v)*5.0);}
+  else if(vM<1.5){float f=abs(fract(u/0.6667)-0.5),wf=max(0.035,uPx*2.0);c*=1.0-0.5*pow(0.035/wf,0.7)*(1.0-smoothstep(wf*0.35,wf,f));c*=0.95+0.07*noise(vec2(u*7.0,v*0.9));c*=0.95+0.08*noise(vec2(u,v)*0.8);}
+  else if(vM<2.5){float f=fract(v/0.5);c*=1.0-0.42*smoothstep(0.84,1.0,f);c*=0.95+0.07*f;c*=0.95+0.08*noise(vec2(u*0.9,v*6.0));}
+  else if(vM<3.5){float f=fract(u/0.75);c*=1.0+0.2*(smoothstep(0.0,0.04,f)-smoothstep(0.04,0.08,f))-0.28*(smoothstep(0.08,0.11,f)-smoothstep(0.11,0.17,f));float g=fract(u/0.25);c*=1.0-0.07*(smoothstep(0.0,0.03,g)-smoothstep(0.03,0.07,g));spec=0.3;}
+  else if(vM<4.5){float row=floor(v/0.42),fr=fract(v/0.42);float uu=u+mod(row,2.0)*0.5+hash(vec2(row,3.0))*0.3;c*=0.78+0.36*hash(vec2(floor(uu),row));c*=0.84+0.28*noise(vec2(u,v)*26.0);c*=1.0-0.5*smoothstep(0.82,1.0,fr);c*=1.0-0.3*(1.0-smoothstep(0.0,0.04,fract(uu)));}
+  else if(vM<5.5){vec3 r=reflect(-view,n);c=mix(vec3(0.17,0.23,0.29),vec3(0.62,0.79,0.94),smoothstep(-0.7,0.6,r.y));c=mix(c,vec3(0.88,0.94,1.0),0.6*pow(1.0-max(dot(view,n),0.0),3.0));c*=0.88+0.2*noise(vec2(u,v)*0.9);spec=0.9;}
+  else if(vM<6.5){float f=fract(v/0.46);c*=1.0-0.55*(1.0-smoothstep(0.0,0.05,f));c*=0.8+0.3*hash(vec2(floor(v/0.46),1.0));c*=0.9+0.16*noise(vec2(u*1.2,v*9.0));}
+  else{c*=0.78+0.4*(noise(vP.xz*0.25)*0.3+noise(vP.xz*1.7)*0.25+noise(vP.xz*9.0)*0.2+noise(vP.xz*38.0)*0.25);}
+  float ndl=max(dot(n,uSun),0.0),lit=ndl>0.0?shade(ndl):0.0;
+  vec3 col=c*(mix(vec3(0.33,0.31,0.29),vec3(0.50,0.55,0.62),n.y*0.5+0.5)+vec3(1.0,0.96,0.88)*0.62*ndl*lit);
+  if(spec>0.0)col+=vec3(spec)*pow(max(dot(n,normalize(uSun+view)),0.0),70.0)*lit;
+  if(vM>6.5)col=mix(col,uFog,smoothstep(uFar*1.3,uFar*6.0,length(vP-uEye)));
+  gl_FragColor=vec4(col,1.0);
+}`;
 function p3Gl() {
   if (P3.gl) return P3.gl;
   const canvas = document.createElement('canvas'), gl = canvas.getContext('webgl', { antialias: true, preserveDrawingBuffer: true, alpha: true });
   if (!gl) return null;
-  const shader = (type, src) => {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    return s;
+  const program = (vs, fs) => {
+    const prog = gl.createProgram();
+    for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      gl.attachShader(prog, s);
+    }
+    ['aP', 'aN', 'aC', 'aM'].forEach((name, i) => gl.bindAttribLocation(prog, i, name));
+    gl.linkProgram(prog);
+    return gl.getProgramParameter(prog, gl.LINK_STATUS) ? prog : null;
   };
-  const prog = gl.createProgram();
-  gl.attachShader(prog, shader(gl.VERTEX_SHADER, 'attribute vec3 aP;attribute vec3 aN;attribute vec3 aC;uniform mat4 uM;varying vec3 vN;varying vec3 vC;void main(){vN=aN;vC=aC;gl_Position=uM*vec4(aP,1.0);}'));
-  gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, 'precision mediump float;varying vec3 vN;varying vec3 vC;uniform float uLine;void main(){vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;float d=max(dot(n,normalize(vec3(-0.45,0.8,0.4))),0.0);vec3 c=vC*(0.62+0.38*d);gl_FragColor=vec4(mix(c,vec3(0.07,0.10,0.14),uLine),1.0);}'));
-  gl.linkProgram(prog);
-  gl.useProgram(prog);
-  P3.gl = { gl, canvas, prog, buf: { p: gl.createBuffer(), n: gl.createBuffer(), c: gl.createBuffer(), l: gl.createBuffer(), s: gl.createBuffer(), sc: gl.createBuffer() } };
+  const prog = program(P3_VS, P3_FS);
+  /* The sun's depth picture, with depth packed into the four color channels. */
+  const depth = program('attribute vec3 aP;uniform mat4 uL;varying float vD;void main(){gl_Position=uL*vec4(aP,1.0);vD=gl_Position.z*0.5+0.5;}', 'precision highp float;varying float vD;void main(){vec4 e=fract(vD*vec4(1.0,255.0,65025.0,16581375.0));e-=e.yzww*vec4(1.0/255.0,1.0/255.0,1.0/255.0,0.0);gl_FragColor=e;}');
+  if (!prog || !depth) return null;
+  const tex = gl.createTexture(), fbo = gl.createFramebuffer(), rb = gl.createRenderbuffer();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 2048, 2048, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, 2048, 2048);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  P3.gl = { gl, canvas, prog, depth, fbo, tex, buf: { p: gl.createBuffer(), n: gl.createBuffer(), c: gl.createBuffer(), m: gl.createBuffer(), l: gl.createBuffer() } };
   return P3.gl;
 }
 function p3Draw(el) {
@@ -339,49 +391,82 @@ function p3Draw(el) {
   const ang = (P3.angles[view.slot] ||= { yaw: -0.72, pitch: 0.4 });
   const dist = (m.radius / Math.sin((14 * Math.PI) / 180)) * Math.max(1, h / w) * (w / h > 2 ? 0.7 : w / h > 1.5 ? 0.82 : 0.98);
   const eye = [m.center[0] + dist * Math.cos(ang.pitch) * Math.sin(ang.yaw), m.center[1] + dist * Math.sin(ang.pitch), m.center[2] + dist * Math.cos(ang.pitch) * Math.cos(ang.yaw)];
-  const M = p3Camera(eye, m.center, w / h), { gl, canvas, prog, buf } = G;
+  const M = p3Camera(eye, m.center, w / h), light = p3Norm([Math.sin(ang.yaw - 0.95) * 0.66, 0.75, Math.cos(ang.yaw - 0.95) * 0.66]), sun = p3Sun(m.center, m.radius, light), { gl, canvas, prog, depth, fbo, tex, buf } = G;
   if (canvas.width !== w || canvas.height !== h) (canvas.width = w), (canvas.height = h);
+  const feed = (i, buffer, data, size = 3) => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(i);
+    gl.vertexAttribPointer(i, size, gl.FLOAT, false, 0, 0);
+  };
+  gl.enable(gl.DEPTH_TEST);
+  gl.disable(gl.BLEND);
+  for (const i of [1, 2, 3]) gl.disableVertexAttribArray(i);
+  feed(0, buf.p, m.pos);
+
+  /* 1. What the sun sees: anything farther than this is in shadow. */
+  gl.useProgram(depth);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.viewport(0, 0, 2048, 2048);
+  gl.clearColor(1, 1, 1, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.uniformMatrix4fv(gl.getUniformLocation(depth, 'uL'), false, new Float32Array(sun));
+  gl.drawArrays(gl.TRIANGLES, 0, m.pos.length / 3);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+  /* 2. The picture itself. */
+  const fog = [0.86, 0.91, 0.95], U = (name) => gl.getUniformLocation(prog, name);
+  gl.useProgram(prog);
   gl.viewport(0, 0, w, h);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.enable(gl.DEPTH_TEST);
-  gl.uniformMatrix4fv(gl.getUniformLocation(prog, 'uM'), false, new Float32Array(M));
-  const bind = (name, buffer, data) => {
-    const loc = gl.getAttribLocation(prog, name);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
-    return loc;
-  };
-  bind('aP', buf.p, m.pos);
-  const nLoc = bind('aN', buf.n, m.nor), cLoc = bind('aC', buf.c, m.rgb);
+  gl.uniformMatrix4fv(U('uM'), false, new Float32Array(M));
+  gl.uniformMatrix4fv(U('uL'), false, new Float32Array(sun));
+  gl.uniform3fv(U('uEye'), eye);
+  gl.uniform3fv(U('uSun'), light);
+  gl.uniform3fv(U('uFog'), fog);
+  gl.uniform1f(U('uFar'), dist);
+  gl.uniform1f(U('uPx'), (dist * 0.75) / h);
+  gl.uniform1f(U('uLine'), 0);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.uniform1i(U('uSh'), 0);
+  feed(1, buf.n, m.nor);
+  feed(2, buf.c, m.rgb);
+  feed(3, buf.m, m.mat, 1);
   gl.enable(gl.POLYGON_OFFSET_FILL);
   gl.polygonOffset(1, 1);
-  gl.uniform1f(gl.getUniformLocation(prog, 'uLine'), 0);
   gl.drawArrays(gl.TRIANGLES, 0, m.pos.length / 3);
   gl.disable(gl.POLYGON_OFFSET_FILL);
-  /* Faint lines first (grooves, ribs), then the dark outlines. */
-  gl.disableVertexAttribArray(nLoc);
-  gl.vertexAttrib3f(nLoc, 0, -1, 0);
-  if (m.soft.length) {
-    bind('aP', buf.s, m.soft);
-    bind('aC', buf.sc, m.softC);
-    gl.uniform1f(gl.getUniformLocation(prog, 'uLine'), 0.3);
-    gl.drawArrays(gl.LINES, 0, m.soft.length / 3);
+
+  /* 3. Thin lines: a hint of an edge on every face, and stronger ones for bars, slats and seams. */
+  for (const i of [1, 2, 3]) gl.disableVertexAttribArray(i);
+  gl.vertexAttrib3f(1, 0, 1, 0);
+  gl.enable(gl.BLEND);
+  gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.uniform1f(U('uLine'), 1);
+  for (const [data, alpha] of [[m.edges, 0.16], [m.lines, 0.6]]) {
+    if (!data.length) continue;
+    feed(0, buf.l, data);
+    gl.uniform1f(U('uAlpha'), alpha);
+    gl.drawArrays(gl.LINES, 0, data.length / 3);
   }
-  bind('aP', buf.l, m.lines);
-  gl.disableVertexAttribArray(nLoc);
-  gl.disableVertexAttribArray(cLoc);
-  gl.vertexAttrib3f(nLoc, 0, 1, 0);
-  gl.vertexAttrib3f(cLoc, 0, 0, 0);
-  gl.uniform1f(gl.getUniformLocation(prog, 'uLine'), 1);
-  gl.drawArrays(gl.LINES, 0, m.lines.length / 3);
+  gl.disable(gl.BLEND);
+
+  /* Sky behind, then the picture. */
+  const sky = ctx.createLinearGradient(0, 0, 0, h);
+  sky.addColorStop(0, '#9cc4ea');
+  sky.addColorStop(0.5, '#dbe8f2');
+  sky.addColorStop(1, '#dbe8f2');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, w, h);
   ctx.drawImage(canvas, 0, 0);
   /* Side names on the ground, so front and back are never in doubt. */
   ctx.font = `700 ${Math.round(11 * dpr)}px Inter, Arial, sans-serif`;
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#566879';
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(10, 25, 15, 0.75)';
+  ctx.shadowBlur = 4 * dpr;
   /* Only the two sides facing the viewer are named; the far ones would print over the building. */
   const near = [...m.labels].sort((a, b) => Math.hypot(...p3Sub(a[1], eye)) - Math.hypot(...p3Sub(b[1], eye))).slice(0, 2);
   for (const [text, p] of near) {
@@ -390,6 +475,7 @@ function p3Draw(el) {
     const x = ((M[0] * p[0] + M[4] * p[1] + M[8] * p[2] + M[12]) / cw) * 0.5 + 0.5, y = 0.5 - ((M[1] * p[0] + M[5] * p[1] + M[9] * p[2] + M[13]) / cw) * 0.5;
     ctx.fillText(text, Math.min(Math.max(x * w, 40 * dpr), w - 40 * dpr), Math.min(Math.max(y * h, 14 * dpr), h - 6 * dpr));
   }
+  ctx.shadowBlur = 0;
 }
 /* Draw every view on the page that is new, resized or whose order changed. */
 function p3Paint(force = false) {
