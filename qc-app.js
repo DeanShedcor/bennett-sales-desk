@@ -379,7 +379,7 @@ function floorCard(b) {
     : st === "In rework" ? [ready ? "Re-inspect" : "Open rework", ready ? "primary" : "secondary"]
     : st === "Needs sign-off" ? ["Open for sign-off", "primary"]
     : ["Open", "secondary"];
-  const days = b.stage === LAST ? "" : b.days_in_stage < 1 ? "Out of the plant today" : `Out of the plant ${plural(b.days_in_stage, "day")}`;
+  const days = b.stage === LAST ? "" : b.days_in_stage < 1 ? "Ready for QC today" : `Ready for QC ${plural(b.days_in_stage, "day")}`;
   return `<article class="card qc-card">
     <div class="qc-cardtop">${thumb(b)}<div class="grow">${statusPill(b)}<h3>${esc(b.serial)}</h3><p><strong>${esc(b.size)} ${esc(b.style)}</strong><br><small>${esc(b.dealer)}${b.customer ? ` · for ${esc(b.customer)}` : ""}</small></p></div></div>
     ${qcTrack(b)}
