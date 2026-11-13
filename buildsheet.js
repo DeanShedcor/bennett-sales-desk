@@ -181,12 +181,11 @@ function bsLayout(c) {
 
   const spare = [...r.outlets];
   if (sh.pkg === 'Dormer Package') {
-    /* Dormer doors sit on the long side, with the two package windows either side. */
-    if (wins[0]) put[2].push(wins[0]);
-    put[2].push(doors[0]);
-    if (wins[1]) put[2].push(wins[1]);
-    wins.slice(2).forEach((w, i) => put[[0, 3][i % 2]].push(w));
-    sh.flags.push('Dormer doors and windows are drawn on the right side. Confirm the side.');
+    /* As in the configurator: the transom doors are on the front end, the dormer is on the
+       right-hand roof, and the package windows go one under the dormer and one opposite. */
+    put[r.entry].push(doors[0]);
+    wins.forEach((w, i) => put[[2, 0][i % 2]].push(w));
+    sh.flags.push('The dormer is drawn on the right-hand roof. Confirm the side.');
   } else {
     put[r.entry].push({ ...doors[0], ...(r.entryOpt || {}) });
     if (sh.pkg === 'Garage Package' && doors[1]) put[2].push({ ...doors[1], frac: 0.2 });
