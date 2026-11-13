@@ -272,7 +272,17 @@ function bsLayout(c) {
   }
   /* Outlets and switches mount on a stud: a standard spot goes to the next free stud along the wall,
      and one the sales manager moved goes to the free stud nearest where it was dropped. */
-  const taken = {};
+  const taken = {}, hung = [];
+  /* Lights hang from a truss. Trusses are 24 in on center along the length (engineer drawings), so a
+     light goes to the closest one that is clear. */
+  for (const it of items) {
+    if (it.kind !== 'light') continue;
+    const free = bsLightsFree(c, sh), xs = [];
+    for (let x = 2; x <= sh.L - 2 + 1e-9; x += 2) if (bsLightSpot(sh, free, x, it.y) && !hung.some((h) => h[0] === x && Math.abs(h[1] - it.y) < 1)) xs.push(x);
+    if (!xs.length) continue;
+    it.x = it.at = xs.reduce((m, x) => (Math.abs(x - it.x) < Math.abs(m - it.x) ? x : m));
+    hung.push([it.x, it.y]);
+  }
   for (const it of items) {
     if (it.kind !== 'outlet' && it.kind !== 'switch') continue;
     const studs = bsStuds(sh, sh.walls[it.wi], items).map((s) => s.x).filter((x) => !(taken[it.wi] || []).includes(x));
@@ -672,6 +682,11 @@ function bsEdDraw(lay) {
   const o = ['<defs><pattern id="bseddeck" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#e9dcc6"/><path d="M0 9H9" stroke="#bfa57f" stroke-width="1"/></pattern></defs>'];
   if (sh.deck) o.push(`<polygon points="${pts(sh.deck)}" fill="url(#bseddeck)" stroke="#8a7350" stroke-width="1.5"/>`);
   o.push(`<polygon points="${pts(sh.poly)}" fill="#fbf7ee"/>${bsGrid(sh, P, 'bsgride', '#e3d9c4', 1)}<polygon points="${pts(sh.poly)}" fill="none" stroke="#0c1a28" stroke-width="9" stroke-linejoin="miter"/>`);
+  /* Trusses, 24 in on center: the lines a light can hang from. */
+  for (let x = 2; x <= sh.L - 2 + 1e-9; x += 2) {
+    const a = P([x, 0]), b = P([x, sh.W]);
+    o.push(`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#c9a877" stroke-width="1.5" stroke-dasharray="7 5"/>`);
+  }
   for (const q of sh.posts) {
     const [x, y] = P(q);
     o.push(`<rect x="${f(x - 6)}" y="${f(y - 6)}" width="12" height="12" fill="#0c1a28"/>`);
@@ -842,7 +857,7 @@ function bsEdNudge(d, dy = 0) {
     if (to != null && bsEdPlace(it.key, it.wi, to)) bsRender();
     return;
   }
-  if (it.kind === 'light' ? bsEdLight(it.key, it.x + d, it.y + dy) : bsEdPlace(it.key, it.wi, it.at + d)) bsRender();
+  if (it.kind === 'light' ? bsEdLight(it.key, it.x + Math.sign(d) * 2, it.y + dy) : bsEdPlace(it.key, it.wi, it.at + d)) bsRender();
 }
 function bsEdToWall(wi) {
   const lay = bsLayout(bsOrder(BS.key).c), it = lay.items.find((x) => x.key === BS.sel), len = lay.sh.walls[wi].len;
