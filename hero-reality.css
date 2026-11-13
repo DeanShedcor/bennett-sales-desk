@@ -1,0 +1,22 @@
+/* hero-reality.css: plan → 3D model → photo, on the home hero. 7 s, played once. */
+.scene.hr .hr-open { opacity: 1; }
+.scene.hr .hr-plan, .scene.hr .hr-model { pointer-events: none; }
+.scene.hr .hr-plan { animation: hr-plan 7s ease-in-out both; }
+.scene.hr .hr-model { animation: hr-model 7s ease-in-out both; }
+.scene.hr .hr-photo { animation: hr-photo 7s cubic-bezier(.55, 0, .25, 1) both; }
+.scene.hr .hr-sweep { position: absolute; top: 25%; bottom: 10%; width: 3px; left: 13%; border-radius: 3px; background: #fff; box-shadow: 0 0 18px 6px rgba(255, 214, 120, .8), 0 0 50px 18px rgba(255, 183, 3, .35); opacity: 0; animation: hr-sweep 7s cubic-bezier(.55, 0, .25, 1) both; pointer-events: none; }
+.scene.hr .shed-halo { animation: hr-halo 7s ease-in-out both; }
+@keyframes hr-plan { 0% { opacity: 0; filter: blur(2px); } 8% { opacity: 1; filter: none; } 26% { opacity: 1; } 40% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes hr-model { 0%, 20% { opacity: 0; } 38% { opacity: 1; } 78% { opacity: 1; } 84%, 100% { opacity: 0; } }
+@keyframes hr-photo { 0%, 50% { clip-path: inset(0 87% 0 0); } 80%, 100% { clip-path: inset(0 0 0 0); } }
+@keyframes hr-sweep { 0%, 49% { left: 13%; opacity: 0; } 52% { opacity: 1; } 79% { left: 72%; opacity: 1; } 84%, 100% { left: 72%; opacity: 0; } }
+@keyframes hr-halo { 0%, 60% { opacity: 0; } 85%, 100% { opacity: 1; } }
+/* Already played, or reduced motion: just the photo. */
+.scene.hr-done .hr-plan, .scene.hr-done .hr-model, .scene.hr-done .hr-sweep { animation: none; opacity: 0; }
+.scene.hr-done .hr-photo, .scene.hr-done .shed-halo { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .scene.hr .hr-plan, .scene.hr .hr-model, .scene.hr .hr-sweep { animation: none; opacity: 0; }
+  .scene.hr .hr-photo, .scene.hr .shed-halo { animation: none; }
+}
+.hr-replay { position: absolute; right: 2%; bottom: 3%; z-index: 3; display: inline-flex; gap: 6px; align-items: center; font: 600 12.5px Inter, sans-serif; color: #fff; background: rgba(12, 26, 40, .55); border: 1px solid rgba(255, 255, 255, .3); border-radius: 999px; padding: 6px 12px; backdrop-filter: blur(4px); cursor: pointer; }
+.hr-replay:hover { background: rgba(12, 26, 40, .75); }
