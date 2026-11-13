@@ -45,7 +45,7 @@ continueBilling = function (form) {
 showSaleReview = function () {
   const d = reviewCustomer, b = reviewBilling, rto = b.type === 'Rent-to-own';
   const next = [...SF_DOCS.map(([, t]) => `The customer signs the ${t.toLowerCase()}`), ...(rto ? ['The customer completes the rent-to-own application'] : []), 'You submit it for admin review'];
-  modal('Finalize sale · create the order', `<p><strong>${esc(d.firstName + ' ' + d.lastName)}</strong><br>${esc(d.email)} · ${esc(d.phone)}</p><p>${d.same ? 'Delivery address matches billing.' : 'Separate delivery address provided.'}</p>
+  modal('Complete the sale · create the order', `<p><strong>${esc(d.firstName + ' ' + d.lastName)}</strong><br>${esc(d.email)} · ${esc(d.phone)}</p><p>${d.same ? 'Delivery address matches billing.' : 'Separate delivery address provided.'}</p>
     <p><strong>${b.type}</strong> · ${money(amount())} building subtotal<br>Deposit recorded: ${money(b.deposit)}${rto ? `<br>${b.term} months · ${money(payment(amount(), b.term))}/mo before tax` : `<br>Remaining building subtotal: ${money(amount() - b.deposit)}`}</p>
     <h3>Next, on the order page</h3><ol class="sf-next">${next.map((x) => `<li>${x}</li>`).join('')}</ol>
     <div class="actions">${button('← Billing', 'openBilling()', 'secondary')}${button('Create the order →', 'submitSale()')}</div>`);
