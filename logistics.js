@@ -30,6 +30,9 @@ const LG_STATE = { planned: 'Being planned', scheduled: 'Scheduled', in_transit:
 const LG_STATE_PILL = { planned: 'amber', scheduled: 'blue', in_transit: 'amber', delivered: 'good', cancelled: 'ghost' };
 const LG_WINDOWS = ['Date only', 'Morning', 'Afternoon', 'Specific window', 'Specific time'];
 const LG_LEG = { 'plant-lot': 'Plant to lot', 'plant-home': 'Plant to home', 'lot-home': 'Lot to home' };
+const LG_DRIVER_PAY = ['Cashier’s check', 'Cash', 'Card']; /* what a driver may take at delivery */
+/* The four messages a customer gets when automatic messages are on. */
+const LG_MSGS = [['set', 'When the day is set'], ['before', 'The day before'], ['way', 'When the driver is on the way'], ['done', 'After delivery']];
 
 const lgIso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const lgToday = () => lgIso(new Date());
@@ -370,13 +373,24 @@ function lgSchedule(id) {
     }
     const auto = LG.set.tell === 'auto';
     u.told = auto ? { how: 'auto', at: Date.now() } : null;
-    if (!s) continue;
-    s.deliverOn = load.date;
-    s.toldCustomer = auto;
-    ofLog(s, auto ? `Logistics: delivery scheduled for ${lgDay(load.date)} · text and email sent to the customer (preview: nothing is really sent)` : `Logistics: delivery scheduled for ${lgDay(load.date)} · Logistics tells the customer`);
+    u.msgAuto = auto;
+    u.msgs = {};
+    if (s) {
+      s.deliverOn = load.date;
+      s.toldCustomer = auto;
+      ofLog(s, `Logistics: delivery scheduled for ${lgDay(load.date)}${auto ? '' : ' · Logistics tells the customer'}`);
+    }
+    lgSend(u, 'set');
   }
   render();
   toast(`${lgLoadName(load)} scheduled for ${lgDay(load.date)}.`);
+}
+/* An automatic message goes out (the preview only records that it would have). */
+function lgSend(u, key) {
+  if (!u.msgAuto || u.msgs?.[key]) return;
+  (u.msgs ||= {})[key] = Date.now();
+  const s = lgSale(u);
+  if (s) ofLog(s, `Text and email to the customer · ${LG_MSGS.find((m) => m[0] === key)[1].toLowerCase()} (preview: nothing is really sent)`);
 }
 /* Has the customer been told the day? Logistics ticks it, the lot's manager can where that is
    switched on, or the text and email went out by themselves. */
@@ -388,15 +402,21 @@ function lgTold(unitId, who) {
   render();
   toast('Marked: the customer knows the day.');
 }
-/* The text and the email a customer gets (or would get) when the day is set. */
+/* The texts and emails a customer gets (or would get) about a delivery. */
 function lgMessage(unitId) {
-  const u = lgUnit(unitId), s = lgSale(u), load = lgOnLoad(u), lot = lotById(u.lotId), st = s ? orderInvoice(s).shipTo : null;
+  const u = lgUnit(unitId), s = lgSale(u), load = lgOnLoad(u) || lgLoad(u.trips[u.trips.length - 1]?.load), lot = lotById(u.lotId), st = s ? orderInvoice(s).shipTo : null;
   const when = load?.date ? `${new Date(load.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}${load.window !== 'Date only' ? ', ' + (load.windowNote || load.window).toLowerCase() : ''}` : 'the day Logistics sets';
-  const text = `Bennett Buildings: your ${u.size.replace('x', ' x ')} building is set for delivery on ${when}. Please keep a ${u.wid + 2} ft wide path and 14 ft of height clear. Questions? Call the ${lot.town} lot at ${lot.phone}.`;
-  modal('Message to the customer', `<p><strong>${esc(u.customer)}</strong>${st ? ` · ${esc(st.phone || 'no phone on file')} · ${esc(st.email || 'no email on file')}` : ' · sample customer, no contact on file'}</p>
-    <div class="lg-msg"><small>Text</small><p>${esc(text)}</p></div>
-    <div class="lg-msg"><small>Email · Your Bennett building is set for delivery on ${esc(when)}</small><p>Hello ${esc(u.customer.split(' ')[0])},</p><p>Your ${esc(u.name)} is set for delivery on <strong>${esc(when)}</strong>.</p><p>Before the driver arrives, please keep a ${u.wid + 2} ft wide path clear to where the building goes, with 14 ft of height free of wires and limbs, and move cars, boats and anything else in the way.</p><p>If the day does not work, or anything at the site has changed, call the ${esc(lot.town)} lot at ${esc(lot.phone)}.</p><p>Bennett Buildings of ${esc(lot.town)}</p></div>
-    <p class="source">${LG.set.tell === 'auto' ? 'With automatic messages on, this goes out the moment the day is set.' : 'Automatic messages are off (Logistics → Trailers → Rules). Logistics tells the customer.'} Preview only: nothing is sent.</p>
+  const size = u.size.replace('x', ' x '), call = `Questions? Call the ${lot.town} lot at ${lot.phone}.`;
+  const body = {
+    set: `Bennett Buildings: your ${size} building is set for delivery on ${when}. Please keep a ${u.wid + 2} ft wide path and 14 ft of height clear. ${call}`,
+    before: `Bennett Buildings: a reminder that your ${size} building arrives tomorrow, ${when}. Please move cars and anything else out of the path. ${call}`,
+    way: `Bennett Buildings: your driver is on the way with your ${size} building. Someone should be home to show where it goes.`,
+    done: `Bennett Buildings: your ${size} building is delivered. Thank you! A copy of the delivery receipt you signed is in your email.`,
+  };
+  const state = (k) => (u.msgs?.[k] ? `<span class="pill good">Sent ${lgStamp(u.msgs[k])}</span>` : u.msgAuto || LG.set.tell === 'auto' ? '<span class="pill">Waiting for its moment</span>' : '<span class="pill ghost">Automatic messages are off</span>');
+  modal('Messages to the customer', `<p><strong>${esc(u.customer)}</strong>${st ? ` · ${esc(st.phone || 'no phone on file')} · ${esc(st.email || 'no email on file')}` : ' · sample customer, no contact on file'}</p>
+    ${LG_MSGS.map(([k, name]) => `<div class="lg-msg"><div class="panelhead"><small>${name}</small>${state(k)}</div><p>${esc(body[k])}</p></div>`).join('')}
+    <p class="source">Each goes as a text and as an email with the same words. ${LG.set.tell === 'auto' ? 'Automatic messages are on.' : 'Automatic messages are off (Logistics → Trailers → Rules), so Logistics tells the customer.'} Preview only: nothing is sent.</p>
     <div class="actions">${button('Close', 'closeModal()', 'secondary')}</div>`);
 }
 /* A lot can let its own manager schedule home deliveries from the lot and tell the customer. */
@@ -411,6 +431,9 @@ function lgStart(id) {
   load.state = 'in_transit';
   load.startedAt = Date.now();
   lgLoadUnits(load).forEach((u) => (u.at = 'road'));
+  /* The reminder went the day before; the first stop, if it is a customer, hears the driver is coming. */
+  lgLoadUnits(load).filter((u) => u.leg !== 'plant-lot').forEach((u) => lgSend(u, 'before'));
+  if (load.stops[0] && !lgStopIsLot(load.stops[0])) lgStopUnits(load.stops[0]).forEach((u) => lgSend(u, 'way'));
   lgNote(load, `${load.driver || 'The driver'} left ${lgOriginName(load)}`);
   render();
   toast('On the road.');
@@ -458,9 +481,10 @@ function lgDropForm(id, i) {
     if (!pay.ok) return modal('Do not unload yet', `<p><strong>${esc(u.customer)}</strong>: ${esc(pay.text)}.</p><p>Call the office before the building comes off the trailer.</p><div class="actions">${button('OK', 'closeModal()', 'secondary')}</div>`);
     if (pay.collect && !stop.collected)
       return modal(`Collect ${money(t.balance)} first`, `<p><strong>${esc(u.customer)}</strong> owes ${money(t.balance)} on ${esc(u.name)}. Take the payment, then the customer signs.</p>
-        <div class="fields"><label>Amount collected ($)<input id="lg-col-amount" type="number" min="0.01" step="0.01" value="${t.balance}" inputmode="decimal"></label>
-        <label>How it was paid<select id="lg-col-method"><option>Cash</option><option>Check</option><option>Card</option><option>Money order</option></select></label></div>
-        <p class="source">Preview only: nothing is charged. The office confirms the payment afterwards.</p>
+        <div class="fields"><label>How it is paid<select id="lg-col-method" onchange="lgColCalc(${t.balance})">${LG_DRIVER_PAY.map((x) => `<option>${x}</option>`).join('')}</select></label>
+        <label>Amount collected ($)<input id="lg-col-amount" type="number" min="0.01" step="0.01" value="${t.balance}" inputmode="decimal"></label></div>
+        <p class="notice" id="lg-col-fee" hidden></p>
+        <p class="source">A card carries a ${OF.set.cardFeePct}% processing fee to cover its cost (Office → Settings). Preview only: nothing is charged. The office confirms the payment afterwards.</p>
         <div class="actions">${button('Payment taken · go to the signature', `lgCollect('${id}',${i})`)}${button('Not yet', 'closeModal()', 'secondary')}</div>`);
     S.activeSale = s.id;
     LG.signing = { id, i };
@@ -473,10 +497,22 @@ function lgDropForm(id, i) {
     <p class="source">A sample customer, so there is no order to sign. A real order opens the delivery receipt for the customer’s signature.</p>
     <div class="actions">${button('Delivered and signed for', `lgDropSave('${id}',${i})`)}${button('Not yet', 'closeModal()', 'secondary')}</div>`);
 }
+/* A card adds the processing fee to what the driver collects. */
+const lgCardFee = (balance) => Math.round(balance * OF.set.cardFeePct) / 100;
+function lgColCalc(balance) {
+  const card = $('#lg-col-method').value === 'Card', fee = card ? lgCardFee(balance) : 0, note = $('#lg-col-fee');
+  $('#lg-col-amount').value = (balance + fee).toFixed(2);
+  note.hidden = !card;
+  note.textContent = card ? `Card: ${money(balance)} owed + ${money(fee)} processing fee (${OF.set.cardFeePct}%) = ${money(balance + fee)} to charge.` : '';
+}
 function lgCollect(id, i) {
   const load = lgLoad(id), stop = load.stops[i], s = lgSale(lgStopUnits(stop)[0]);
   const amount = Math.round(Number($('#lg-col-amount').value) * 100) / 100, method = $('#lg-col-method').value;
   if (!(amount > 0)) return toast('Type the amount collected.');
+  if (method === 'Card') {
+    const fee = lgCardFee(ofTotals(s).balance);
+    if (fee > 0) s.money.fees.push({ name: `Card processing fee (${OF.set.cardFeePct}%)`, amount: fee });
+  }
   s.money.payments.push({ amount, method: `Driver · ${method.toLowerCase()}`, at: Date.now(), confirmed: false, by: 'Driver' });
   stop.collected = amount;
   ofLog(s, `Driver collected ${money(amount)} (${method.toLowerCase()}) at delivery · the office confirms it`);
@@ -510,8 +546,11 @@ function lgDropDone(id, i, proof, quiet) {
     } else {
       u.at = 'home';
       u.leg = null;
+      lgSend(u, 'done');
     }
   }
+  const next = load.stops.find((x) => !x.done);
+  if (next && !lgStopIsLot(next)) lgStopUnits(next).forEach((u) => lgSend(u, 'way'));
   lgNote(load, lgStopIsLot(stop) ? `Unloaded at the ${lot.town} lot · received by ${proof.by}${proof.note ? ' · ' + proof.note : ''}` : `Delivered to ${lgStopUnits(stop)[0].customer} · signed by ${proof.by}`);
   if (load.stops.every((x) => x.done)) {
     load.state = 'delivered';

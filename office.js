@@ -27,6 +27,7 @@ const OF = {
     overTo: 100, overFee: 100, /* 51 to 100 miles: $100, from the delivery agreement */
     depositPct: 10, /* the website asks cash customers for 10% at the time of order */
     driverPay: false, /* false: cash sales are paid in full before delivery */
+    cardFeePct: 3, /* processing fee a card carries when a driver takes it; a starting number for the office to set */
     purposes: ['Military'],
     rtoCos: ['JMAG LLC'], /* one company today (the name on the sample contract); more can be added */
   },
@@ -858,7 +859,10 @@ function officeSettings() {
       <div class="of-inline"><label>Deposit at the time of order (%)<input type="number" min="0" max="100" value="${f.depositPct}" onchange="ofSetNum('depositPct',this,0,100)" inputmode="numeric"></label></div>
       <h3>Final payment</h3>
       <div class="of-seg two" role="group" aria-label="Final payment"><button type="button" class="${f.driverPay ? '' : 'on'}" onclick="OF.set.driverPay=false;render()"><strong>Before delivery</strong><small>Paid in full before a building goes to a home. How it works today.</small></button>
-        <button type="button" class="${f.driverPay ? 'on' : ''}" onclick="OF.set.driverPay=true;render()"><strong>Driver can take it</strong><small>The driver collects the balance at delivery, before the customer signs.</small></button></div></section>
+        <button type="button" class="${f.driverPay ? 'on' : ''}" onclick="OF.set.driverPay=true;render()"><strong>Driver can take it</strong><small>The driver collects the balance at delivery, before the customer signs.</small></button></div>
+      <p class="source">A driver may take a cashier’s check, cash or a card.</p>
+      <div class="of-inline"><label>Card processing fee when a driver takes a card (%)<input type="number" min="0" max="10" step="0.1" value="${f.cardFeePct}" onchange="ofSetNum('cardFeePct',this,0,10)" inputmode="decimal"></label></div>
+      <p class="source">Added to what the driver charges, to cover the card’s cost. 3% is a starting number: set your own.</p></section>
     <section class="panel"><div class="panelhead"><h2>Rent-to-own companies</h2><span class="pill blue">${f.rtoCos.length === 1 ? 'One company' : f.rtoCos.length + ' companies'}</span></div>
       <p>${f.rtoCos.length === 1 ? 'Every rent-to-own application goes to this company. Add another and the office picks where each one goes, and can try the next after a decline.' : 'The office picks where each application goes, and can try the next company after a decline.'}</p>
       <div class="chiprow">${f.rtoCos.map((c, i) => `<span class="chipbtn on">${esc(c)}${f.rtoCos.length > 1 ? ` <button type="button" class="of-x" aria-label="Remove ${esc(c)}" onclick="OF.set.rtoCos.splice(${i},1);render()">×</button>` : ''}</span>`).join('')}</div>
