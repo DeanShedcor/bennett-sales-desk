@@ -15,6 +15,7 @@ function lgUnitRow(u, mode) {
     u.kind === 'stock' ? '<span class="ops-flag">Inventory for the lot</span>' : `<span class="ops-flag wait">Customer · ${esc(u.customer)}</span>`,
     u.leg && u.kind === 'order' ? `<span class="ops-flag ${u.leg === 'plant-lot' ? '' : 'wait'}">${u.leg === 'plant-lot' ? 'Through the lot' : LG_LEG[u.leg]}</span>` : '',
     lgWide(u) ? `<span class="ops-flag todo">Wide load · ${u.wid} ft</span>` : '',
+    typeof prLoadOf === 'function' && prLoadOf(u.id) ? `<span class="ops-flag">Production load ${esc(prLoadOf(u.id).id)}</span>` : '',
     hold ? `<span class="ops-flag bad">${esc(hold)}</span>` : home && s ? `<span class="ops-flag ok">${esc(ofPayRule(s).text)}</span>` : '',
     home ? `<span class="ops-flag ${siteOpen ? 'todo' : 'ok'}">${siteOpen ? (/^ask/.test(siteOpen) ? 'Site questions not asked' : 'Site not confirmed yet') : 'Site confirmed'}</span>` : '',
     ...probs.map((p) => `<span class="ops-flag todo">${esc(p)}</span>`),
@@ -58,7 +59,18 @@ function lgBoardList() {
   const feeRow = (s) => `<article class="ops-row"><span class="lg-size"><b>${ofDelivery(s).miles}</b><small>miles</small></span><div class="grow"><div class="ops-rowtop"><strong>${esc(s.customer)}</strong><span class="serial">${esc(s.id)}</span>${lgSample(s)}</div>
     <p class="ops-rowsub">${esc(label(s.c))} · from the ${esc(saleLot(s).town)} lot · ${esc(siteLine(s))}</p><div class="ops-flags"><span class="ops-flag todo">Past ${OF.set.overTo} miles: the fee is yours to approve</span></div></div>
     <button type="button" class="primary small" onclick="lgFeeForm('${s.id}')">Set the fee</button></article>`;
+  /* Loads the plant planned before building: ship the group once its buildings are finished. */
+  const planned = (typeof prLoadsOpen === 'function' ? prLoadsOpen() : []).map((l) => {
+    const ready = l.units.map(lgUnit).filter((u) => u && u.at === 'plant' && u.leg && !u.loadId);
+    const notYet = l.units.filter((id) => !lgUnit(id)).map((id) => (typeof prUnit === 'function' ? prUnit(id) : null)).filter(Boolean);
+    return { l, ready, notYet };
+  }).filter((x) => x.ready.length);
+  const plannedRow = ({ l, ready, notYet }) => `<article class="ops-row"><span class="lg-code">${esc(l.id)}</span><div class="grow"><div class="ops-rowtop"><strong>Production load ${esc(l.id)}${l.alias ? ' · ' + esc(l.alias) : ''}</strong><span class="serial">planned at the plant for a ${l.trailer || 40} ft trailer</span></div>
+    <p class="ops-rowsub">${ready.map((u) => `${u.size} to ${esc(lotById(u.lotId).town)}`).join(' · ')} · ${ready.reduce((t, u) => t + u.len, 0)} ft finished and ready</p>
+    <div class="ops-flags"><span class="ops-flag ok">${lgPlural(ready.length, 'building')} ready</span>${notYet.map((u) => `<span class="ops-flag todo">${esc(u.size)} for ${esc(lotById(u.lotId).town)}: ${u.phase === PR_DONE ? 'waiting on the office’s release' : phaseNames[u.phase].toLowerCase()}</span>`).join('')}</div></div>
+    <button type="button" class="primary small" onclick="lgFromProd('${l.id}')">Build this load</button></article>`;
   const html = [
+    show('plant') && planned.length ? `<h2 class="sectionhead qc-group">Planned at the plant <small>${planned.length}</small></h2><div class="ops-list">${planned.map(plannedRow).join('')}</div>` : '',
     LG.tile === 'all' && fees.length ? `<h2 class="sectionhead qc-group">Delivery fees to approve <small>${fees.length}</small></h2><div class="ops-list">${fees.map(feeRow).join('')}</div>` : '',
     sec('road', 'On the road now', loads.filter((l) => l.state === 'in_transit').length, `<div class="ops-list">${loads.filter((l) => l.state === 'in_transit').map(lgLoadRow).join('')}</div>`),
     sec('plant', 'At the plant, ready to load', atPlant.length, plantHtml),
@@ -84,7 +96,8 @@ function lgBoard() {
   ${opsNotes([
     ['Ready to load', 'A unit can be routed once it is built and flagged ready to deliver (<code>assertUnitEligibleForLogisticsRoute</code>).'],
     ['The board', 'Logistics → Routes: the queue and the dispatch board (<code>LogisticsRoutesDispatchBoard</code>), where a planned delivery is dragged onto a rig.'],
-    ['Build a load', 'A shipment for the plant load (<code>mintShipmentForProductionLoad</code>, codes like “AC”) with one route per building (<code>createOrgRoute</code>).'],
+    ['Planned at the plant · Build this load', 'The shipment made from a production load (<code>mintShipmentForProductionLoad</code>). The plant groups the units before they are built; Logistics ships the group.'],
+    ['Build a load', 'A shipment (codes like “AC”) with one route per building (<code>createOrgRoute</code>), for buildings picked by hand.'],
     ['Schedule delivery', 'A route from the lot to the customer: stops <code>dealer_holding</code> → <code>end_customer</code>.'],
     ['Plant to lot · plant to home · lot to home', 'Turbo Logistics has no leg field: the stops say it (<code>plant_origin</code>, <code>dealer_holding</code>, <code>end_customer</code>).'],
   ], ['Picking several buildings and seeing their total length against a trailer.', 'Switching a building between through the lot and plant to home.', 'Holding a home delivery until the payment rule is met.', 'Logistics approving the delivery fee past ' + OF.set.overTo + ' miles.', 'Confirming the delivery-site answers with the customer before a delivery is scheduled.'])}`;
@@ -166,7 +179,7 @@ function lgLoadPage() {
         ? `<div class="ops-bar"><div class="grow"><strong>On the road · ${doneStops} of ${load.stops.length} stops done</strong><small>Next: ${lgStopIsLot(nextStop) ? esc(lgStopLot(nextStop).town) + ' lot' : esc(lgStopUnits(nextStop)[0].customer)}</small></div>${nextStop.arrived ? `<button type="button" class="primary" onclick="lgDropForm('${id}',${nextI})">${lgStopIsLot(nextStop) ? 'Unload here' : 'Deliver here'}</button>` : `<button type="button" class="primary" onclick="lgArrive('${id}',${nextI})">Arrived</button>`}</div>` : '';
   return `<button class="link backlink" onclick="go('${LG.back}')">${icon('back', 18)} ${lgDetailNav()[1]}</button>
   ${head(`${load.kind === 'haul' ? 'Plant load' : 'Home delivery'} · from ${esc(lgOriginName(load))}`, lgLoadName(load), `${lgPlural(units.length, 'building')} · ${lgPlural(load.stops.length, 'stop')}${units.length ? ` · about ${miles.total} miles to the last stop` : ''}`)}
-  <section class="panel of-top"><div class="pillrow"><span class="pill ${LG_STATE_PILL[load.state]}">${LG_STATE[load.state]}</span>${load.date ? `<span class="pill">${lgDay(load.date)}${load.window !== 'Date only' ? ' · ' + esc(load.windowNote || load.window) : ''}</span>` : ''}${lgSample(load)}</div>
+  <section class="panel of-top"><div class="pillrow"><span class="pill ${LG_STATE_PILL[load.state]}">${LG_STATE[load.state]}</span>${load.date ? `<span class="pill">${lgDay(load.date)}${load.window !== 'Date only' ? ' · ' + esc(load.windowNote || load.window) : ''}</span>` : ''}${load.prod ? `<span class="pill">From production load ${esc(load.prod)}</span>` : ''}${lgSample(load)}</div>
     ${load.state === 'cancelled' ? '' : chevronTrack(['Planned', 'Scheduled', 'On the road', 'Delivered'], at)}</section>
   <div class="od-grid"><div class="od-col">${setup}${stopPanel}</div><div class="od-col">${checkPanel}${addPanel}
     <section class="panel"><h2>History</h2>${load.log.slice().reverse().map((e) => `<div class="log"><small>${lgStamp(e.at)}</small><br>${esc(e.text)}</div>`).join('')}</section></div></div>

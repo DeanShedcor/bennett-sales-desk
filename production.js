@@ -12,12 +12,14 @@
    - The lots' stock orders, once the office approves them.
    - Sample stock builds, so the middle of the line is not empty.
    - Buildings that are with plant QC (Final QA) or signed off (Build complete), until they leave.
+   Production loads: the plant can group orders into a trailer load before they are built and send
+   the group to the floor together. Logistics ships that group, or changes it, once they are done.
    Moving a building to Final QA hands it to the Plant QC side. QC's sign-off is what puts it in
    Build complete, and from there the office releases it and Logistics moves it.
 
    Nothing is saved: a reload starts over. Loaded after logistics-screens.js. */
 
-const PR = { id: null, back: 'prod', path: 'All', q: '', tile: 'all', phase: null, since: {}, hist: {}, holds: {}, samples: [] };
+const PR = { id: null, back: 'prod', path: 'All', q: '', tile: 'all', phase: null, since: {}, hist: {}, holds: {}, samples: [], loads: [], loadSeq: 0, trailer: 40 };
 const PR_QA = phaseNames.indexOf('Final QA'), PR_DONE = phaseNames.length - 1;
 const PR_HOLDS = ['Waiting on materials', 'Waiting on a change order', 'Waiting on the customer', 'Equipment down'];
 const PR_PATHS = ['All sale paths', 'Stock', 'Cash', 'RTO'];
@@ -176,6 +178,97 @@ function prInvoice(id) {
   orderDoc('invoice');
 }
 
+/* ---------- Production loads ----------
+   A load groups the orders that will ship on one trailer, decided before they are built. Open: still
+   being put together. Dispatched: sent to the floor together. It closes once Logistics has them. */
+const prCode = (n) => (n < 26 ? '' : String.fromCharCode(64 + Math.floor(n / 26))) + String.fromCharCode(65 + (n % 26));
+const prLen = (u) => Number(u.size.split('x')[1]);
+const prLoad = (code) => PR.loads.find((l) => l.id === code);
+const prLoadOf = (id) => PR.loads.find((l) => l.units.includes(id));
+/* A load is finished with the plant once every building on it has left, or is on a Logistics load. */
+function prLoadDone(l) {
+  if (!l.units.length || typeof lgUnit !== 'function') return false;
+  return l.units.every((id) => { const u = lgUnit(id); return u && (u.at !== 'plant' || u.loadId); });
+}
+const prLoadsOpen = () => PR.loads.filter((l) => !prLoadDone(l));
+function prLoadNew() {
+  const l = { id: prCode(PR.loadSeq++), alias: '', units: [], state: 'open', made: Date.now() };
+  PR.loads.push(l);
+  prLoadForm(l.id);
+}
+/* Pick the buildings for a load: anything approved and still on the floor, nearest lots together. */
+function prLoadForm(code) {
+  const l = prLoad(code), plant = PLANTS[0];
+  const pool = prUnits().filter((u) => u.phase >= 1 && u.phase < PR_QA && (!prLoadOf(u.id) || prLoadOf(u.id) === l)).sort((a, b) => milesBetween(plant, lotById(a.lotId)) - milesBetween(plant, lotById(b.lotId)) || a.since - b.since);
+  const lengths = [...new Set([40, ...(typeof LG !== 'undefined' ? LG.rigs.map((r) => r.feet).filter(Boolean) : [])])].sort((a, b) => b - a);
+  modal(`Production load ${esc(code)}`, `<p>Group the buildings that will ship on one trailer. The plant builds them together, and Logistics ships them together.</p>
+    <div class="fields"><label>Name (optional)<input id="pr-alias" maxlength="40" value="${esc(l.alias)}" placeholder="Example: Florence run"></label>
+    <label>Plan for a trailer of<select id="pr-trailer" onchange="prLoadSum()">${lengths.map((f) => `<option value="${f}" ${f === (l.trailer || PR.trailer) ? 'selected' : ''}>${f} ft</option>`).join('')}</select></label></div>
+    <p class="pr-sum" id="pr-sum"></p>
+    <div class="pr-picklist">${pool.map((u) => `<label class="pr-pickrow"><input type="checkbox" value="${u.id}" data-ft="${prLen(u)}" ${l.units.includes(u.id) ? 'checked' : ''} onchange="prLoadSum()"><span class="lg-size sm"><b>${esc(u.size.replace('x', ' × '))}</b></span><span class="grow"><strong>${esc(u.name.replace(u.size, '').trim())}</strong><small>${prFor(u)} · about ${milesBetween(plant, lotById(u.lotId))} mi · ${phaseNames[u.phase]} · ${prAgo(u.since)}</small></span></label>`).join('') || '<p class="empty">Nothing is approved and waiting. Orders show here once the office approves them.</p>'}</div>
+    <div class="actions">${button('Save the load', `prLoadSave('${code}')`)}${l.units.length ? button('Remove this load', `prLoadDrop('${code}')`, 'secondary') : button('Cancel', `prLoadDrop('${code}')`, 'secondary')}</div>`);
+  prLoadSum();
+}
+function prLoadSum() {
+  const feet = [...document.querySelectorAll('.pr-picklist input:checked')].reduce((t, x) => t + Number(x.dataset.ft), 0), cap = Number($('#pr-trailer').value), el = $('#pr-sum');
+  el.className = 'pr-sum' + (feet > cap ? ' over' : '');
+  el.innerHTML = `<strong>${feet} ft</strong> of buildings for a ${cap} ft trailer · ${feet > cap ? `${feet - cap} ft over` : feet === cap ? 'full' : `${cap - feet} ft free`}`;
+}
+function prLoadSave(code) {
+  const l = prLoad(code), ids = [...document.querySelectorAll('.pr-picklist input:checked')].map((x) => x.value);
+  if (!ids.length) return toast('Pick at least one building, or cancel.');
+  l.units = ids;
+  l.alias = $('#pr-alias').value.trim();
+  l.trailer = Number($('#pr-trailer').value);
+  closeModal();
+  render();
+  toast(`Load ${code} saved: ${ids.length} building${ids.length === 1 ? '' : 's'}.`);
+}
+function prLoadDrop(code) {
+  PR.loads = PR.loads.filter((l) => l.id !== code);
+  closeModal();
+  render();
+}
+/* Send a load to the floor: its buildings still in Order approved start in Flooring together. */
+function prLoadDispatch(code) {
+  const l = prLoad(code);
+  let n = 0;
+  for (const id of l.units) {
+    const u = prUnit(id);
+    if (u && u.phase === 1 && !prBlock(u, 2)) {
+      (PR.hist[id] ||= []).push({ from: 1, to: 2, at: Date.now(), note: `Load ${code} sent to the floor` });
+      PR.since[id] = Date.now();
+      if (u.src === 'sale') (u.ref.plantPhase = 2), (u.ref.fulfillment = phaseNames[2]), ofLog(u.ref, `Plant: ${phaseNames[2]} · production load ${code}`);
+      else if (u.src === 'stock') (u.ref.plantPhase = 2), (u.ref.stage = 2);
+      else if (u.src === 'sample') u.ref.phase = 2;
+      n++;
+    }
+  }
+  l.state = 'dispatched';
+  l.dispatchedAt = Date.now();
+  render();
+  toast(`Load ${code} is on the floor${n ? `: ${n} building${n === 1 ? '' : 's'} started in Flooring` : ''}.`);
+}
+function prLoadAssign(unitId, code) {
+  for (const l of PR.loads) l.units = l.units.filter((x) => x !== unitId);
+  PR.loads = PR.loads.filter((l) => l.units.length || l.id === code);
+  if (code) prLoad(code).units.push(unitId);
+  render();
+}
+function prLoadCard(l) {
+  const units = l.units.map(prUnit).filter(Boolean), feet = l.units.reduce((t, id) => { const u = prUnit(id) || (typeof lgUnit === 'function' && lgUnit(id)); return t + (u ? (u.len || prLen(u)) : 0); }, 0);
+  const cap = l.trailer || PR.trailer, done = units.filter((u) => u.phase === PR_DONE).length, waiting = units.filter((u) => u.phase === 1).length;
+  return `<article class="pr-load${feet > cap ? ' over' : ''}"><div class="pr-loadhead"><span class="lg-code">${esc(l.id)}</span><div class="grow"><strong>${l.alias ? esc(l.alias) : 'Load ' + esc(l.id)}</strong><small>${feet} of ${cap} ft${feet > cap ? ` · ${feet - cap} ft over` : ''} · ${done} of ${l.units.length} finished</small></div><span class="pill ${l.state === 'open' ? 'amber' : 'blue'}">${l.state === 'open' ? 'Being planned' : 'On the floor'}</span></div>
+    <div class="pr-loadbar"><i style="width:${Math.min(100, (feet / cap) * 100)}%"></i></div>
+    <ul>${units.map((u) => `<li><button type="button" class="link inline" onclick="prOpen('${u.id}')">${esc(u.size.replace('x', ' × '))}</button> for ${esc(lotById(u.lotId).town)} <span>${phaseNames[u.phase]}</span></li>`).join('')}</ul>
+    <div class="actions"><button type="button" class="secondary small" onclick="prLoadForm('${l.id}')">Change</button>${l.state === 'open' ? `<button type="button" class="primary small" ${waiting ? '' : 'disabled'} onclick="prLoadDispatch('${l.id}')">Send to the floor</button>` : ''}</div></article>`;
+}
+function prLoadStrip() {
+  const loads = prLoadsOpen();
+  return `<section class="panel pr-loads"><div class="panelhead"><h2>Loads <small>planned before building</small></h2>${button(icon('plus', 16) + ' New load', 'prLoadNew()', 'secondary small')}</div>
+    ${loads.length ? `<div class="pr-loadrow">${loads.map(prLoadCard).join('')}</div>` : '<p class="of-soft">No loads planned. Group the approved orders that will ship on one trailer, and the plant builds them together.</p>'}</section>`;
+}
+
 /* ---------- Screens ---------- */
 const prSample = (u) => (u.sample ? '<span class="pill ghost">Sample</span>' : '');
 const prFor = (u) => (u.customer ? `${esc(u.customer)} · ${esc(lotById(u.lotId).town)}` : `Stock · ${esc(lotById(u.lotId).town)}`);
@@ -183,6 +276,7 @@ function prFlags(u) {
   const ch = prChanges(u), ack = ch.filter((c) => c.done === 2).length, asked = ch.filter((c) => c.done === 1).length;
   return [
     u.wait ? `<span class="ops-flag wait">${esc(u.wait)}</span>` : '',
+    prLoadOf(u.id) ? `<span class="ops-flag">Load ${esc(prLoadOf(u.id).id)}</span>` : '',
     u.hold ? `<span class="ops-flag bad">On hold · ${esc(u.hold.reason)}</span>` : '',
     ack ? `<span class="ops-flag todo">Change order to acknowledge</span>` : '',
     asked ? `<span class="ops-flag">Change asked · with the office</span>` : '',
@@ -216,6 +310,7 @@ function prBoard() {
   <div class="today ops-tiles">${kpi(n((u) => u.phase >= 2 && u.phase < PR_QA), 'In progress')}${kpi(n((u) => u.phase === PR_QA), 'Final QA')}${kpi(n((u) => u.phase === PR_DONE), 'Build complete')}${kpi(all.length, 'On board')}</div>
   <div class="qc-filter"><label class="searchbar">${icon('orders', 18)}<input class="search" type="search" placeholder="Search serial, customer, location…" aria-label="Search serial, customer or location" value="${esc(PR.q)}" oninput="PR.q=this.value;$('#pr-cols').innerHTML=prBoardCols()"></label>
     <div class="chiprow">${PR_PATHS.map((p) => `<button type="button" class="chipbtn${(PR.path === 'All' ? 'All sale paths' : PR.path) === p ? ' on' : ''}" onclick="PR.path='${p}';render()">${p}</button>`).join('')}${holds ? chip('hold', `On hold <span class="ops-n">${holds}</span>`) : ''}${acks ? chip('change', `Change orders to acknowledge <span class="ops-n">${acks}</span>`) : ''}</div></div>
+  ${prLoadStrip()}
   <div id="pr-cols">${prBoardCols()}</div>
   <p class="lede-small" style="margin-top:16px">Final QA belongs to Plant QC: a building there moves to Build complete when QC signs it off. Then the office releases it and Logistics takes it off the board.</p>
   ${opsNotes([
@@ -224,8 +319,9 @@ function prBoard() {
     ['Filters and search', '“All sale paths”, “Stock”, “Cash”, “Finance”, “RTO”, and “Search serial, customer, location…”.'],
     ['Dragging a card', '<code>dropOnPhase</code> → <code>transitionUnitPhase</code>. The server does not force the order, so a drag can skip a phase or go back.'],
     ['Order received', 'A unit the office has accepted waits here until the plant packet is complete (<code>submitDealToBuild</code>), which moves it to Order approved and issues its serial (<code>issueSerialForBuildStart</code>).'],
-    ['Not drawn here', 'Production loads (<code>mfg_production_loads</code>, “New load”): Turbo Assist groups units into a load before they are built, and Logistics makes the shipment from it.'],
+    ['Loads', 'Production loads (<code>mfg_production_loads</code>: a code from A to ZZ, a name, open → dispatched → closed) and the “New load” strip (<code>BuildPipelineLoadsStrip</code>). Dispatching moves the load’s units to the first shop phase (<code>pickShopPhase</code>); Logistics makes the shipment from the load (<code>mintShipmentForProductionLoad</code>).'],
   ], [
+    'Adding up a load’s building lengths against a trailer length while it is being planned.',
     'Orders still with the office shown in Order received, so the plant can see what is coming.',
     'A hold with a reason on a building. Turbo Assist has a unit status “on hold” but no hold button on the board.',
     'Change orders on the card, and stopping a building until the plant acknowledges one.',
@@ -257,6 +353,7 @@ function prUnitPage() {
       : `<div class="pr-move"><button type="button" class="secondary" ${whyBack ? 'disabled' : ''} onclick="prStep('${id}',-1)">← ${back >= 1 ? phaseNames[back] : 'Back'}</button><button type="button" class="primary" ${whyNext ? 'disabled' : ''} onclick="prStep('${id}',1)">${phaseNames[next]} →</button></div>
         ${whyNext ? `<p class="lg-bad">${esc(whyNext)}</p>` : next === PR_QA ? '<p class="of-soft">Final QA hands the building to Plant QC.</p>' : ''}
         <label class="field">Optional transition note<input id="pr-note" maxlength="120" placeholder="Anything the next crew should know"></label>
+        <label class="ops-select pr-loadsel">Production load<select onchange="prLoadAssign('${id}',this.value)"><option value="">Unassigned</option>${prLoadsOpen().map((l) => `<option value="${l.id}" ${prLoadOf(id) === l ? 'selected' : ''}>Load ${esc(l.id)}${l.alias ? ' · ' + esc(l.alias) : ''}</option>`).join('')}</select></label>
         <div class="actions">${u.hold ? button('Take off hold', `prHoldOff('${id}')`, 'secondary small') : button('Put on hold', `prHoldForm('${id}')`, 'secondary small')}</div>
         ${u.hold ? `<p class="of-soft">On hold since ${prStamp(u.hold.at)}: ${esc(u.hold.reason)}</p>` : ''}`}</section>`;
   const packet = `<section class="panel"><h2>Plant packet</h2>
@@ -281,7 +378,8 @@ function prUnitPage() {
     ['History', '<code>mfg_unit_phase_history</code>: from, to, who, when and the note (<code>BuildPipelineUnitDetailHistory</code>).'],
     ['Plant packet', '<code>DEFAULT_PLANT_PACKET_SLOTS</code>: Order form and Floor plan are required, Special instructions is optional.'],
     ['Final QA', 'Builder Assistant’s Final QC marks the unit ready to ship (<code>markReadyToShipFromFinalQc</code>); entering Build complete runs <code>completeBuiltUnitBuild</code>.'],
-    ['Not drawn here', 'The drawer’s load assignment, “Ship from plant” and “Bill of materials” sections.'],
+    ['Production load', 'The drawer’s load assignment (“Unassigned” until it is on a load).'],
+    ['Not drawn here', 'The drawer’s “Ship from plant” and “Bill of materials” sections.'],
   ], ['Put on hold, with a reason.', 'Acknowledging a change order here. Turbo Assist stores no change orders yet.', 'Who moved it: there are no logins, so history has no names.'])}`;
 }
 function prNotesPage() {
@@ -294,6 +392,7 @@ function prNotesPage() {
       <li>Moving a building one phase forward or back with an optional note, and a history of every move.</li>
       <li>The plant packet: order form, floor plan, special instructions.</li>
       <li>Final QA belongs to QC. QC’s pass is what finishes the build.</li>
+      <li>Production loads: orders grouped for one trailer before they are built, sent to the floor together, and shipped together.</li>
     </ul></section>
     <section class="panel"><h2>Only in this preview</h2><ul>
       <li>Orders the office is still reviewing shown in the first column.</li>
@@ -306,8 +405,7 @@ function prNotesPage() {
       <li>The order number stands in for the plant’s serial number.</li>
     </ul></section>
     <section class="panel"><h2>Not built</h2><ul>
-      <li>Production loads: grouping buildings into a trailer load before they are built.</li>
-      <li>Crews, stations, due dates, materials and labor pay.</li>
+      <li>Crews, stations, due dates, materials and labor pay. The plant manager moves every building; there are no promised dates, and the oldest building in a phase is listed first.</li>
       <li>Logins: anyone can move anything.</li>
       <li>Saving. Reloading the page starts over.</li>
     </ul></section>
@@ -363,6 +461,9 @@ function prNotesPage() {
   make(3007, '12x28', 'Classic Utility', 'boiling-springs', 4, 18, { color: 'Web Grey' });
   make(3008, '10x20', 'Basic Lofted Barn', 'salisbury', 5, 7, { color: 'Brown' });
   make(3009, '12x16', 'Basic Studio', 'ravenel', 6, 11, { color: 'Alpine Grey' });
+  /* Two planned loads: one already on the floor, one still being put together. */
+  PR.loads.push({ id: prCode(PR.loadSeq++), alias: 'Florence and Lugoff', units: ['SAMPLE-1224-3003', 'SAMPLE-1016-3006'], state: 'dispatched', trailer: 40, made: hours(40), dispatchedAt: hours(30) });
+  PR.loads.push({ id: prCode(PR.loadSeq++), alias: 'North Carolina run', units: ['SAMPLE-1220-3001', 'SAMPLE-1016-3002'], state: 'open', trailer: 40, made: hours(18) });
 })();
 
 const PROD_SCREENS = { prod: prBoard, 'pr-list': prRoster, 'pr-unit': prUnitPage, 'pr-notes': prNotesPage };

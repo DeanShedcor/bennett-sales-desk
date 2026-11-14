@@ -374,3 +374,25 @@ a.chipbtn, a.secondary { text-decoration: none; color: var(--ink); }
   .pr-card small { font-size: 13px; }
   .pr-card .ops-flag { font-size: 12px; }
 }
+
+/* Production loads: planned before building */
+.pr-loads { margin-bottom: 16px; }
+.pr-loads h2 small { font: 600 13px var(--body); color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+.pr-loadrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.pr-load { border: 1.500px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; min-width: 0; }
+.pr-load.over { border-color: var(--bad); }
+.pr-loadhead { display: flex; align-items: center; gap: 10px; }
+.pr-loadhead .lg-code { width: 40px; height: 40px; font-size: 16px; border-radius: 10px; }
+.pr-loadhead small { display: block; color: var(--muted); }
+.pr-loadbar { height: 8px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+.pr-loadbar i { display: block; height: 100%; background: var(--navy-2); }
+.pr-load.over .pr-loadbar i { background: var(--bad); }
+.pr-load ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 13.500px; }
+.pr-load li span { color: var(--muted); margin-left: 4px; }
+.pr-load .actions { margin: 0; }
+.pr-sum { font-size: 14.500px; background: var(--surface-2); border-radius: 8px; padding: 8px 12px; }
+.pr-sum.over { background: var(--bad-bg); color: var(--bad); }
+.pr-picklist { display: grid; gap: 0; max-height: 46vh; overflow: auto; border-top: 1px solid var(--line); }
+.pr-pickrow { display: flex; align-items: center; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.pr-pickrow small { display: block; color: var(--muted); }
+.pr-loadsel { margin: 12px 0 0; }

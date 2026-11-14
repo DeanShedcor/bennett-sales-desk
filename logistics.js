@@ -288,6 +288,16 @@ function lgNewLoad() {
   LG.pick = [];
   lgOpen(load.id);
 }
+/* Ship what the plant planned: a load from a production load's finished buildings. Logistics can
+   still add to it or take buildings off. */
+function lgFromProd(code) {
+  const l = prLoad(code), ready = l.units.map(lgUnit).filter((u) => u && u.at === 'plant' && u.leg && !u.loadId);
+  if (!ready.length) return toast('Nothing on that load is finished yet.');
+  const load = lgMakeLoad('haul', { type: 'plant', id: ready[0].plantId }, ready.map((u) => u.id));
+  load.prod = code;
+  lgNote(load, `Built from production load ${code}${l.alias ? ' (' + l.alias + ')' : ''}`);
+  lgOpen(load.id);
+}
 /* A home delivery from a lot, for one building. */
 function lgNewHome(unitId) {
   const u = lgUnit(unitId);
