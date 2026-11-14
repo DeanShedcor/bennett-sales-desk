@@ -103,7 +103,9 @@ function leadRows() {
 }
 
 function salesRows(arr = S.sales) {
+  /* This desk lists its own lot's orders. The Office side sees every lot. */
   return arr
+    .filter(deskSale)
     .map(
       (s) =>
         `<button class="listrow" onclick="openSale('${s.id}')"><span class="grow"><strong>${esc(s.customer)} · ${s.id}</strong><small>${label(s.c)}</small><span class="pillrow"><span class="pill">${s.status}</span><span class="pill blue">${s.fulfillment}</span>${S.changes.some((c) => c.order === s.id && !c.declined && c.done < 3) ? '<span class="pill amber">Change order open</span>' : ''}</span>${saleTrack(s)}</span><span class="rowarrow">${icon('arrow', 18)}</span></button>`
@@ -166,7 +168,7 @@ function heroScene() {
 
 function home() {
   const available = lots.filter((u) => u.status === 'Available').length;
-  const building = S.sales.length || sampleBuilds.length;
+  const building = S.sales.filter(deskSale).length || sampleBuilds.length;
   const today = [
     ['user', leadData.length, 'new leads', "document.getElementById('leads-panel')?.scrollIntoView({behavior:'smooth',block:'start'})"],
     ['receipt', receiptReviewCount(), 'receipts to review', "go('receipts')"],
@@ -202,7 +204,7 @@ function home() {
     }
     ${
       S.tiles.builds
-        ? `<section class="panel"><div class="panelhead"><h2>Buildings in progress</h2><button class="link" onclick="go('orders')">All orders ${icon('arrow', 16)}</button></div>${salesRows(S.sales.slice(-S.tiles.buildCount)) || sampleBuildRows(S.tiles.buildCount)}</section>`
+        ? `<section class="panel"><div class="panelhead"><h2>Buildings in progress</h2><button class="link" onclick="go('orders')">All orders ${icon('arrow', 16)}</button></div>${salesRows(S.sales.filter(deskSale).slice(-S.tiles.buildCount)) || sampleBuildRows(S.tiles.buildCount)}</section>`
         : ''
     }
   </div>

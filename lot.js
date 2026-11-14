@@ -3,7 +3,7 @@
    the manager's lot summary. Loaded after core.js and before views.js. */
 
 const LOT_COMPARE = [];
-const FREE_DELIVERY_MILES = 50; /* The listing says: free delivery and setup within 50 miles. */
+let FREE_DELIVERY_MILES = 50; /* The listing says: free delivery and setup within 50 miles. */
 
 /* ---------- Small helpers ---------- */
 

@@ -6,11 +6,13 @@
    "Preview only".
 
    At the desk: the customer signs the invoice, terms and delivery agreement; a rent-to-own sale
-   completes the RTO application; the floor plan can be checked; then Submit for admin review,
-   which stays off until everything is signed.
-   Handoffs: Order Intake approves, the plant moves through its nine phases, the QC build book
-   passes the building, Logistics schedules and delivers. The desk only shows where the order is;
-   a marked "Preview stand-ins" box acts for those apps so the preview can walk the whole path.
+   completes the RTO application; the customer confirms the floor plan (a custom build cannot be
+   approved without it); then Submit for admin review, which stays off until all of that is in.
+   Handoffs: the office approves, the plant moves through its nine phases, plant QC passes the
+   building, the office releases it, Logistics schedules and delivers. The desk only shows where
+   the order is. The Office, Plant QC and Logistics are their own sides of this preview (office.js,
+   qc-app.js, logistics.js); a marked box under the handoffs links to them, and holds the one
+   stand-in that is left, for Production.
 
    Signatures stay in this browser tab only, like everything else in the preview.
    Loaded last; wraps the Sales desk, order page and Plant QC globals. */
@@ -31,6 +33,8 @@ const sfSigned = (s) => orderInvoice(s).signed || {};
 function sfMissing(s) {
   const signed = sfSigned(s), out = SF_DOCS.filter(([k]) => !signed[k]).map(([, t]) => `Customer signature on the ${t.toLowerCase()}`);
   if (s.type === 'Rent-to-own' && !s.rtoApp) out.push('Rent-to-own application (all parts)');
+  /* The office cannot approve a custom build until the floor plan is confirmed. */
+  if (s.path !== 'lot' && !s.c.sheet?.ok) out.push('Floor plan confirmed with the customer');
   return out;
 }
 
@@ -44,10 +48,11 @@ continueBilling = function (form) {
 };
 showSaleReview = function () {
   const d = reviewCustomer, b = reviewBilling, rto = b.type === 'Rent-to-own';
+  const disc = b.discount > 0 ? b.discount : 0, price = amount() - disc;
   /* Rent-to-own: the application starts as soon as the order is created, then the signatures. */
-  const next = [...(rto ? ['The customer fills in the rent-to-own application (it opens next)'] : []), ...SF_DOCS.map(([, t]) => `The customer signs the ${t.toLowerCase()}`), 'You submit it for admin review'];
+  const next = [...(rto ? ['The customer fills in the rent-to-own application (it opens next)'] : []), ...SF_DOCS.map(([, t]) => `The customer signs the ${t.toLowerCase()}`), ...(S.path !== 'lot' && !S.c.sheet?.ok ? ['The customer confirms the floor plan'] : []), 'You submit it for admin review'];
   modal('Complete the sale · create the order', `<p><strong>${esc(d.firstName + ' ' + d.lastName)}</strong><br>${esc(d.email)} · ${esc(d.phone)}</p><p>${d.same ? 'Delivery address matches billing.' : 'Separate delivery address provided.'}</p>
-    <p><strong>${b.type}</strong> · ${money(amount())} building subtotal<br>Deposit recorded: ${money(b.deposit)}${rto ? `<br>${b.term} months · ${money(payment(amount(), b.term))}/mo before tax` : `<br>Remaining building subtotal: ${money(amount() - b.deposit)}`}</p>
+    <p><strong>${b.type}</strong> · ${money(amount())} building subtotal${disc ? `<br>Discount · ${esc(b.purpose)}: ${money(-disc)} · the office approves it at review<br>After the discount: ${money(price)}` : ''}<br>${rto ? 'First payment' : 'Deposit'} recorded: ${money(b.deposit)}${rto ? `<br>${b.term} months · ${money(payment(price, b.term))}/mo before tax` : `<br>Balance after the deposit: ${money(price - b.deposit)}`}</p>
     <h3>${rto ? 'Next' : 'Next, on the order page'}</h3><ol class="sf-next">${next.map((x) => `<li>${x}</li>`).join('')}</ol>
     <div class="actions">${button('← Billing', 'openBilling()', 'secondary')}${button(rto ? 'Create the order and start the RTO application →' : 'Create the order →', 'submitSale()')}</div>`);
 };
@@ -168,7 +173,7 @@ function sfSign(kind) {
   closeModal();
   render();
   const left = sfMissing(s);
-  toast(kind === 'receipt' ? 'Delivered. The order is complete.' : left.length ? `Signed. ${left.length} left before admin review.` : 'Everything is signed. Ready to submit for admin review.');
+  toast(kind === 'receipt' ? 'Delivered. The order is complete.' : left.length ? `Signed. ${left.length} left before admin review.` : 'Everything is in. Ready to submit for admin review.');
 }
 /* Sign a document: the document itself, then the signature box under it. */
 function sfSignDoc(kind) {
@@ -220,11 +225,11 @@ function sfSubmit() {
   toast('Submitted for admin review.');
 }
 
-/* ---------- Preview stand-ins for the other apps ----------
+/* ---------- The other apps ----------
    In Turbo Assist the administrator approves in Order Intake, Production accepts the order and
    moves the plant phases, the QC build book passes the building, and Logistics schedules and
-   delivers. None of that happens on the desk. These buttons only let the preview walk the
-   whole path; they sit in their own marked box under the handoffs. */
+   delivers. None of that happens on the desk. The preview has a side for the office, plant QC
+   and Logistics; Production is the one stand-in left, a button in a marked box under the handoffs. */
 const SF_QA = () => phaseNames.indexOf('Final QA');
 function sfPlantNext() {
   const s = sfSale();
@@ -239,17 +244,9 @@ function sfPlantNext() {
   }
   render();
 }
-function sfSchedule() {
-  const s = sfSale(), v = document.getElementById('sf-date')?.value;
-  if (!s || !v) return toast('Pick a delivery date.');
-  s.deliverOn = v;
-  s.fulfillment = `Delivery scheduled ${sfDay(v)}`;
-  sfLog(s, `Logistics: delivery scheduled for ${sfDay(v)}`);
-  render();
-}
 function sfReceipt() {
   const s = sfSale();
-  modal('Proof of delivery', `<p class="sf-standin-note">Preview stand-in for Turbo Logistics: the driver collects this on site.</p><div class="od-paper od-legal"><div class="od-paperhead"><strong>Delivery receipt</strong><span>Invoice # ${esc(orderInvoice(s).number)}</span></div>
+  modal('Proof of delivery', `<p class="sf-standin-note">The driver collects this on site. In Turbo Logistics it is the stop’s FastField form.</p><div class="od-paper od-legal"><div class="od-paperhead"><strong>Delivery receipt</strong><span>Invoice # ${esc(orderInvoice(s).number)}</span></div>
     <p>${esc(label(s.c))}${s.c.package && activePackage(s.c) ? ' · ' + esc(s.c.package) : ''}, delivered to ${esc(orderInvoice(s).shipTo.street || 'the delivery address on the invoice')}.</p>
     <p>The customer confirms the building was delivered, set and blocked where they asked, and has walked around it with the driver.</p></div>`
     + sfPad('receipt', orderInvoice(s).shipTo.name || s.customer, 'The customer received the building and is satisfied with where it was set.'));
@@ -285,13 +282,14 @@ const SF_HOOK = {
   approve: 'Order Intake, in the office. The desk records the handoff (<code>salesDeskHandoffEntry</code>).',
   plant: 'Production → Accept order puts it on the plant. Phases from <code>mfg_build_pipeline_v1</code>; the desk reads them with <code>salesDeskBuildStage</code>.',
   qc: 'The QC build book report (<code>mfg_qa_qc_build_book.md</code>). The desk opens that report.',
-  ship: 'Turbo Logistics (<code>shipmentsService</code>, <code>routesService</code>).',
+  release: 'The <code>ready_to_deliver</code> flag, set by the office (<code>readyToDeliverPatch</code>).',
+  ship: 'Turbo Logistics (<code>shipmentsService</code>, <code>routesService</code>). Scheduling tells the salesperson to relay the day; no text goes to the customer (<code>notifyRouteDeliveryStateTransition</code>).',
   pod: 'Turbo Logistics proof of delivery, filed to the deal paperwork; desk history reads <code>customer_order_delivered</code>.',
 };
 const SF_ONLY = {
   sign: 'Signing on this screen with a finger. The contract plan signs through the provider instead.',
   rto: 'The step-by-step application. Turbo Assist has no record for it yet; its desk shows “RTO application: Not recorded”.',
-  submit: 'Holding Submit until everything is signed. No plan sets that rule yet.',
+  submit: 'Holding Submit until everything is signed and the floor plan is confirmed. No plan sets that rule yet.',
   plan: 'The floor plan editor and build sheet. The configurator plan leaves drawing floor plans in the browser out of scope.',
   pod: 'The on-screen delivery signature, until Logistics’ form is wired to the order.',
 };
@@ -304,29 +302,43 @@ function sfSteps(s) {
   for (const [k, t] of SF_DOCS)
     desk.push({ title: `Customer signs the ${t.toLowerCase()}`, on: signed[k], text: signed[k] ? `Signed ${signed[k]} by ${esc(s.signatures?.[k]?.name || s.customer)}` : 'Read it with the customer, then they sign', act: signing && !signed[k] ? `<button type="button" class="secondary small" onclick="sfSignDoc('${k}')">Sign</button>` : '', hook: SF_HOOK.sign, only: SF_ONLY.sign });
   if (!lot)
-    desk.push({ title: 'Customer checks the floor plan', on: s.c.sheet?.ok, optional: true, text: s.c.sheet?.ok ? 'Layout confirmed' : 'Optional: walk the customer through where everything goes', act: !s.c.sheet?.ok && !after ? `<button type="button" class="secondary small" onclick="openBuildSheet('${s.id}')">Open floor plan</button>` : '', hook: SF_HOOK.plan, only: SF_ONLY.plan });
+    desk.push({ title: 'Customer confirms the floor plan', on: s.c.sheet?.ok, text: s.c.sheet?.ok ? 'Layout confirmed' : 'Walk the customer through where everything goes, then press Confirm layout. The office cannot approve without it.', act: !s.c.sheet?.ok && !after ? `<button type="button" class="secondary small" onclick="openBuildSheet('${s.id}')">Open floor plan</button>` : '', hook: SF_HOOK.plan, only: SF_ONLY.plan });
   const missing = sfMissing(s);
-  desk.push({ title: 'Submit for admin review', on: !signing, text: signing ? (missing.length ? `Still needed: ${missing.join('; ')}` : 'Everything is signed') : `Submitted${reviewing ? ' · waiting on the office' : ''}`, act: signing ? `<button type="button" class="primary small" ${missing.length ? 'disabled' : ''} onclick="sfSubmit()">Submit for admin review</button>` : '', block: signing && missing.length, hook: SF_HOOK.submit, only: SF_ONLY.submit });
+  desk.push({ title: 'Submit for admin review', on: !signing, text: signing ? (missing.length ? `Still needed: ${missing.join('; ')}` : 'Everything is in') : `Submitted${reviewing ? ' · waiting on the office' : ''}`, act: signing ? `<button type="button" class="primary small" ${missing.length ? 'disabled' : ''} onclick="sfSubmit()">Submit for admin review</button>` : '', block: signing && missing.length, hook: SF_HOOK.submit, only: SF_ONLY.submit });
 
-  handoff.push({ title: 'Order Intake approves', on: after, text: after ? 'Approved' : s.status === 'Correction requested' ? 'The office asked for a correction. Fix it, then submit again.' : reviewing ? 'Waiting on the office' : 'After you submit', hook: SF_HOOK.approve });
+  const o = s.office || {}, released = !!o.released;
+  handoff.push({ title: 'The office approves', on: after, text: after ? 'Approved' : s.status === 'Correction requested' ? `On hold${o.hold ? ': ' + esc(o.hold.reason) : ''}. Fix it, then submit again.` : reviewing ? 'Waiting on the office' : 'After you submit', hook: SF_HOOK.approve });
   if (!lot) {
     const phase = s.plantPhase ?? -1, qc = sfQc(s), done = qc.passed || phase >= phaseNames.length - 1;
-    handoff.push({ title: 'Plant builds it', on: done || phase >= SF_QA(), text: phase < 0 ? 'After Order Intake approves' : phaseNames[Math.max(phase, 0)], extra: phase >= 0 ? `<div class="sf-phases">${chevronTrack(phaseNames, done ? phaseNames.length : phase)}</div>` : '', hook: SF_HOOK.plant });
+    handoff.push({ title: 'Plant builds it', on: done || phase >= SF_QA(), text: phase < 0 ? 'After the office approves' : phaseNames[Math.max(phase, 0)], extra: phase >= 0 ? `<div class="sf-phases">${chevronTrack(phaseNames, done ? phaseNames.length : phase)}</div>` : '', hook: SF_HOOK.plant });
     handoff.push({ title: 'Passes plant QC', on: qc.passed, text: qc.text, act: qc.b ? `<button type="button" class="secondary small" onclick="openBuild('${s.id}')">Open the QC report</button>` : '', hook: SF_HOOK.qc });
   }
-  handoff.push({ title: 'Logistics schedules delivery', on: s.deliverOn, text: s.deliverOn ? sfDay(s.deliverOn) : lot ? 'After Order Intake approves' : 'After the building passes plant QC', hook: SF_HOOK.ship });
+  handoff.push({ title: 'The office releases it for delivery', on: released || s.deliveredAt, text: released ? (lot ? 'Released' : o.path === 'home' ? 'Released · plant to home' : 'Released · through the lot') : lot ? 'After the office approves, once the payment rule is met' : 'After the building passes plant QC', hook: SF_HOOK.release });
+  const where = released && typeof lgSaleLine === 'function' ? lgSaleLine(s) : '';
+  handoff.push({ title: 'Logistics schedules delivery', on: s.deliverOn || s.deliveredAt, text: s.deliverOn ? `${sfDay(s.deliverOn)} · ${s.toldCustomer ? 'the customer has been told' : 'tell your customer the day'}` : where || 'After the office releases it',
+    act: s.deliverOn && !s.toldCustomer && !s.deliveredAt ? `<button type="button" class="secondary small" onclick="sfTold()">Customer told</button>` : '', hook: SF_HOOK.ship });
   handoff.push({ title: 'Delivered and signed for', on: s.deliveredAt, text: s.deliveredAt ? `Delivered ${s.deliveredAt} · signed by ${esc(s.signatures?.receipt?.name || s.customer)}` : 'The driver collects the customer’s signature', hook: SF_HOOK.pod, only: SF_ONLY.pod });
   return { desk, handoff };
 }
-/* Buttons that stand in for Order Intake, Production, Plant QC and Logistics in this preview. */
+/* Where to act next. The Office, Plant QC and Logistics are their own sides of the preview, so
+   these are links to the right screen there. Production has no side yet: its button is a stand-in. */
 function sfStandins(s) {
-  const lot = s.path === 'lot', after = s.status === 'Processed · Sold', qc = sfQc(s), b = [];
-  if (s.status === 'Submitted · Awaiting review') b.push(button('Order Intake: approve', "reviewAction('approve')", 'secondary small'), button('Order Intake: ask for a correction', "reviewAction('correction')", 'secondary small'));
+  const lot = s.path === 'lot', after = s.status === 'Processed · Sold', qc = sfQc(s), b = [], o = s.office || {};
+  const office = typeof ofOpen === 'function', logi = typeof lgOpenSale === 'function';
+  if (['Submitted · Awaiting review', 'Correction requested'].includes(s.status) && office) b.push(button('Office: review this order ' + icon('arrow', 16), `ofOpen('${s.id}')`, 'secondary small'));
   if (after && !lot && (s.plantPhase ?? -1) < SF_QA()) b.push(button(`Production: move to ${phaseNames[(s.plantPhase ?? -1) + 1]}`, 'sfPlantNext()', 'secondary small'));
-  if (after && !lot && qc.b && !qc.passed) b.push(button('Plant QC: open the inspection', `openBuild('${s.id}')`, 'secondary small'));
-  if (after && !s.deliverOn && (lot || qc.passed)) b.push(`<span class="sf-sched"><input type="date" id="sf-date" min="${new Date().toISOString().slice(0, 10)}" aria-label="Delivery date">${button('Logistics: schedule', 'sfSchedule()', 'secondary small')}</span>`);
-  if (after && s.deliverOn && !s.deliveredAt) b.push(button('Logistics: delivered, customer signs', 'sfReceipt()', 'secondary small'));
-  return b.length ? `<div class="sf-standin"><strong>Preview stand-ins</strong><span>These buttons act for the other apps so the preview can walk the whole path. Salespeople do not see them in Turbo Assist.</span><div class="actions">${b.join('')}</div></div>` : '';
+  if (after && !lot && qc.b && !qc.passed) b.push(button('Plant QC: open the inspection ' + icon('arrow', 16), `openBuild('${s.id}')`, 'secondary small'));
+  if (after && (lot || qc.passed) && !o.released && office) b.push(button('Office: release it for delivery ' + icon('arrow', 16), `ofOpen('${s.id}')`, 'secondary small'));
+  if (after && o.released && logi) b.push(button('Logistics: open this building ' + icon('arrow', 16), `lgOpenSale('${s.id}')`, 'secondary small'));
+  return b.length ? `<div class="sf-standin"><strong>Where to act next in this preview</strong><span>The Office, Plant QC and Logistics are their own sides here (the switch at the top). Production has no side yet, so its button is a stand-in. Salespeople do not see these in Turbo Assist.</span><div class="actions">${b.join('')}</div></div>` : '';
+}
+/* The salesperson passes the delivery day to the customer; nothing texts the customer for them. */
+function sfTold() {
+  const s = sfSale();
+  if (!s) return;
+  s.toldCustomer = true;
+  sfLog(s, 'Salesperson told the customer the delivery day');
+  render();
 }
 function sfRow(x, now) {
   const notes = S.sfNotes === false ? '' : `${x.hook ? `<small class="sf-hook"><b>Turbo Assist</b> ${x.hook}</small>` : ''}${x.only ? `<small class="sf-only"><b>Preview only</b> ${x.only}</small>` : ''}`;
@@ -344,6 +356,7 @@ function sfPanel(s) {
 
 /* ---------- The order page ---------- */
 orderTrack = function (s) {
+  if (s.status === 'Cancelled') return '';
   const lot = s.path === 'lot', hold = s.status === 'Correction requested';
   const names = ['Quote', 'Signed', hold ? 'Correction needed' : 'Admin review', ...(lot ? [] : ['Plant', 'Plant QC']), 'Delivery', 'Delivered'];
   let at = { 'Quote issued': 0, 'Sold · Awaiting signatures': 1, 'Submitted · Awaiting review': 2, 'Correction requested': 2 }[s.status];
@@ -361,8 +374,8 @@ orderTrack = function (s) {
     /* QC passed: the plant's last phase, Build complete. */
     if (s.built && sfQc(s).passed && s.plantPhase < phaseNames.length - 1) s.plantPhase = phaseNames.length - 1;
     html = html.replace('<div class="od-grid">', sfPanel(s) + '<div class="od-grid">').replace('<span class="pill amber">Delivered</span>', '<span class="pill good">Delivered</span>');
-    /* The office's approve / correction buttons now live in the stand-in box, marked as Order Intake. */
-    html = html.replace(/<p>Administrator: check the options[\s\S]*?<\/div>/, '<p class="sf-standin-note">Approval happens in Order Intake. In this preview, use the stand-in buttons under Next steps.</p>');
+    /* Approve and hold are the office's buttons: they live on the Office side. */
+    html = html.replace(/<p>Administrator: check the options[\s\S]*?<\/div>/, `<p class="sf-standin-note">The office reviews and approves this order on the Office side (Order Intake in Turbo Assist).</p>${typeof ofOpen === 'function' ? `<div class="actions">${button('Open it in the Office ' + icon('arrow', 16), `ofOpen('${s.id}')`, 'secondary small')}</div>` : ''}`);
     /* Unsigned paperwork gets a Sign button next to View while the customer is signing. */
     if (SF_SIGNING.includes(s.status))
       for (const [k] of SF_DOCS)

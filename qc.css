@@ -170,7 +170,7 @@ body:not([data-side="qc"]) [data-for="qc"], body[data-side="qc"] [data-for="sale
 .sideswitch { display: inline-flex; flex: none; padding: 3px; border-radius: 10px; background: var(--navy-2); gap: 2px; }
 .sideswitch button { border: 0; background: none; color: var(--on-dark-muted); font-weight: 600; font-size: 13.5px; padding: 6px 12px; border-radius: 8px; white-space: nowrap; }
 .sideswitch button:hover { color: var(--on-dark); }
-body:not([data-side="qc"]) .sideswitch [data-side-btn="sales"], body[data-side="qc"] .sideswitch [data-side-btn="qc"] { background: var(--surface); color: var(--ink); }
+body:not([data-side="qc"]):not([data-side="office"]):not([data-side="logi"]) .sideswitch [data-side-btn="sales"], body[data-side="qc"] .sideswitch [data-side-btn="qc"] { background: var(--surface); color: var(--ink); }
 .sideswitch.strip { display: none; padding: 2px; }
 .sideswitch.strip button { font-size: 12.5px; padding: 5px 10px; }
 .previewstrip-in { flex-wrap: wrap; row-gap: 6px; }

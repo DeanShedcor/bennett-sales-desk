@@ -6,8 +6,6 @@
 .sf-step.blocked small { color: var(--bad); }
 .sf-step button[disabled] { opacity: .45; cursor: not-allowed; }
 .sf-step .grow { min-width: 180px; }
-.sf-sched { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.sf-sched input { font: inherit; padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: 8px; }
 .sf-next { margin: 6px 0 14px; padding-left: 22px; line-height: 1.7; }
 .sf-signbox { border-top: 2px solid var(--line); margin-top: 18px; padding-top: 14px; }
 .sf-signbox h3 { margin: 0 0 10px; }
