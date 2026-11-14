@@ -21,7 +21,10 @@ const LG = {
   units: [], loads: [], rigs: [], carriers: [],
   loadId: null, back: 'logi', tile: 'all', q: '', pick: [], tab: 'scheduled', week: 0, place: null, rig: null,
   seq: 0, homeSeq: 11,
-  set: { wideFt: 14 }, /* buildings this wide or wider are flagged as wide loads */
+  /* wideFt: buildings this wide or wider are flagged as wide loads.
+     tell: who tells the customer the delivery day. "logistics" (how it works today) or "auto",
+     a text and an email sent when the day is set. A lot can also let its own manager schedule. */
+  set: { wideFt: 14, tell: 'logistics' },
 };
 const LG_STATE = { planned: 'Being planned', scheduled: 'Scheduled', in_transit: 'On the road', delivered: 'Delivered', cancelled: 'Cancelled' };
 const LG_STATE_PILL = { planned: 'amber', scheduled: 'blue', in_transit: 'amber', delivered: 'good', cancelled: 'ghost' };
@@ -227,7 +230,8 @@ function lgChecks(load) {
     if (!rig.feet) add('warn', 'Rig has no capacity on file — verify load fit manually.', true);
     else {
       for (const u of units) if (u.len > rig.feet) add('warn', `Unit needs ~${u.len} linear feet; rig capacity is ${rig.feet}.`, true);
-      if (feet > rig.feet) add('stop', `Too long: ${feet} ft of buildings on a ${rig.feet} ft trailer. Take one off or pick a longer trailer.`);
+      if (feet > rig.feet && load.over) add('warn', `${feet - rig.feet} ft over the ${rig.feet} ft trailer · override: ${load.over.reason}.`);
+      else if (feet > rig.feet) out.push({ level: 'stop', key: 'over', text: `Too long: ${feet} ft of buildings on a ${rig.feet} ft trailer. Take one off, pick a longer trailer, or override with a reason.` });
     }
     if (load.date) {
       const same = LG.loads.filter((l) => l !== load && l.rigId === rig.id && l.date === load.date && !['cancelled', 'delivered'].includes(l.state)).length;
@@ -246,6 +250,9 @@ function lgChecks(load) {
   const states = lgStates(load);
   if (states.length > 1) add('info', `This run crosses state lines: ${states.join(' → ')}.`);
   const firstHome = load.stops.findIndex((x) => !lgStopIsLot(x)), lastLot = load.stops.map(lgStopIsLot).lastIndexOf(true);
+  if (load.state === 'scheduled')
+    for (const u of units.filter((x) => x.leg !== 'plant-lot'))
+      if (!lgToldOf(u)) add('stop', `${u.customer}: tell the customer the day before the run starts.`);
   if (firstHome >= 0 && lastLot > firstHome) add('warn', 'A customer delivery comes before a lot drop. Lot drops usually come off first, with the customer’s building at the front of the trailer.');
   for (const u of units) if (lgSale(u)?.status === 'Cancelled') add('stop', `${u.customer}: the office cancelled this order. Take the building off the load.`);
   for (const stop of load.stops.filter((x) => !lgStopIsLot(x)))
@@ -292,11 +299,13 @@ function lgTogglePick(id, on) {
 }
 function lgAdd(loadId, unitId) {
   const load = lgLoad(loadId);
+  load.over = null; /* the load changed: an override has to be given again */
   lgPut(load, unitId);
   lgOrderStops(load);
   render();
 }
 function lgRemove(loadId, unitId) {
+  lgLoad(loadId).over = null;
   lgTake(lgLoad(loadId), unitId);
   render();
 }
@@ -310,7 +319,22 @@ function lgMoveStop(loadId, i, by) {
 function lgSet(loadId, key, value) {
   const load = lgLoad(loadId);
   load[key] = value;
-  if (key === 'rigId') load.driver = lgRig(value)?.driver || '';
+  if (key === 'rigId') (load.driver = lgRig(value)?.driver || ''), (load.over = null);
+  render();
+}
+function lgOverForm(id) {
+  const load = lgLoad(id), rig = lgRig(load.rigId), feet = lgFeet(load);
+  modal('Override the trailer length', `<p><strong>${lgLoadName(load)}</strong> carries ${feet} ft of buildings on a ${rig.feet} ft trailer: ${feet - rig.feet} ft over.</p>
+    <label class="field">Why it is safe to haul<input id="lg-over" maxlength="120" placeholder="Example: 4 ft overhang at the rear, flagged"></label>
+    <p class="source">The reason stays on the load and shows to the driver. Adding or removing a building, or changing the trailer, clears it.</p>
+    <div class="actions">${button('Override', `lgOverSave('${id}')`)}${button('Cancel', 'closeModal()', 'secondary')}</div>`);
+}
+function lgOverSave(id) {
+  const load = lgLoad(id), reason = $('#lg-over').value.trim();
+  if (!reason) return toast('An override needs a reason.');
+  load.over = { reason, at: Date.now() };
+  lgNote(load, `Trailer length overridden: ${reason}`);
+  closeModal();
   render();
 }
 /* A building can leave the plant path it was given: straight to the customer, or through the lot. */
@@ -340,16 +364,46 @@ function lgSchedule(id) {
   lgNote(load, `Scheduled for ${lgDay(load.date)}${load.window !== 'Date only' ? ' · ' + (load.windowNote || load.window).toLowerCase() : ''} with ${lgRig(load.rigId).name}`);
   for (const u of lgLoadUnits(load)) {
     const s = lgSale(u);
-    if (!s) continue;
-    if (u.leg === 'plant-lot') ofLog(s, `Logistics: leaves the plant for the ${lotById(u.lotId).town} lot ${lgDay(load.date)}`);
-    else {
-      s.deliverOn = load.date;
-      s.toldCustomer = false;
-      ofLog(s, `Logistics: delivery scheduled for ${lgDay(load.date)} · relay the date to your customer (no automatic customer text)`);
+    if (u.leg === 'plant-lot') {
+      if (s) ofLog(s, `Logistics: leaves the plant for the ${lotById(u.lotId).town} lot ${lgDay(load.date)}`);
+      continue;
     }
+    const auto = LG.set.tell === 'auto';
+    u.told = auto ? { how: 'auto', at: Date.now() } : null;
+    if (!s) continue;
+    s.deliverOn = load.date;
+    s.toldCustomer = auto;
+    ofLog(s, auto ? `Logistics: delivery scheduled for ${lgDay(load.date)} · text and email sent to the customer (preview: nothing is really sent)` : `Logistics: delivery scheduled for ${lgDay(load.date)} · Logistics tells the customer`);
   }
   render();
   toast(`${lgLoadName(load)} scheduled for ${lgDay(load.date)}.`);
+}
+/* Has the customer been told the day? Logistics ticks it, the lot's manager can where that is
+   switched on, or the text and email went out by themselves. */
+const lgToldOf = (u) => !!u.told || !!lgSale(u)?.toldCustomer;
+function lgTold(unitId, who) {
+  const u = lgUnit(unitId), s = lgSale(u);
+  u.told = { how: who || 'Logistics', at: Date.now() };
+  if (s) (s.toldCustomer = true), ofLog(s, `${who || 'Logistics'} told the customer the delivery day`);
+  render();
+  toast('Marked: the customer knows the day.');
+}
+/* The text and the email a customer gets (or would get) when the day is set. */
+function lgMessage(unitId) {
+  const u = lgUnit(unitId), s = lgSale(u), load = lgOnLoad(u), lot = lotById(u.lotId), st = s ? orderInvoice(s).shipTo : null;
+  const when = load?.date ? `${new Date(load.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}${load.window !== 'Date only' ? ', ' + (load.windowNote || load.window).toLowerCase() : ''}` : 'the day Logistics sets';
+  const text = `Bennett Buildings: your ${u.size.replace('x', ' x ')} building is set for delivery on ${when}. Please keep a ${u.wid + 2} ft wide path and 14 ft of height clear. Questions? Call the ${lot.town} lot at ${lot.phone}.`;
+  modal('Message to the customer', `<p><strong>${esc(u.customer)}</strong>${st ? ` · ${esc(st.phone || 'no phone on file')} · ${esc(st.email || 'no email on file')}` : ' · sample customer, no contact on file'}</p>
+    <div class="lg-msg"><small>Text</small><p>${esc(text)}</p></div>
+    <div class="lg-msg"><small>Email · Your Bennett building is set for delivery on ${esc(when)}</small><p>Hello ${esc(u.customer.split(' ')[0])},</p><p>Your ${esc(u.name)} is set for delivery on <strong>${esc(when)}</strong>.</p><p>Before the driver arrives, please keep a ${u.wid + 2} ft wide path clear to where the building goes, with 14 ft of height free of wires and limbs, and move cars, boats and anything else in the way.</p><p>If the day does not work, or anything at the site has changed, call the ${esc(lot.town)} lot at ${esc(lot.phone)}.</p><p>Bennett Buildings of ${esc(lot.town)}</p></div>
+    <p class="source">${LG.set.tell === 'auto' ? 'With automatic messages on, this goes out the moment the day is set.' : 'Automatic messages are off (Logistics → Trailers → Rules). Logistics tells the customer.'} Preview only: nothing is sent.</p>
+    <div class="actions">${button('Close', 'closeModal()', 'secondary')}</div>`);
+}
+/* A lot can let its own manager schedule home deliveries from the lot and tell the customer. */
+function lgManager(lotId, on) {
+  lotById(lotId).managerSchedules = !!on;
+  render();
+  toast(on ? `The ${lotById(lotId).town} manager can now schedule that lot’s home deliveries.` : `Home deliveries from ${lotById(lotId).town} are back with Logistics.`);
 }
 function lgStart(id) {
   const load = lgLoad(id);
@@ -661,5 +715,6 @@ function lgServe(lotId, plantId) {
   let hday = lgAddDays(lgToday(), 1);
   while (!lotDay(lotById('lugoff'), hday).open) hday = lgAddDays(hday, 1);
   Object.assign(home, { rigId: 'rig-4', driver: 'Nia Foster', date: hday, window: 'Afternoon', state: 'scheduled', sample: true });
+  lgLoadUnits(home)[0].told = { how: 'Logistics', at: hours(4) };
   home.log = [{ at: hours(5), text: 'Delivery started' }, { at: hours(4), text: `Scheduled for ${lgDay(hday)} · afternoon with Rig 4` }];
 })();

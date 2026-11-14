@@ -316,3 +316,16 @@ a.chipbtn, a.secondary { text-decoration: none; color: var(--ink); }
 .of-example { font-size: 13.500px; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 8px 12px; }
 .of-example b { color: var(--ink); }
 @media (max-width: 680px) { .of-seg.three { grid-template-columns: minmax(0, 1fr); } }
+
+.of-pickco { display: inline-flex; align-items: center; gap: 6px; font-size: 12.500px; font-weight: 600; color: var(--muted); }
+.of-pickco select { padding: 7px 9px; border: 1.500px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); font-weight: 500; max-width: 180px; }
+
+/* Logistics: the override button on a check, the message a customer gets, the manager switch */
+.lg-check > .secondary { flex: none; margin-left: auto; }
+.lg-msg { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--surface-2); }
+.lg-msg small { display: block; font-weight: 700; color: var(--steel); margin-bottom: 4px; }
+.lg-msg p + p { margin-top: 8px; }
+.lg-mgr { font-size: 14px; margin-top: 4px !important; }
+@media (max-width: 680px) {
+  .lg-stopacts { flex: 1 1 calc(100% - 42px); min-width: 0; }
+}

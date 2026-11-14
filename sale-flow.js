@@ -297,6 +297,7 @@ const SF_ONLY = {
   plan: 'The floor plan editor and build sheet. The configurator plan leaves drawing floor plans in the browser out of scope.',
   pod: 'The on-screen delivery signature, until Logistics’ form is wired to the order.',
   site: 'Asking miles, the gate, access and the ground at the sale, and Logistics confirming them at scheduling. Turbo Assist keeps no site answers yet.',
+  ship: 'Who tells the customer: Logistics today, an automatic text and email as an option, or a lot manager allowed to schedule. Turbo Assist tells the salesperson to relay the day.',
 };
 function sfSteps(s) {
   const lot = s.path === 'lot', signing = SF_SIGNING.includes(s.status), after = ['Processed · Sold', 'Delivered'].includes(s.status);
@@ -325,8 +326,11 @@ function sfSteps(s) {
   }
   handoff.push({ title: 'The office releases it for delivery', on: released || s.deliveredAt, text: released ? (lot ? 'Released' : o.path === 'home' ? 'Released · plant to home' : 'Released · through the lot') : lot ? 'After the office approves, once the payment rule is met' : 'After the building passes plant QC', hook: SF_HOOK.release });
   const where = released && typeof lgSaleLine === 'function' ? lgSaleLine(s) : '';
-  handoff.push({ title: 'Logistics schedules delivery', on: s.deliverOn || s.deliveredAt, text: s.deliverOn ? `${sfDay(s.deliverOn)} · ${s.toldCustomer ? 'the customer has been told' : 'tell your customer the day'}` : where || 'After the office releases it',
-    act: s.deliverOn && !s.toldCustomer && !s.deliveredAt ? `<button type="button" class="secondary small" onclick="sfTold()">Customer told</button>` : '', hook: SF_HOOK.ship });
+  /* Logistics tells the customer the day (or a text and email does). A lot whose manager is allowed
+     to schedule can tell the customer from here. */
+  const mgr = typeof saleLot === 'function' && saleLot(s).managerSchedules;
+  handoff.push({ title: 'Logistics schedules delivery', on: s.deliverOn || s.deliveredAt, text: s.deliverOn ? `${sfDay(s.deliverOn)} · ${s.toldCustomer ? 'the customer has been told' : mgr ? 'tell your customer the day' : 'Logistics tells the customer'}` : where || 'After the office releases it',
+    act: mgr && s.deliverOn && !s.toldCustomer && !s.deliveredAt ? `<button type="button" class="secondary small" onclick="sfTold()">Customer told</button>` : '', hook: SF_HOOK.ship, only: SF_ONLY.ship });
   handoff.push({ title: 'Delivered and signed for', on: s.deliveredAt, text: s.deliveredAt ? `Delivered ${s.deliveredAt} · signed by ${esc(s.signatures?.receipt?.name || s.customer)}` : 'The driver collects the customer’s signature', hook: SF_HOOK.pod, only: SF_ONLY.pod });
   return { desk, handoff };
 }
@@ -339,15 +343,16 @@ function sfStandins(s) {
   if (after && !lot && (s.plantPhase ?? -1) < SF_QA()) b.push(button(`Production: move to ${phaseNames[(s.plantPhase ?? -1) + 1]}`, 'sfPlantNext()', 'secondary small'));
   if (after && !lot && qc.b && !qc.passed) b.push(button('Plant QC: open the inspection ' + icon('arrow', 16), `openBuild('${s.id}')`, 'secondary small'));
   if (after && (lot || qc.passed) && !o.released && office) b.push(button('Office: release it for delivery ' + icon('arrow', 16), `ofOpen('${s.id}')`, 'secondary small'));
-  if (after && o.released && logi) b.push(button('Logistics: open this building ' + icon('arrow', 16), `lgOpenSale('${s.id}')`, 'secondary small'));
+  if (after && o.released && logi) b.push(button((typeof saleLot === 'function' && saleLot(s).managerSchedules ? 'Schedule this delivery yourself ' : 'Logistics: open this building ') + icon('arrow', 16), `lgOpenSale('${s.id}')`, 'secondary small'));
   return b.length ? `<div class="sf-standin"><strong>Where to act next in this preview</strong><span>The Office, Plant QC and Logistics are their own sides here (the switch at the top). Production has no side yet, so its button is a stand-in. Salespeople do not see these in Turbo Assist.</span><div class="actions">${b.join('')}</div></div>` : '';
 }
 /* The salesperson passes the delivery day to the customer; nothing texts the customer for them. */
 function sfTold() {
   const s = sfSale();
   if (!s) return;
+  if (typeof lgUnit === 'function' && lgUnit(s.id)) return lgTold(s.id, 'The lot manager');
   s.toldCustomer = true;
-  sfLog(s, 'Salesperson told the customer the delivery day');
+  sfLog(s, 'The lot manager told the customer the delivery day');
   render();
 }
 function sfRow(x, now) {

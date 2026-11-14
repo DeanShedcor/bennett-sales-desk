@@ -20,14 +20,15 @@
 const OF = {
   id: null, back: 'office', tile: 'all', lot: 'All', q: '', tab: 'review', payTab: 'confirm',
   set: {
-    /* Fuel surcharge: a percent of the price (how it works today), by size, or a flat amount.
-       Each way keeps its own number; a number is null until the office sets it. */
-    fuel: { method: 'percent', pct: null, perSqFt: null, flat: null },
+    /* Fuel surcharge: a percent of the price (how it works today), by size (a square foot or a
+       foot of length), or a flat amount. Each way keeps its own number; null until the office sets it. */
+    fuel: { method: 'percent', pct: null, perSqFt: null, perFt: null, flat: null },
     fuelLog: [],
     overTo: 100, overFee: 100, /* 51 to 100 miles: $100, from the delivery agreement */
     depositPct: 10, /* the website asks cash customers for 10% at the time of order */
     driverPay: false, /* false: cash sales are paid in full before delivery */
     purposes: ['Military'],
+    rtoCos: ['JMAG LLC'], /* one company today (the name on the sample contract); more can be added */
   },
 };
 /* Extra delivery charges, from the Delivery and blocking agreement every customer signs. */
@@ -38,7 +39,8 @@ const OF_FEES = [
 const OF_METHODS = ['Card', 'Cash', 'Check', 'Bank transfer', 'Money order'];
 const OF_FUEL = {
   percent: { key: 'pct', name: 'Percent of the price', hint: 'How it works today. A bigger price carries a bigger surcharge.', label: 'Percent of the building price (%)' },
-  size: { key: 'perSqFt', name: 'By size', hint: 'So much a square foot of building: width × length.', label: 'Dollars per square foot of building' },
+  size: { key: 'perSqFt', name: 'By square foot', hint: 'So much a square foot of building: width × length.', label: 'Dollars per square foot of building' },
+  linear: { key: 'perFt', name: 'By linear foot', hint: 'So much a foot of the building’s length.', label: 'Dollars per foot of length' },
   flat: { key: 'flat', name: 'Flat amount', hint: 'The same on every building.', label: 'Dollars per building' },
 };
 const ofFuelValue = (f = OF.set.fuel) => f[OF_FUEL[f.method].key];
@@ -47,11 +49,12 @@ const ofFuelSet = () => ofFuelValue() != null;
 function ofFuelFor(c, price) {
   const f = OF.set.fuel, v = ofFuelValue();
   if (v == null) return null;
-  return Math.round((f.method === 'percent' ? (price * v) / 100 : f.method === 'size' ? floorArea(c) * v : v) * 100) / 100;
+  const length = Number(c.size.split('x')[1]);
+  return Math.round((f.method === 'percent' ? (price * v) / 100 : f.method === 'size' ? floorArea(c) * v : f.method === 'linear' ? length * v : v) * 100) / 100;
 }
 function ofFuelSay(f = OF.set.fuel) {
   const v = ofFuelValue(f);
-  return v == null ? 'not set' : f.method === 'percent' ? `${v}% of the building price` : f.method === 'size' ? `${money(v)} per sq ft of building` : `${money(v)} per building`;
+  return v == null ? 'not set' : f.method === 'percent' ? `${v}% of the building price` : f.method === 'size' ? `${money(v)} per sq ft of building` : f.method === 'linear' ? `${money(v)} per foot of length` : `${money(v)} per building`;
 }
 const OF_STAGE = { 'Submitted · Awaiting review': 'review', 'Correction requested': 'hold', 'Processed · Sold': 'approved', Delivered: 'delivered', Cancelled: 'cancelled' };
 const OF_STAGE_NAME = { review: 'To review', hold: 'On hold', approved: 'Approved', delivered: 'Delivered', cancelled: 'Cancelled' };
@@ -63,7 +66,7 @@ const ofAll = () => S.sales.filter(ofStage);
 const ofLog = (s, text) => s.events.push({ text, time: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) });
 const ofSum = (list) => list.reduce((t, x) => t + Number(x.amount || 0), 0);
 const ofRto = (s) => s.type === 'Rent-to-own' || /RTO/.test(s.invoice?.plan || '');
-const ofRtoName = (s) => (s.rtoApp?.provider && s.rtoApp.provider !== 'RTO provider' ? s.rtoApp.provider : 'the RTO company');
+const ofRtoName = (s) => s.office?.rtoCo?.company || (s.rtoApp?.provider && s.rtoApp.provider !== 'RTO provider' ? s.rtoApp.provider : OF.set.rtoCos.length === 1 ? OF.set.rtoCos[0] : 'the RTO company');
 const ofStamp = (t) => new Date(t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const ofAgo = (t) => {
   const h = Math.max(0, Math.round((Date.now() - t) / 36e5));
@@ -167,11 +170,14 @@ function ofChecks(s) {
       act: btn('Build sheet', `openBuildSheet('${id}')`), hold: 'Floor plan is not confirmed' });
 
   if (t.rto) {
-    const r = o.rtoCo, name = esc(ofRtoName(s));
+    const r = o.rtoCo, name = esc(ofRtoName(s)), tried = (o.rtoTries || []).map((x) => x.company), left = OF.set.rtoCos.filter((c) => !tried.includes(c));
+    /* One company: one button. Several: the office picks where it goes, and can try another after a decline. */
+    const send = left.length > 1 ? `<label class="of-pickco">Send to<select id="of-rto-co">${left.map((c) => `<option>${esc(c)}</option>`).join('')}</select></label>${btn('Send', `ofRtoSend('${id}')`, 'primary small')}` : btn(`Send to ${esc(left[0] || 'the RTO company')}`, `ofRtoSend('${id}')`, 'primary small');
+    const more = r?.state === 'declined' && OF.set.rtoCos.some((c) => c !== r.company && !tried.includes(c));
     out.push({ key: 'rto', short: 'RTO company', title: 'RTO company approval', must: true,
       state: !r ? 'todo' : r.state === 'approved' ? 'ok' : r.state === 'declined' ? 'bad' : 'wait',
-      text: !r ? `Not sent to ${name} yet` : r.state === 'approved' ? `Approved by ${name} ${ofStamp(r.at)}` : r.state === 'declined' ? `Declined by ${name} ${ofStamp(r.at)} · cancel, or place on hold to change the sale` : `Sent to ${name} ${ofAgo(r.sent)} · waiting on their answer`,
-      act: !r ? btn('Send to the RTO company', `ofRtoSend('${id}')`, 'primary small') : r.state === 'sent' ? btn('They approved', `ofRtoAnswer('${id}',true)`, 'primary small') + btn('They declined', `ofRtoAnswer('${id}',false)`) : '', hold: 'The RTO company declined the application' });
+      text: (!r ? `Not sent ${left.length > 1 ? 'yet' : `to ${name} yet`}` : r.state === 'approved' ? `Approved by ${name} ${ofStamp(r.at)}` : r.state === 'declined' ? `Declined by ${name} ${ofStamp(r.at)} · ${more ? 'try another company, cancel, or place on hold' : 'cancel, or place on hold to change the sale'}` : `Sent to ${name} ${ofAgo(r.sent)} · waiting on their answer`) + (tried.length ? ` · declined earlier by ${tried.map(esc).join(', ')}` : ''),
+      act: !r ? send : r.state === 'sent' ? btn('They approved', `ofRtoAnswer('${id}',true)`, 'primary small') + btn('They declined', `ofRtoAnswer('${id}',false)`) : more ? btn('Send to another company', `ofRtoRetry('${id}')`, 'primary small') : '', hold: 'The RTO company declined the application' });
   }
 
   const list = ofListPrice(s), gap = list == null ? 0 : Math.round((s.total - (m.fuel || 0) - list) * 100) / 100;
@@ -249,11 +255,27 @@ function ofPaySave(id) {
   toast(t.rto || t.balance > 0 ? `${money(amount)} recorded.` : `${money(amount)} recorded. Paid in full.`);
 }
 function ofRtoSend(id) {
-  const s = ofSale(id);
-  ofRec(s).rtoCo = { state: 'sent', sent: Date.now() };
-  ofLog(s, `Office sent the application to ${ofRtoName(s)}`);
+  const s = ofSale(id), o = ofRec(s), tried = (o.rtoTries || []).map((x) => x.company);
+  const company = $('#of-rto-co')?.value || OF.set.rtoCos.find((c) => !tried.includes(c)) || OF.set.rtoCos[0];
+  o.rtoCo = { state: 'sent', company, sent: Date.now() };
+  if (s.rtoApp) s.rtoApp.provider = company;
+  ofLog(s, `Office sent the application to ${company}`);
   render();
   toast('Sent. Record their answer when it comes back.');
+}
+/* Declined: with more than one company, the application can go to the next. */
+function ofRtoRetry(id) {
+  const s = ofSale(id), o = ofRec(s);
+  (o.rtoTries ||= []).push(o.rtoCo);
+  o.rtoCo = null;
+  render();
+}
+function ofAddRtoCo() {
+  const v = $('#of-rtoco').value.trim();
+  if (!v) return;
+  if (!OF.set.rtoCos.includes(v)) OF.set.rtoCos.push(v);
+  render();
+  toast(`${v} added. The office now picks where each application goes.`);
 }
 function ofRtoAnswer(id, yes) {
   const s = ofSale(id), r = ofRec(s).rtoCo;
@@ -822,7 +844,7 @@ function officeSettings() {
   <div class="grid2">
     <section class="panel"><div class="panelhead"><h2>Fuel surcharge</h2><span class="pill ${ofFuelSet() ? 'good' : 'red'}">${ofFuelSet() ? esc(ofFuelSay()) : 'Not set'}</span></div>
       <p>Added to every new custom building automatically. An order keeps the amount it was sold with.</p>
-      <div class="of-seg three" role="group" aria-label="How the fuel surcharge is figured">${Object.entries(OF_FUEL).map(([k, o]) => `<button type="button" class="${f.fuel.method === k ? 'on' : ''}" onclick="ofFuelMethod('${k}')"><strong>${o.name}</strong><small>${o.hint}</small></button>`).join('')}</div>
+      <div class="of-seg" role="group" aria-label="How the fuel surcharge is figured">${Object.entries(OF_FUEL).map(([k, o]) => `<button type="button" class="${f.fuel.method === k ? 'on' : ''}" onclick="ofFuelMethod('${k}')"><strong>${o.name}</strong><small>${o.hint}</small></button>`).join('')}</div>
       <div class="of-inline"><label>${OF_FUEL[f.fuel.method].label}<input id="of-fuel" type="number" min="0" step="0.01" value="${ofFuelValue() ?? ''}" inputmode="decimal" placeholder="Not set"></label>${button('Save', 'ofSetFuel()', 'primary small')}</div>
       ${ofFuelExample()}
       ${ofFuelSet() ? '' : `<p class="notice">Until this is set, every price on the Sales desk shows ${STILL_NEEDED} beside the fuel surcharge.</p>`}
@@ -837,13 +859,17 @@ function officeSettings() {
       <h3>Final payment</h3>
       <div class="of-seg two" role="group" aria-label="Final payment"><button type="button" class="${f.driverPay ? '' : 'on'}" onclick="OF.set.driverPay=false;render()"><strong>Before delivery</strong><small>Paid in full before a building goes to a home. How it works today.</small></button>
         <button type="button" class="${f.driverPay ? 'on' : ''}" onclick="OF.set.driverPay=true;render()"><strong>Driver can take it</strong><small>The driver collects the balance at delivery, before the customer signs.</small></button></div></section>
+    <section class="panel"><div class="panelhead"><h2>Rent-to-own companies</h2><span class="pill blue">${f.rtoCos.length === 1 ? 'One company' : f.rtoCos.length + ' companies'}</span></div>
+      <p>${f.rtoCos.length === 1 ? 'Every rent-to-own application goes to this company. Add another and the office picks where each one goes, and can try the next after a decline.' : 'The office picks where each application goes, and can try the next company after a decline.'}</p>
+      <div class="chiprow">${f.rtoCos.map((c, i) => `<span class="chipbtn on">${esc(c)}${f.rtoCos.length > 1 ? ` <button type="button" class="of-x" aria-label="Remove ${esc(c)}" onclick="OF.set.rtoCos.splice(${i},1);render()">×</button>` : ''}</span>`).join('')}</div>
+      <div class="of-inline"><label>Add a company<input id="of-rtoco" maxlength="50" placeholder="Company name"></label>${button('Add', 'ofAddRtoCo()', 'secondary small')}</div></section>
     <section class="panel"><h2>Discounts</h2>
       <p>Every discount needs a purpose. These are offered as quick picks; anything else can be typed.</p>
       <div class="chiprow">${f.purposes.map((p, i) => `<span class="chipbtn on">${esc(p)} <button type="button" class="of-x" aria-label="Remove ${esc(p)}" onclick="OF.set.purposes.splice(${i},1);render()">×</button></span>`).join('')}</div>
       <div class="of-inline"><label>Add a purpose<input id="of-purpose" maxlength="40" placeholder="Example: First responder"></label>${button('Add', 'ofAddPurpose()', 'secondary small')}</div>
       <h3>Sales tax</h3><p class="of-soft">Comes from a tax service, by delivery address. Not connected in this preview, so tax shows as “from the tax service”.</p></section>
   </div>
-  ${opsNotes([['Free delivery miles and haul charges', 'Haul rates live in <code>mfg_haul_rate_rules</code>.']], ['A fuel surcharge setting (a percent of the price, by size, or a flat amount) with its change history. Turbo Assist has no fuel surcharge yet.', 'The deposit percent, the driver-payment switch and the discount purposes.', 'Sales tax: the plan <code>rto_tax_lookup.md</code> is not started.'])}`;
+  ${opsNotes([['Free delivery miles and haul charges', 'Haul rates live in <code>mfg_haul_rate_rules</code>.']], ['A fuel surcharge setting (a percent of the price, by the square foot, by the linear foot, or a flat amount) with its change history. Turbo Assist has no fuel surcharge yet.', 'The deposit percent, the driver-payment switch, the discount purposes and the list of RTO companies.', 'Sales tax: the plan <code>rto_tax_lookup.md</code> is not started.'])}`;
 }
 
 function officeNotes() {
@@ -1014,7 +1040,7 @@ function officeNotes() {
       events: [{ time: stamp(new Date(at - 50 * 60e3)), text: `Order created by ${o.agent} at ${lot.town}` }, { time: stamp(new Date(at - 15 * 60e3)), text: 'Customer signed the invoice, terms and delivery agreement' }, { time: stamp(at), text: 'Submitted to administrator for review' }],
       site: o.miles == null ? undefined : { miles: o.miles, access: 'Clear access', gate: '', noGate: true, ground: 'Level', notes: '', askedBy: 'Salesperson', askedAt: at.getTime() - 40 * 60e3, confirmed: null },
     };
-    if (rto) s.rtoApp = { provider: 'Sample RTO company', signedOn: day(at), term: o.term, a: { dlState: lot.state, dlGiven: true, dobGiven: true, ssn4: '0000', billingSame: true, employer: 'Sample Employer', r1name: 'Sample Reference', r1phone: '(843) 555-0111', r1rel: 'Friend', r1state: lot.state, r2name: 'Sample Reference Two', r2phone: '(843) 555-0122', r2rel: 'Friend', r2state: lot.state, idPhoto: 'sample-license.jpg', property: 'Owns the property', cosigner: false } };
+    if (rto) s.rtoApp = { provider: OF.set.rtoCos[0], signedOn: day(at), term: o.term, a: { dlState: lot.state, dlGiven: true, dobGiven: true, ssn4: '0000', billingSame: true, employer: 'Sample Employer', r1name: 'Sample Reference', r1phone: '(843) 555-0111', r1rel: 'Friend', r1state: lot.state, r2name: 'Sample Reference Two', r2phone: '(843) 555-0122', r2rel: 'Friend', r2state: lot.state, idPhoto: 'sample-license.jpg', property: 'Owns the property', cosigner: false } };
     S.sales.push(s);
     ofRec(s);
     s.money.fuel = null;
@@ -1039,7 +1065,7 @@ function officeNotes() {
   make({ id: 'STB-3102', lot: 'statesboro', customer: 'Dana Whitfield', agent: 'Sam Carter', hours: 2, c: { style: 'Lofted', size: '10x16', color: 'Clay', trimColor: 'Origami White', roofColor: 'Charcoal' }, street: '14 Sample Oak Rd', miles: 18, seeFirst: 'no', pays: [['all', 'Bank transfer', true]] });
   /* Rent-to-own, sent to the RTO company yesterday. */
   make({ id: 'LEX-1634', lot: 'lexington', customer: 'Pat Monroe', agent: 'Riley Hart', hours: 26, term: 48, c: { style: 'Utility', size: '12x24', shield: true, color: 'Dovetail Grey', trimColor: 'Origami White', roofColor: 'Black', windows: 2 }, street: '208 Sample Mill Rd', miles: 31, pays: [[436.5, 'Card at the lot', true]],
-    after: (s) => (s.office.rtoCo = { state: 'sent', sent: Date.now() - 20 * 36e5 }) });
+    after: (s) => (s.office.rtoCo = { state: 'sent', company: OF.set.rtoCos[0], sent: Date.now() - 20 * 36e5 }) });
   /* Cash with a military discount to approve and a deposit to confirm. */
   make({ id: 'FLO-2121', lot: 'florence', customer: 'Robin Hale', agent: 'Jo Whitaker', hours: 5, c: { style: 'Utility', size: '12x20', siding: 'Lap', color: 'Sage Green', trimColor: 'Origami White', roof: 'Shingles', windows: 2 }, street: '77 Sample Pine Ct', miles: 44, discount: [300, 'Military'], pays: [['tenth', 'Card at the lot', false]] });
   /* Cash with two problems (no deposit, under the price list), and 62 miles out: a delivery charge. */
@@ -1077,7 +1103,7 @@ function officeNotes() {
   /* Rent-to-own, approved by the RTO company: free to go straight to the customer. */
   make({ id: 'RAV-5538', lot: 'ravenel', customer: 'Avery Quinn', agent: 'Noel Park', hours: 240, term: 36, status: 'Processed · Sold', seeFirst: 'no', c: { style: 'Utility', size: '10x16', shield: true, color: 'Navajo White', trimColor: 'Brown', roofColor: 'Brown' }, street: '19 Sample Creek Rd', miles: 27, pays: [[421.4, 'Card at the lot', true]],
     after: (s) => {
-      s.office.rtoCo = { state: 'approved', sent: Date.now() - 238 * 36e5, at: Date.now() - 230 * 36e5 };
+      s.office.rtoCo = { state: 'approved', company: OF.set.rtoCos[0], sent: Date.now() - 238 * 36e5, at: Date.now() - 230 * 36e5 };
       builtAndPassed(s, 4);
     } });
   /* Cash with a balance still owed: it can ride to the lot, not to the customer's home. */

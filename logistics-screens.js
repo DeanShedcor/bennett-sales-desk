@@ -111,7 +111,7 @@ function lgStopCard(load, i, big) {
     !isLot && site ? `<small>${esc([site.access, site.noGate ? 'no gate' : site.gate ? site.gate + ' ft opening' : '', site.ground, site.notes].filter(Boolean).join(' · '))}</small>` : '',
     !isLot && !stop.done ? `<small class="${lgSiteOpen(u) ? 'lg-bad' : 'lg-good'}">${lgSiteOpen(u) ? 'Site: ' + esc(lgSiteOpen(u)) : 'Site confirmed with the customer ' + lgStamp(site.confirmed)}</small>` : '',
     pay ? `<small class="${pay.ok ? '' : 'lg-bad'}">${esc(pay.text)}${stop.collected ? ` · driver collected ${money(stop.collected)}` : ''}</small>` : '',
-    s && load.state === 'scheduled' ? `<small>${s.toldCustomer ? 'The customer has been told the day' : 'The salesperson tells the customer the day · not ticked yet'}</small>` : '',
+    !isLot && load.state === 'scheduled' ? `<small class="${lgToldOf(u) ? 'lg-good' : 'lg-bad'}">${lgToldOf(u) ? `The customer knows the day${u.told?.how === 'auto' ? ' · text and email sent' : u.told?.how ? ' · told by ' + esc(u.told.how) : ''}` : 'The customer has not been told the day yet'}</small>` : '',
     stop.done ? `<small class="lg-good">${isLot ? 'Unloaded' : 'Delivered'} ${lgStamp(stop.done)} · ${isLot ? 'received' : 'signed'} by ${esc(stop.proof?.by || '')}${stop.proof?.note ? ' · ' + esc(stop.proof.note) : ''}${stop.proof?.photo ? ' · photo ' + esc(stop.proof.photo) : ''}</small>` : stop.arrived ? `<small>Arrived ${lgStamp(stop.arrived)}</small>` : '',
   ].join('');
   const acts = next
@@ -120,7 +120,7 @@ function lgStopCard(load, i, big) {
   return `<div class="lg-stop${stop.done ? ' done' : next ? ' now' : ''}"><span class="lg-stopn">${stop.done ? icon('check', 16) : i + 1}</span><div class="grow">
     <strong>${isLot ? esc(lot.town) + ' lot' : esc(u.customer) + ' · customer delivery'}</strong><small>${where} · about ${miles} mi from ${i ? 'the stop before' : load.from.type === 'plant' ? 'the plant' : 'the lot'}</small>${lines}
     <ul class="lg-stopunits">${units.map((x) => `<li><b>${x.wid} × ${x.len}</b> ${esc(x.name.replace(x.size, '').trim())} <span class="serial">${esc(x.id)}</span>${x.kind === 'order' && isLot ? ` <span class="ops-flag wait">for ${esc(x.customer)}</span>` : ''}${lgWide(x) ? ' <span class="ops-flag todo">Wide</span>' : ''}${editable && !big ? ` <button type="button" class="of-x" aria-label="Take ${esc(x.name)} off this load" onclick="lgRemove('${load.id}','${x.id}')">×</button>` : ''}</li>`).join('')}</ul></div>
-    <div class="lg-stopacts">${acts}${!isLot && editable && !big ? `<button type="button" class="${lgSiteOpen(u) ? 'primary' : 'secondary'} small" onclick="lgSiteForm('${u.id}')">${lgSiteOpen(u) ? 'Confirm the site' : 'Site answers'}</button>` : ''}${addr || isLot ? `<a class="chipbtn" target="_blank" rel="noopener" href="${lgMapLink(isLot ? placeAddress(lot) : addr)}">${icon('pin', 16)} Directions</a>` : ''}</div></div>`;
+    <div class="lg-stopacts">${acts}${!isLot && load.state === 'scheduled' && !lgToldOf(u) ? `<button type="button" class="primary small" onclick="lgTold('${u.id}')">Customer told</button>` : ''}${!isLot && editable ? `<button type="button" class="link" onclick="lgMessage('${u.id}')">See the message</button>` : ''}${!isLot && editable && !big ? `<button type="button" class="${lgSiteOpen(u) ? 'primary' : 'secondary'} small" onclick="lgSiteForm('${u.id}')">${lgSiteOpen(u) ? 'Confirm the site' : 'Site answers'}</button>` : ''}${addr || isLot ? `<a class="chipbtn" target="_blank" rel="noopener" href="${lgMapLink(isLot ? placeAddress(lot) : addr)}">${icon('pin', 16)} Directions</a>` : ''}</div></div>`;
 }
 /* Buildings that could ride along: the same stops first, then the same area, oldest first. */
 function lgCandidates(load) {
@@ -151,7 +151,7 @@ function lgLoadPage() {
     <div class="lg-stop origin"><span class="lg-stopn">${icon(load.from.type === 'plant' ? 'build' : 'lot', 16)}</span><div class="grow"><strong>Start: ${esc(lgOriginName(load))}</strong><small>${esc(placeAddress(lgOrigin(load)))}</small></div></div>
     ${load.stops.map((_, i) => lgStopCard(load, i)).join('') || '<p class="empty">No buildings on this load yet. Add some below.</p>'}</section>`;
   const checkPanel = load.state === 'delivered' || load.state === 'cancelled' ? '' : `<section class="panel"><div class="panelhead"><h2>Checks</h2><span class="pill ${stops.length ? 'red' : checks.some((c) => c.level === 'warn') ? 'amber' : 'good'}">${stops.length ? lgPlural(stops.length, 'thing') + ' to fix' : checks.some((c) => c.level === 'warn') ? 'Look these over' : 'All clear'}</span></div>
-    ${checks.map((c) => `<div class="lg-check ${c.level}"><span>${c.level === 'stop' ? '!' : c.level === 'warn' ? '!' : 'i'}</span><p>${esc(c.text)}</p></div>`).join('') || '<p class="lg-good">Nothing stands in the way.</p>'}</section>`;
+    ${checks.map((c) => `<div class="lg-check ${c.level}"><span>${c.level === 'info' ? 'i' : '!'}</span><p>${esc(c.text)}</p>${c.key === 'over' && editable ? `<button type="button" class="secondary small" onclick="lgOverForm('${id}')">Override</button>` : ''}</div>`).join('') || '<p class="lg-good">Nothing stands in the way.</p>'}</section>`;
   const addPanel = !editable ? '' : `<section class="panel"><div class="panelhead"><h2>Add buildings</h2><span class="od-tag">${free == null ? 'No trailer picked' : free > 0 ? free + ' ft free' : free === 0 ? 'Trailer is full' : -free + ' ft over'}</span></div>
     <p class="lede-small">${load.kind === 'haul' ? 'Ready at the plant. Buildings for the same stops come first, then the same area, then the ones that have waited longest.' : `Sold buildings waiting at the ${esc(lgOrigin(load).town)} lot.`}</p>
     ${cands.slice(0, LG.more ? 99 : 6).map(({ u, near, same, fits, hold }) => `<div class="lg-cand"><span class="lg-size sm"><b>${u.wid} × ${u.len}</b></span><div class="grow"><strong>${esc(u.name.replace(u.size, '').trim())}</strong><small>To ${esc(lgDest(u))}${same ? ' · same stop' : load.stops.length ? ` · about ${near} mi from a stop on this load` : ''}${u.leg === 'plant-home' ? ' · plant to home' : ''}</small>
@@ -182,13 +182,14 @@ function lgLoadPage() {
     ['Miles', '<code>computeOrgRouteMileage</code> measures real road miles. The miles here are rough.'],
     ['Not drawn here', 'Turbo Logistics can email or download a route manifest for a hauler without an account (<code>emailLogisticsRouteManifest</code>).'],
   ], [
-    'Adding up every building’s length against the trailer, and stopping a load that is too long. Turbo Logistics checks one unit at a time.',
+    'Adding up every building’s length against the trailer. A load that is too long needs the dispatcher’s override and a reason; Turbo Logistics checks one unit at a time and only warns.',
     'The trailer drawing and the loading order.',
     'Warnings for a lot that is closed that day, a wide load, crossing a state line, and the delivery site.',
     'Stopping a home delivery until Logistics has confirmed the site answers with the customer.',
     'Suggesting buildings for the same area.',
     'The driver taking the final payment at delivery.',
     'Signing on this screen. In Turbo Logistics the proof form opens in FastField.',
+    'Telling the customer the day: a tick by Logistics, or an automatic text and email. Turbo Logistics tells the salesperson to relay it.',
   ])}`;
 }
 
@@ -269,6 +270,7 @@ function lgPlaceCard() {
     <p>${esc(placeAddress(l))}${l.note ? ' · ' + esc(l.note) : ''}<br><a href="tel:${l.phone.replace(/\D/g, '')}">${esc(l.phone)}</a></p>
     <p class="lg-hours">${esc(lotWeek(l))}</p>
     <div class="qc-facts"><span>About <strong>${milesBetween(p, l)} mi</strong> from the ${esc(p.town)} plant</span><span>Headed here <strong>${lgPlural(coming.length, 'building')}</strong></span><span>Here, for home delivery <strong>${here.length}</strong></span></div>
+    <label class="checkrow lg-mgr"><input type="checkbox" ${l.managerSchedules ? 'checked' : ''} onchange="lgManager('${l.id}',this.checked)"> <span>The manager here can schedule this lot’s home deliveries and tell the customer</span></label>
     ${PLANTS.length > 1 ? `<label class="ops-select">Built at<select onchange="lgServe('${l.id}',this.value)">${PLANTS.map((x) => `<option value="${x.id}" ${x.id === p.id ? 'selected' : ''}>${esc(x.name)}, ${esc(x.town)} · about ${milesBetween(x, l)} mi</option>`).join('')}</select></label>` : ''}
     ${units.length ? `<ul class="lg-stopunits">${units.map((u) => `<li><b>${u.wid} × ${u.len}</b> ${esc(u.name.replace(u.size, '').trim())} <span class="serial">${esc(u.id)}</span> <span class="ops-flag">${u.at === 'lot' ? 'at the lot' : u.at === 'road' ? 'on the road' : lgOnLoad(u) ? 'on ' + lgLoadName(lgOnLoad(u)).toLowerCase() : 'at the plant'}</span></li>`).join('')}</ul>` : ''}
     <div class="actions"><a class="secondary small" target="_blank" rel="noopener" href="${lgMapLink(placeAddress(l))}">${icon('pin', 16)} Directions</a></div></section>`;
@@ -308,9 +310,13 @@ function lgFleet() {
     <section class="panel"><h2>Rules</h2>
       <div class="of-inline"><label>Flag a building as a wide load at (ft wide)<input type="number" min="8" max="20" step="1" value="${LG.set.wideFt}" onchange="LG.set.wideFt=Math.max(8,Number(this.value)||14);render()" inputmode="numeric"></label></div>
       <p class="source">A flagged load asks the dispatcher to confirm the permit before it can be scheduled without a warning.</p>
+      <h3>Telling the customer the delivery day</h3>
+      <div class="of-seg" role="group" aria-label="Who tells the customer the delivery day"><button type="button" class="${LG.set.tell === 'logistics' ? 'on' : ''}" onclick="LG.set.tell='logistics';render()"><strong>Logistics tells them</strong><small>How it works today. Dispatch ticks “Customer told” on the delivery.</small></button>
+        <button type="button" class="${LG.set.tell === 'auto' ? 'on' : ''}" onclick="LG.set.tell='auto';render()"><strong>Text and email them</strong><small>A message goes out by itself the moment the day is set.</small></button></div>
+      <p class="source">${LOTS.filter((l) => l.managerSchedules).length ? `Managers at ${LOTS.filter((l) => l.managerSchedules).map((l) => esc(l.town)).join(', ')} can schedule their own home deliveries.` : 'A lot’s manager can be allowed to schedule that lot’s home deliveries: Locations, pick the lot, tick the box.'} Preview only: nothing is really sent.</p>
       <h3>Home deliveries</h3><p class="of-soft">${OF.set.driverPay ? 'Drivers may take the final payment at delivery.' : 'A cash building is paid in full before it goes to a home.'} The office sets this (Office → Settings).</p></section>
   </div>
-  ${opsNotes([['Trailers', 'Rigs (<code>logi_carrier_rigs</code>): <code>capacity_value</code> in linear feet, <code>supports_plant_haul</code>, <code>supports_home_delivery</code>, <code>standard_driver_name</code>.'], ['Who hauls', 'Carriers (<code>logi_carriers</code>): contracted, freelance, dealer’s own, in house, with coverage areas.']], ['A wide-load width that flags a load. Turbo Logistics has a manual “permit required” tick only.'])}`;
+  ${opsNotes([['Trailers', 'Rigs (<code>logi_carrier_rigs</code>): <code>capacity_value</code> in linear feet, <code>supports_plant_haul</code>, <code>supports_home_delivery</code>, <code>standard_driver_name</code>.'], ['Who hauls', 'Carriers (<code>logi_carriers</code>): contracted, freelance, dealer’s own, in house, with coverage areas.']], ['A wide-load width that flags a load. Turbo Logistics has a manual “permit required” tick only.', 'Telling the customer: Turbo Logistics tells the salesperson to relay the day and sends the customer nothing. Logistics ticking it, an automatic text and email, and a lot manager scheduling its own deliveries exist only here.'])}`;
 }
 
 /* ---------- Driver's day ---------- */
@@ -350,7 +356,8 @@ function lgNotesPage() {
       <li>Turbo Logistics already has a dispatch board, a calendar, a map of a route’s stops and a driver app with Arrived and Departed stamps. Proof of delivery is a FastField form.</li>
     </ul></section>
     <section class="panel"><h2>Only in this preview</h2><ul>
-      <li>Adding every building’s length against the trailer, and stopping a load that is too long.</li>
+      <li>Adding every building’s length against the trailer; a load that is too long needs an override with a reason.</li>
+      <li>Telling the customer the day: Logistics ticks it, an automatic text and email (nothing is really sent here), or a lot manager allowed to schedule.</li>
       <li>Warnings for a closed lot, a wide load, a state line, a tight gate or a slope.</li>
       <li>Through the lot or plant to home as a choice on the building.</li>
       <li>Holding a home delivery until the payment rule is met, and the driver taking payment.</li>
