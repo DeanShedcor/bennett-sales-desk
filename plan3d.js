@@ -431,7 +431,8 @@ function p3Mesh(c, inside = false, yaw = 0) {
     }
   }
   /* Studio, as built: a small white louvered vent high on each end wall, near the tall front corner, above the
-     trim band. A frame with the louvers set back inside it, in two rows of three slotted panels. */
+     trim band. A frame with the louvers set back inside it, in two rows of three slotted panels. All white: the
+     slots and the recess are only shadow, never black. */
   if (!inside && c.style === 'Studio') {
     const vw = 1.3, vh = 0.66, y1 = W - 1.25, y0 = y1 - vw, top = topAt(y0) - 0.42, bot = top - vh, PF = 0.07, fr = 0.07, white = '#f4f4f1';
     if (bot > eave + 0.02) for (const [x, sgn] of [[0, -1], [L, 1]]) {
@@ -441,12 +442,12 @@ function p3Mesh(c, inside = false, yaw = 0) {
       sq(y0, y0 + fr, bot + fr, top - fr, PF, white);
       sq(y1 - fr, y1, bot + fr, top - fr, PF, white);
       for (const [ya, yb, ua, ub] of [[y0, y1, bot, bot], [y0, y1, top, top], [y0, y0, bot, top], [y1, y1, bot, top]]) face([P(ya, ua, 0.005), P(yb, ub, 0.005), P(yb, ub, PF), P(ya, ua, PF)], white, false);
-      sq(y0 + fr, y1 - fr, bot + fr, top - fr, 0.012, '#1b1d20');
+      sq(y0 + fr, y1 - fr, bot + fr, top - fr, 0.012, '#c3c5c7');
       const iw = vw - 2 * fr, ih = vh - 2 * fr, cw = iw / 3, rh = ih / 2;
       for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) {
         const a = y0 + fr + k * cw + 0.025, b = a + cw - 0.05, u = bot + fr + r * rh + 0.025, t = u + rh - 0.05;
         sq(a, b, u, t, 0.045, white);
-        for (let j = 0; j < 3; j++) sq(a + 0.04, b - 0.04, u + (t - u) * (0.2 + j * 0.27), u + (t - u) * (0.2 + j * 0.27) + 0.035, 0.047, '#2a2d31');
+        for (let j = 0; j < 3; j++) sq(a + 0.04, b - 0.04, u + (t - u) * (0.2 + j * 0.27), u + (t - u) * (0.2 + j * 0.27) + 0.035, 0.047, '#989ca0');
       }
     }
   }
