@@ -84,7 +84,7 @@ function lgHold(u) {
 /* What is wrong at the delivery site, for a building headed to a home. */
 function lgSiteProblems(u) {
   const d = lgSite(u), out = [];
-  if (!d || d.miles === '' || d.miles == null) return ['Site questions not asked yet'];
+  if (!d) return out;
   if (!d.noGate && d.gate !== '' && d.gate != null) {
     if (d.gate <= u.wid) out.push(`The opening is ${d.gate} ft and the building is ${u.wid} ft wide`);
     else if (d.gate < u.wid + 2) out.push(`Tight: a ${u.wid} ft building through a ${d.gate} ft opening`);
@@ -92,6 +92,38 @@ function lgSiteProblems(u) {
   if (d.ground === 'Needs leveling') out.push('The site needs leveling first');
   if (d.access && d.access !== 'Clear access') out.push(d.access);
   return out;
+}
+/* The site answers are asked at the sale and gone over again by Logistics before the delivery is
+   scheduled. Returns what is still open: the questions themselves, then the confirmation. */
+function lgSiteOpen(u) {
+  const d = lgSite(u), gaps = siteMissing(d);
+  return gaps.length ? `ask the delivery-site questions (${gaps.join(', ')})` : d.confirmed ? '' : 'confirm the site answers with the customer';
+}
+function lgSiteForm(unitId) {
+  const u = lgUnit(unitId), s = lgSale(u);
+  siteForm(s ? { sale: s } : { unit: u }, true);
+}
+/* Past the mileage the agreement prices, Logistics approves the fee for that delivery. */
+const lgFeeList = () => S.sales.filter((s) => ['review', 'hold', 'approved'].includes(ofStage(s)) && ofDelivery(s).over && !ofDelivery(s).approved);
+function lgFeeForm(id) {
+  const s = ofSale(id), d = ofDelivery(s), lot = saleLot(s);
+  modal('Approve a delivery fee', `<p><strong>${esc(s.customer)}</strong> · ${esc(label(s.c))} · ${esc(id)}</p>
+    <p>${d.miles} miles from the ${esc(lot.town)} lot. Delivery is free within ${FREE_DELIVERY_MILES} miles and ${money(OF.set.overFee)} up to ${OF.set.overTo}; past that, Logistics sets the fee for the trip.</p>
+    <label class="field">Delivery fee ($)<input id="lg-fee" type="number" min="0" step="1" inputmode="decimal" placeholder="For the whole delivery"></label>
+    <label class="field">Note (optional)<input id="lg-fee-note" maxlength="100" placeholder="Example: second driver, escort, overnight"></label>
+    <p class="source">The fee goes on the order as a delivery line. The office and the salesperson see it at once.</p>
+    <div class="actions">${button('Approve the fee', `lgFeeSave('${id}')`)}${button('Cancel', 'closeModal()', 'secondary')}</div>`);
+}
+function lgFeeSave(id) {
+  const s = ofSale(id), amount = Math.round(Number($('#lg-fee').value) * 100) / 100, note = $('#lg-fee-note').value.trim(), d = ofDelivery(s);
+  if (!(amount >= 0) || $('#lg-fee').value.trim() === '') return toast('Type the fee.');
+  ofRec(s);
+  s.money.fees = s.money.fees.filter((f) => f.by !== 'Logistics');
+  s.money.fees.push({ name: `Delivery · ${d.miles} miles${note ? ' · ' + note : ''}`, amount, auto: true, by: 'Logistics' });
+  ofLog(s, `Logistics approved a ${money(amount)} delivery fee for ${d.miles} miles${note ? ' (' + note + ')' : ''}`);
+  closeModal();
+  render();
+  toast(`${money(amount)} delivery fee approved.`);
 }
 const lgWide = (u) => u.wid >= LG.set.wideFt;
 /* Where a building is headed on its next move, in words. */
@@ -218,8 +250,9 @@ function lgChecks(load) {
   for (const u of units) if (lgSale(u)?.status === 'Cancelled') add('stop', `${u.customer}: the office cancelled this order. Take the building off the load.`);
   for (const stop of load.stops.filter((x) => !lgStopIsLot(x)))
     for (const u of lgStopUnits(stop)) {
-      const hold = lgHold(u);
+      const hold = lgHold(u), site = lgSiteOpen(u);
       if (hold) add('stop', `${u.customer}: ${hold}.`);
+      if (site && ['planned', 'scheduled'].includes(load.state)) add('stop', `${u.customer}: ${site}.`);
       for (const p of lgSiteProblems(u)) add('warn', `${u.customer}: ${p}.`);
     }
   return out;
@@ -578,7 +611,7 @@ function lgServe(lotId, plantId) {
   const plant = PLANTS[0].id, hours = (h) => Date.now() - h * 36e5;
   const stock = (n, size, style, lot, waited) => lgAddUnit({ id: `SAMPLE-${size.replace('x', '')}-${n}`, name: `${size} ${style}`, size, kind: 'stock', lotId: lot, plantId: plant, leg: 'plant-lot', sample: true, readyAt: hours(waited) });
   const order = (n, size, style, lot, customer, leg, miles, extra = {}) => lgAddUnit({ id: `SAMPLE-${size.replace('x', '')}-${n}`, name: `${size} ${style}`, size, kind: 'order', customer, lotId: lot, plantId: plant, leg, at: leg === 'lot-home' ? 'lot' : 'plant', sample: true, readyAt: hours(30),
-    site: { miles, access: 'Clear access', gate: '', noGate: true, ground: 'Level', notes: '', ...extra } });
+    site: { miles, access: 'Clear access', gate: '', noGate: true, ground: 'Level', notes: '', askedBy: 'Salesperson', askedAt: hours(200), confirmed: null, ...extra } });
 
   /* In the plant yard, signed off and waiting for a load. */
   stock(2101, '12x24', 'Classic Utility', 'florence', 52);
@@ -624,7 +657,7 @@ function lgServe(lotId, plantId) {
   plan.log = [{ at: hours(2), text: 'Load started' }];
 
   /* A home delivery from the Lugoff lot, scheduled for the next day the lot is open. */
-  const home = lgMakeLoad('home', { type: 'lot', id: 'lugoff' }, [order(2123, '10x12', 'Basic Utility', 'lugoff', 'Harper Dunmore', 'lot-home', 8).id]);
+  const home = lgMakeLoad('home', { type: 'lot', id: 'lugoff' }, [order(2123, '10x12', 'Basic Utility', 'lugoff', 'Harper Dunmore', 'lot-home', 8, { confirmed: hours(5) }).id]);
   let hday = lgAddDays(lgToday(), 1);
   while (!lotDay(lotById('lugoff'), hday).open) hday = lgAddDays(hday, 1);
   Object.assign(home, { rigId: 'rig-4', driver: 'Nia Foster', date: hday, window: 'Afternoon', state: 'scheduled', sample: true });

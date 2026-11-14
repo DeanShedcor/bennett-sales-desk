@@ -310,3 +310,9 @@ a.chipbtn, a.secondary { text-decoration: none; color: var(--ink); }
   .lg-dot text.n { font-size: 12px; }
   .lg-statename { font-size: 17px; }
 }
+
+/* Settings: three ways to figure the fuel surcharge, and what the number comes to */
+.of-seg.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.of-example { font-size: 13.500px; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 8px 12px; }
+.of-example b { color: var(--ink); }
+@media (max-width: 680px) { .of-seg.three { grid-template-columns: minmax(0, 1fr); } }

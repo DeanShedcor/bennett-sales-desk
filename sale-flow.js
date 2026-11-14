@@ -5,8 +5,9 @@
    step names the existing function it hooks, and anything that exists only here is marked
    "Preview only".
 
-   At the desk: the customer signs the invoice, terms and delivery agreement; a rent-to-own sale
-   completes the RTO application; the customer confirms the floor plan (a custom build cannot be
+   At the desk: the salesperson asks the delivery-site questions on a custom order; the customer
+   signs the invoice, terms and delivery agreement; a rent-to-own sale completes the RTO
+   application; the customer confirms the floor plan (a custom build cannot be
    approved without it); then Submit for admin review, which stays off until all of that is in.
    Handoffs: the office approves, the plant moves through its nine phases, plant QC passes the
    building, the office releases it, Logistics schedules and delivers. The desk only shows where
@@ -33,6 +34,8 @@ const sfSigned = (s) => orderInvoice(s).signed || {};
 function sfMissing(s) {
   const signed = sfSigned(s), out = SF_DOCS.filter(([k]) => !signed[k]).map(([, t]) => `Customer signature on the ${t.toLowerCase()}`);
   if (s.type === 'Rent-to-own' && !s.rtoApp) out.push('Rent-to-own application (all parts)');
+  /* A custom order: the delivery-site questions are asked at the sale, before the customer signs. */
+  if (s.path !== 'lot' && typeof siteMissing === 'function' && siteMissing(s.site).length) out.unshift('Delivery site questions');
   /* The office cannot approve a custom build until the floor plan is confirmed. */
   if (s.path !== 'lot' && !s.c.sheet?.ok) out.push('Floor plan confirmed with the customer');
   return out;
@@ -50,7 +53,7 @@ showSaleReview = function () {
   const d = reviewCustomer, b = reviewBilling, rto = b.type === 'Rent-to-own';
   const disc = b.discount > 0 ? b.discount : 0, price = amount() - disc;
   /* Rent-to-own: the application starts as soon as the order is created, then the signatures. */
-  const next = [...(rto ? ['The customer fills in the rent-to-own application (it opens next)'] : []), ...SF_DOCS.map(([, t]) => `The customer signs the ${t.toLowerCase()}`), ...(S.path !== 'lot' && !S.c.sheet?.ok ? ['The customer confirms the floor plan'] : []), 'You submit it for admin review'];
+  const next = [...(rto ? ['The customer fills in the rent-to-own application (it opens next)'] : []), ...(S.path !== 'lot' ? ['You ask the delivery-site questions'] : []), ...SF_DOCS.map(([, t]) => `The customer signs the ${t.toLowerCase()}`), ...(S.path !== 'lot' && !S.c.sheet?.ok ? ['The customer confirms the floor plan'] : []), 'You submit it for admin review'];
   modal('Complete the sale · create the order', `<p><strong>${esc(d.firstName + ' ' + d.lastName)}</strong><br>${esc(d.email)} · ${esc(d.phone)}</p><p>${d.same ? 'Delivery address matches billing.' : 'Separate delivery address provided.'}</p>
     <p><strong>${b.type}</strong> · ${money(amount())} building subtotal${disc ? `<br>Discount · ${esc(b.purpose)}: ${money(-disc)} · the office approves it at review<br>After the discount: ${money(price)}` : ''}<br>${rto ? 'First payment' : 'Deposit'} recorded: ${money(b.deposit)}${rto ? `<br>${b.term} months · ${money(payment(price, b.term))}/mo before tax` : `<br>Balance after the deposit: ${money(price - b.deposit)}`}</p>
     <h3>${rto ? 'Next' : 'Next, on the order page'}</h3><ol class="sf-next">${next.map((x) => `<li>${x}</li>`).join('')}</ol>
@@ -283,6 +286,7 @@ const SF_HOOK = {
   plant: 'Production → Accept order puts it on the plant. Phases from <code>mfg_build_pipeline_v1</code>; the desk reads them with <code>salesDeskBuildStage</code>.',
   qc: 'The QC build book report (<code>mfg_qa_qc_build_book.md</code>). The desk opens that report.',
   release: 'The <code>ready_to_deliver</code> flag, set by the office (<code>readyToDeliverPatch</code>).',
+  site: 'The delivery address and notes ride on the route’s customer stop (<code>logi_stops</code>).',
   ship: 'Turbo Logistics (<code>shipmentsService</code>, <code>routesService</code>). Scheduling tells the salesperson to relay the day; no text goes to the customer (<code>notifyRouteDeliveryStateTransition</code>).',
   pod: 'Turbo Logistics proof of delivery, filed to the deal paperwork; desk history reads <code>customer_order_delivered</code>.',
 };
@@ -292,11 +296,17 @@ const SF_ONLY = {
   submit: 'Holding Submit until everything is signed and the floor plan is confirmed. No plan sets that rule yet.',
   plan: 'The floor plan editor and build sheet. The configurator plan leaves drawing floor plans in the browser out of scope.',
   pod: 'The on-screen delivery signature, until Logistics’ form is wired to the order.',
+  site: 'Asking miles, the gate, access and the ground at the sale, and Logistics confirming them at scheduling. Turbo Assist keeps no site answers yet.',
 };
 function sfSteps(s) {
   const lot = s.path === 'lot', signing = SF_SIGNING.includes(s.status), after = ['Processed · Sold', 'Delivered'].includes(s.status);
   const reviewing = s.status === 'Submitted · Awaiting review', rto = s.type === 'Rent-to-own';
   const desk = [], handoff = [], signed = sfSigned(s);
+  if (!lot && typeof siteMissing === 'function') {
+    const gaps = siteMissing(s.site), d = s.site && typeof ofDelivery === 'function' ? ofDelivery(s) : null;
+    desk.push({ title: 'Delivery site questions', on: !gaps.length, text: !gaps.length ? `${esc(siteLine(s))}${d ? ' · ' + esc(d.text) : ''}` : s.site ? `Still to ask: ${gaps.join(', ')}` : 'Miles from the lot, the narrowest gate, access and the ground. Ask before the customer signs, so a delivery charge is on the invoice.',
+      act: signing ? `<button type="button" class="secondary small" onclick="ofSiteForm('${s.id}')">${s.site ? 'Change' : 'Answer'}</button>` : '', hook: SF_HOOK.site, only: SF_ONLY.site });
+  }
   if (rto)
     desk.push({ title: 'Rent-to-own application', on: s.rtoApp, text: s.rtoApp ? 'All parts done' : `${Math.max(0, Math.min((s.rtoStep || 0) - 1, 5))} of 5 parts done`, act: signing && !s.rtoApp ? button(s.rtoStep > 1 && RTOF.sale === s.id ? 'Continue' : 'Start', s.rtoStep > 1 && RTOF.sale === s.id ? `rtoApply(${Math.min(s.rtoStep, RTO_LAST)})` : 'rtoApply(0)', 'secondary small') : '', hook: SF_HOOK.rto, only: SF_ONLY.rto });
   for (const [k, t] of SF_DOCS)

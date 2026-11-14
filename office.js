@@ -20,7 +20,9 @@
 const OF = {
   id: null, back: 'office', tile: 'all', lot: 'All', q: '', tab: 'review', payTab: 'confirm',
   set: {
-    fuel: null, /* dollars per building; null until the office sets it */
+    /* Fuel surcharge: a percent of the price (how it works today), by size, or a flat amount.
+       Each way keeps its own number; a number is null until the office sets it. */
+    fuel: { method: 'percent', pct: null, perSqFt: null, flat: null },
     fuelLog: [],
     overTo: 100, overFee: 100, /* 51 to 100 miles: $100, from the delivery agreement */
     depositPct: 10, /* the website asks cash customers for 10% at the time of order */
@@ -34,6 +36,23 @@ const OF_FEES = [
   ['16 in pier set, building up to 32 ft', 750], ['16 in pier set, building over 32 ft', 1200], ['Return trip fee', 250],
 ];
 const OF_METHODS = ['Card', 'Cash', 'Check', 'Bank transfer', 'Money order'];
+const OF_FUEL = {
+  percent: { key: 'pct', name: 'Percent of the price', hint: 'How it works today. A bigger price carries a bigger surcharge.', label: 'Percent of the building price (%)' },
+  size: { key: 'perSqFt', name: 'By size', hint: 'So much a square foot of building: width × length.', label: 'Dollars per square foot of building' },
+  flat: { key: 'flat', name: 'Flat amount', hint: 'The same on every building.', label: 'Dollars per building' },
+};
+const ofFuelValue = (f = OF.set.fuel) => f[OF_FUEL[f.method].key];
+const ofFuelSet = () => ofFuelValue() != null;
+/* The surcharge for one building. `price` is the building and its options before the surcharge. */
+function ofFuelFor(c, price) {
+  const f = OF.set.fuel, v = ofFuelValue();
+  if (v == null) return null;
+  return Math.round((f.method === 'percent' ? (price * v) / 100 : f.method === 'size' ? floorArea(c) * v : v) * 100) / 100;
+}
+function ofFuelSay(f = OF.set.fuel) {
+  const v = ofFuelValue(f);
+  return v == null ? 'not set' : f.method === 'percent' ? `${v}% of the building price` : f.method === 'size' ? `${money(v)} per sq ft of building` : `${money(v)} per building`;
+}
 const OF_STAGE = { 'Submitted · Awaiting review': 'review', 'Correction requested': 'hold', 'Processed · Sold': 'approved', Delivered: 'delivered', Cancelled: 'cancelled' };
 const OF_STAGE_NAME = { review: 'To review', hold: 'On hold', approved: 'Approved', delivered: 'Delivered', cancelled: 'Cancelled' };
 const OF_STAGE_PILL = { review: 'blue', hold: 'red', approved: 'good', delivered: 'good', cancelled: 'ghost' };
@@ -92,13 +111,24 @@ function ofBuilt(s) {
   const p = s.plantPhase ?? -1;
   return { ok: false, text: p < 0 ? 'Not started' : `At the plant: ${phaseNames[p]}` };
 }
-/* Delivery charge for the miles on file. */
+/* Delivery charge for the miles on file: free inside the free miles, a set charge up to the next
+   mark, and past that a fee Logistics approves. */
 function ofDelivery(s) {
   const miles = s.site?.miles === '' || s.site?.miles == null ? null : Number(s.site.miles), free = FREE_DELIVERY_MILES;
   if (miles == null) return { miles, text: 'Miles not recorded', state: 'todo' };
   if (miles <= free) return { miles, text: `${miles} miles · free within ${free}`, state: 'ok', fee: 0 };
   if (miles <= OF.set.overTo) return { miles, text: `${miles} miles · ${free + 1} to ${OF.set.overTo} miles is ${money(OF.set.overFee)}`, state: 'ok', fee: OF.set.overFee };
-  return { miles, text: `${miles} miles · over ${OF.set.overTo}: priced by the delivery coordinator`, state: 'todo', fee: null };
+  const lg = s.money?.fees.find((f) => f.by === 'Logistics');
+  return lg ? { miles, text: `${miles} miles · ${money(lg.amount)} approved by Logistics`, state: 'ok', fee: lg.amount, over: true, approved: true }
+    : { miles, text: `${miles} miles · over ${OF.set.overTo}: Logistics approves the fee`, state: 'todo', fee: null, over: true };
+}
+/* Keep the mileage charge on the order in step with the miles: one line, added, changed or removed. */
+function siteFeeSync(s) {
+  ofRec(s);
+  const m = s.money, d = ofDelivery(s);
+  m.fees = m.fees.filter((f) => !f.auto || (f.by === 'Logistics' && d.over));
+  if (d.fee && !d.over) m.fees.push({ name: `Delivery · ${d.miles} miles`, amount: d.fee, auto: true });
+  return d.fee && !d.over ? d.fee : 0;
 }
 /* Today's price list total for a custom order, without the fuel surcharge. */
 function ofListPrice(s) {
@@ -293,36 +323,57 @@ function ofTick(id, i) {
 }
 /* Fuel surcharge: an order made before the office set the rate can take today's rate. */
 function ofFuelApply(id) {
-  const s = ofSale(id), rate = OF.set.fuel;
-  if (rate == null) return go('of-settings');
-  s.money.fuel = rate;
-  s.total = Math.round((s.total + rate) * 100) / 100;
-  ofLog(s, `Office added the fuel surcharge (${money(rate)})`);
+  const s = ofSale(id), amount = ofFuelFor(s.c, s.total);
+  if (amount == null) return go('of-settings');
+  s.money.fuel = amount;
+  s.total = Math.round((s.total + amount) * 100) / 100;
+  ofLog(s, `Office added the fuel surcharge (${money(amount)} · ${ofFuelSay()})`);
   render();
 }
-/* Delivery site answers: miles from the lot, access, the narrowest opening and the ground. */
-function ofSiteForm(id) {
-  const s = ofSale(id), d = s.site || {}, width = Number(s.c.size.split('x')[0]);
-  const pick = (name, label, opts) => `<label>${label}<select id="of-site-${name}"><option value="">Not asked yet</option>${opts.map((x) => `<option ${d[name] === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>`;
-  modal('Delivery site', `<p><strong>${esc(s.customer)}</strong> · ${esc(label(s.c))} · sold at ${esc(lotTown(saleLot(s)))}</p>
-    <div class="fields"><label>Miles from the lot to the site<input id="of-site-miles" type="number" min="0" step="1" value="${d.miles ?? ''}" inputmode="numeric"></label>
-    <label>Narrowest gate or opening (ft)<input id="of-site-gate" type="number" min="0" step="0.5" value="${d.gate ?? ''}" inputmode="decimal" placeholder="Blank if there is no gate"></label>
-    ${pick('access', 'Site access', ['Clear access', 'Tight access', 'Not sure, needs a look'])}${pick('ground', 'Ground at the site', ['Level', 'Slight slope', 'Needs leveling'])}</div>
-    <label class="field">Notes for the driver (optional)<input id="of-site-notes" maxlength="160" value="${esc(d.notes || '')}"></label>
-    <p class="source">A ${width} ft wide building needs a ${width + 2} ft opening and 14 ft of height clear of wires and limbs.</p>
-    <div class="actions">${button('Save', `ofSiteSave('${id}')`)}${button('Cancel', 'closeModal()', 'secondary')}</div>`);
+/* Delivery site answers: miles from the lot, access, the narrowest opening and the ground.
+   The salesperson asks them at the sale; Logistics confirms them with the customer when it
+   schedules the delivery. They live on the order, or on a sample building that has no order. */
+let SITE_EDIT = null;
+function siteMissing(d) {
+  d = d || {};
+  return [(d.miles === '' || d.miles == null) && 'miles from the lot', !d.access && 'site access', !d.noGate && (d.gate === '' || d.gate == null) && 'the narrowest gate or opening', !d.ground && 'the ground'].filter(Boolean);
 }
-function ofSiteSave(id) {
-  const s = ofSale(id), v = (k) => $('#of-site-' + k).value.trim(), was = ofDelivery(s).fee;
-  s.site = { miles: v('miles') === '' ? '' : Math.max(0, Number(v('miles')) || 0), gate: v('gate') === '' ? '' : Number(v('gate')), noGate: v('gate') === '', access: v('access'), ground: v('ground'), notes: v('notes') };
-  ofRec(s);
-  /* The mileage charge follows the miles: one line, added or replaced. */
-  const fee = ofDelivery(s).fee, at = s.money.fees.findIndex((f) => f.auto);
-  if (at >= 0) s.money.fees.splice(at, 1);
-  if (fee) s.money.fees.push({ name: `Delivery · ${s.site.miles} miles`, amount: fee, auto: true });
-  ofLog(s, `Delivery site recorded: ${siteLine(s) || 'no answers'}${fee && fee !== was ? ` · ${money(fee)} delivery charge added` : ''}`);
+const siteWho = () => ({ office: 'Office', logi: 'Logistics' })[document.body.dataset.side] || 'Salesperson';
+function siteForm(holder, confirm) {
+  SITE_EDIT = { ...holder, confirm: !!confirm };
+  const s = holder.sale, u = holder.unit, d = (s ? s.site : u.site) || {}, width = Number((s ? s.c.size : u.size).split('x')[0]);
+  const who = s ? `${esc(s.customer)} · ${esc(label(s.c))} · sold at ${esc(lotTown(saleLot(s)))}` : `${esc(u.customer)} · ${esc(u.name)} · sold at ${esc(lotTown(lotById(u.lotId)))}`;
+  const pick = (name, text, opts) => `<label>${text}<select id="of-site-${name}"><option value="">Not asked yet</option>${opts.map((x) => `<option ${d[name] === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>`;
+  modal(confirm ? 'Confirm the delivery site' : 'Delivery site', `<p><strong>${who}</strong></p>
+    ${confirm ? `<p class="notice">${d.askedBy ? `Asked by the ${esc(d.askedBy.toLowerCase())} ${d.askedAt ? ofStamp(d.askedAt) : 'at the sale'}.` : 'Asked at the sale.'} Go over each answer with the customer again before the delivery is scheduled.</p>` : ''}
+    <div class="fields"><label>Miles from the lot to the site<input id="of-site-miles" type="number" min="0" step="1" value="${d.miles ?? ''}" inputmode="numeric"></label>
+    <label>Narrowest gate or opening (ft)<input id="of-site-gate" type="number" min="0" step="0.5" value="${d.gate ?? ''}" ${d.noGate ? 'disabled' : ''} inputmode="decimal"></label>
+    ${pick('access', 'Site access', ['Clear access', 'Tight access', 'Not sure, needs a look'])}${pick('ground', 'Ground at the site', ['Level', 'Slight slope', 'Needs leveling'])}</div>
+    <label class="checkrow"><input id="of-site-nogate" type="checkbox" ${d.noGate ? 'checked' : ''} onchange="$('#of-site-gate').disabled=this.checked"> <span>No gate or opening to pass through</span></label>
+    <label class="field">Notes for the driver (optional)<input id="of-site-notes" maxlength="160" value="${esc(d.notes || '')}" placeholder="Trees, wires, soft ground, where it goes"></label>
+    <p class="source">A ${width} ft wide building needs a ${width + 2} ft opening and 14 ft of height clear of wires and limbs. Delivery is free within ${FREE_DELIVERY_MILES} miles of the lot, ${money(OF.set.overFee)} up to ${OF.set.overTo} miles, and past that Logistics approves the fee.</p>
+    <div class="actions">${button(confirm ? 'Confirmed with the customer' : 'Save', 'siteSave()')}${button('Cancel', 'closeModal()', 'secondary')}</div>`);
+}
+function ofSiteForm(id, confirm) {
+  siteForm({ sale: ofSale(id) }, confirm);
+}
+function siteSave() {
+  const h = SITE_EDIT, s = h.sale, u = h.unit, old = (s ? s.site : u.site) || {}, v = (k) => $('#of-site-' + k).value.trim(), noGate = $('#of-site-nogate').checked;
+  const d = { miles: v('miles') === '' ? '' : Math.max(0, Number(v('miles')) || 0), gate: noGate || v('gate') === '' ? '' : Number(v('gate')), noGate, access: v('access'), ground: v('ground'), notes: v('notes') };
+  const gaps = siteMissing(d), same = ['miles', 'gate', 'noGate', 'access', 'ground'].every((k) => String(old[k] ?? '') === String(d[k] ?? ''));
+  if (h.confirm && gaps.length) return toast(`Still to ask: ${gaps.join(', ')}.`);
+  d.askedBy = old.askedBy || siteWho();
+  d.askedAt = old.askedAt || Date.now();
+  d.confirmed = h.confirm ? Date.now() : same ? old.confirmed || null : null; /* changed answers need confirming again */
+  if (s) {
+    const before = ofSum(ofRec(s) && s.money.fees.filter((f) => f.auto));
+    s.site = d;
+    const fee = siteFeeSync(s), now = ofDelivery(s);
+    ofLog(s, `${siteWho()} ${h.confirm ? 'confirmed the delivery site with the customer' : 'recorded the delivery site'}: ${siteLine(s) || 'no answers'}${fee && fee !== before ? ` · ${money(fee)} delivery charge` : now.over && !now.approved ? ' · over ' + OF.set.overTo + ' miles, Logistics approves the fee' : ''}`);
+  } else u.site = d;
   closeModal();
   render();
+  toast(h.confirm ? 'Site confirmed.' : gaps.length ? `Saved. Still to ask: ${gaps.join(', ')}.` : 'Delivery site saved.');
 }
 function siteLine(s) {
   const d = s.site;
@@ -332,7 +383,7 @@ function siteLine(s) {
 /* What stands in the way at the site: an opening too narrow, a slope, a tight drive. */
 function siteProblems(s) {
   const d = s.site, w = Number(s.c.size.split('x')[0]), out = [];
-  if (!d || d.miles === '' || d.miles == null) return ['Site questions not asked yet'];
+  if (!d) return [];
   if (!d.noGate && d.gate !== '' && d.gate != null) {
     if (d.gate <= w) out.push(`The opening is ${d.gate} ft and the building is ${w} ft wide`);
     else if (d.gate < w + 2) out.push(`Tight: a ${w} ft building through a ${d.gate} ft opening`);
@@ -340,14 +391,6 @@ function siteProblems(s) {
   if (d.ground === 'Needs leveling') out.push('The site needs leveling first');
   if (d.access && d.access !== 'Clear access') out.push(d.access);
   return out;
-}
-/* Past the free miles: add the mileage charge from the settings. */
-function ofMileFee(id) {
-  const s = ofSale(id), d = ofDelivery(s);
-  if (!d.fee || s.money.fees.some((f) => f.auto)) return;
-  s.money.fees.push({ name: `Delivery · ${d.miles} miles`, amount: d.fee, auto: true });
-  ofLog(s, `Office added the ${money(d.fee)} delivery charge for ${d.miles} miles`);
-  render();
 }
 function ofFeeForm(id) {
   modal('Add a delivery charge', `<p>From the delivery and blocking agreement the customer signed.</p>
@@ -566,14 +609,14 @@ function ofMoneyPanel(s) {
   const x = (i, fn) => (open ? ` <button type="button" class="of-x" aria-label="Remove" onclick="${fn}('${id}',${i})">×</button>` : '');
   const fuel = s.path === 'lot' ? odRow('Fuel surcharge', 'In the lot price') : s.invoice ? odRow('Fuel surcharge', 'Included on the invoice')
     : m.fuel != null ? odRow('Fuel surcharge', money(m.fuel) + ' · in the price above', 'sub')
-    : odRow('Fuel surcharge', OF.set.fuel == null ? `${STILL_NEEDED} <button type="button" class="link inline" onclick="go('of-settings')">Set it</button>` : `<button type="button" class="link inline" onclick="ofFuelApply('${id}')">Add today’s ${money(OF.set.fuel)}</button>`);
+    : odRow('Fuel surcharge', !ofFuelSet() ? `${STILL_NEEDED} <button type="button" class="link inline" onclick="go('of-settings')">Set it</button>` : `<button type="button" class="link inline" onclick="ofFuelApply('${id}')">Add ${money(ofFuelFor(s.c, s.total))} · ${ofFuelSay()}</button>`);
   const d = ofDelivery(s);
   const taxes = inv.taxes ? odRow(t.rto ? 'Sales tax, monthly' : 'Sales tax', money(inv.taxes.reduce((a, b) => a + b[1], 0))) : odRow('Sales tax', '<span class="of-soft">From the tax service</span>');
   return `<section class="panel"><div class="panelhead"><h2>Money</h2><span class="pill blue">${t.rto ? `Rent-to-own${s.billing?.term || s.rtoApp?.term ? ' · ' + (s.billing?.term || s.rtoApp?.term) + ' months' : ''}` : 'Cash purchase'}</span></div>
     ${odRow(t.rto ? 'Cash price of the building' : 'Building and options', money(s.total))}
     ${fuel}
     ${m.discounts.map((k, i) => odRow(`Discount · ${esc(k.purpose || 'no purpose')}${k.ok ? '' : ' <em class="of-soft">not approved yet</em>'}`, money(-k.amount) + x(i, 'ofDiscountDrop'))).join('')}
-    ${odRow('Delivery', d.miles == null ? '<span class="of-soft">Miles not recorded</span>' : d.fee === 0 ? `Free · ${d.miles} miles` : d.fee ? (m.fees.some((f) => f.auto) || !open ? `${d.miles} miles` : `${d.miles} miles · <button type="button" class="link inline" onclick="ofMileFee('${id}')">Add the ${money(d.fee)} charge</button>`) : `${d.miles} miles · <span class="of-soft">priced by the coordinator</span>`)}
+    ${odRow('Delivery', d.miles == null ? '<span class="of-soft">Miles not recorded</span>' : d.fee === 0 ? `Free · ${d.miles} miles` : d.over && !d.approved ? `${d.miles} miles · <span class="of-soft">waiting on Logistics for the fee</span>` : `${d.miles} miles`)}
     ${m.fees.map((k, i) => odRow(esc(k.name), money(k.amount) + x(i, 'ofFeeDrop'), 'sub')).join('')}
     ${taxes}
     ${odRow(t.rto ? 'Price the RTO company pays, before tax' : 'Order total, before tax', money(t.total), 'strong')}
@@ -585,10 +628,13 @@ function ofMoneyPanel(s) {
     <p class="source">${t.rto ? 'The RTO company pays for the building. The customer pays the first payment at signing, then monthly.' : OF.set.driverPay ? 'Cash sales: the driver may take the final payment at delivery.' : 'Cash sales are paid in full before delivery.'} Sales tax comes from the tax service by delivery address; it is not connected in this preview.</p></section>`;
 }
 function ofAlsoPanel(s) {
-  const d = ofDelivery(s), id = s.id, probs = s.site ? siteProblems(s) : [], open = !['cancelled', 'delivered'].includes(ofStage(s));
+  const d = ofDelivery(s), id = s.id, probs = siteProblems(s), gaps = siteMissing(s.site), open = !['cancelled', 'delivered'].includes(ofStage(s));
+  const text = !s.site ? `Not asked yet. Free delivery is within ${FREE_DELIVERY_MILES} miles of the lot that sold it.`
+    : `${esc(siteLine(s))}${gaps.length ? ` · <b>still to ask: ${gaps.join(', ')}</b>` : ''}${probs.length ? ` · <b>${probs.map(esc).join(' · ')}</b>` : ''} · ${d.text}`;
   return `<section class="panel"><h2>Delivery site</h2>
-    ${ofCheckRow({ state: d.state === 'ok' && !probs.length ? 'ok' : 'todo', title: 'Miles, access and the opening', text: s.site ? esc(siteLine(s)) + (probs.length ? ` · <b>${probs.map(esc).join(' · ')}</b>` : '') + ` · ${d.text}` : 'Not asked yet. Free delivery is within ' + FREE_DELIVERY_MILES + ' miles of the lot that sold it.', act: open ? `<button type="button" class="secondary small" onclick="ofSiteForm('${id}')">${s.site ? 'Change' : 'Add'}</button>` : '' })}
-    <p class="source">These do not hold up approval. Logistics needs them before it schedules a delivery to the customer.</p></section>`;
+    ${ofCheckRow({ state: d.state === 'ok' && !probs.length && !gaps.length ? 'ok' : 'todo', title: 'Miles, access, the opening and the ground', text, act: open ? `<button type="button" class="secondary small" onclick="ofSiteForm('${id}')">${s.site ? 'Change' : 'Add'}</button>` : '' })}
+    ${s.site && !gaps.length ? ofCheckRow({ state: s.site.confirmed ? 'ok' : 'wait', title: 'Confirmed by Logistics', text: s.site.confirmed ? `Confirmed with the customer ${ofStamp(s.site.confirmed)}` : 'Logistics goes over these with the customer again when it schedules the delivery' }) : ''}
+    <p class="source">The salesperson asks these at the sale. They do not hold up approval. Past ${OF.set.overTo} miles, Logistics approves the delivery fee.</p></section>`;
 }
 /* After approval: plant, QC, release, delivery. */
 function ofAfterPanel(s) {
@@ -735,13 +781,26 @@ function officeRequests() {
 }
 
 /* Settings: the numbers that move with the market. */
-function ofSetFuel() {
-  const raw = $('#of-fuel').value.trim(), v = raw === '' ? null : Math.round(Number(raw) * 100) / 100;
-  if (v != null && !(v >= 0)) return toast('Type the surcharge in dollars.');
-  OF.set.fuelLog.unshift({ from: OF.set.fuel, to: v, at: Date.now() });
-  OF.set.fuel = v;
+function ofFuelMethod(method) {
+  const f = OF.set.fuel, was = ofFuelSay();
+  if (f.method === method) return;
+  f.method = method;
+  OF.set.fuelLog.unshift({ from: was, to: `${OF_FUEL[method].name.toLowerCase()} · ${ofFuelSay()}`, at: Date.now() });
   render();
-  toast(v == null ? 'Fuel surcharge cleared. Prices show STILL NEEDED again.' : `Fuel surcharge is now ${money(v)} on every new building.`);
+}
+function ofSetFuel() {
+  const f = OF.set.fuel, raw = $('#of-fuel').value.trim(), v = raw === '' ? null : Math.round(Number(raw) * 1000) / 1000, was = ofFuelSay();
+  if (v != null && !(v >= 0)) return toast('Type a number.');
+  if (v != null && f.method === 'percent' && v > 25) return toast('That is more than 25% of the price. Check the number.');
+  f[OF_FUEL[f.method].key] = v;
+  OF.set.fuelLog.unshift({ from: was, to: ofFuelSay(), at: Date.now() });
+  render();
+  toast(v == null ? 'Fuel surcharge cleared. Prices show STILL NEEDED again.' : `Fuel surcharge is now ${ofFuelSay()} on every new building.`);
+}
+/* What the surcharge comes to on a plain 10 × 16, so the office sees the number it is setting. */
+function ofFuelExample() {
+  const c = clone(defaults), rows = breakdown(c), price = rows.reduce((t, r) => t + (r.name === 'Fuel surcharge' ? 0 : r.amount), 0), amount = ofFuelFor(c, price);
+  return amount == null ? '' : `<p class="of-example">Example: a ${esc(label(c))} at ${money(price)} carries <b>${money(amount)}</b>.</p>`;
 }
 function ofSetNum(key, el, min, max) {
   const v = Number(el.value);
@@ -758,18 +817,20 @@ function ofAddPurpose() {
   render();
 }
 function officeSettings() {
-  const f = OF.set, fuelSay = (v) => (v == null ? 'not set' : money(v));
+  const f = OF.set;
   return `${head('Office', 'Settings.', 'The numbers that change with the market live here, so nobody edits a price list to move them.')}
   <div class="grid2">
-    <section class="panel"><div class="panelhead"><h2>Fuel surcharge</h2><span class="pill ${f.fuel == null ? 'red' : 'good'}">${f.fuel == null ? 'Not set' : money(f.fuel) + ' a building'}</span></div>
-      <p>Added to every new custom building automatically. An order keeps the rate it was sold at.</p>
-      <div class="of-inline"><label>Dollars per building<input id="of-fuel" type="number" min="0" step="0.01" value="${f.fuel ?? ''}" inputmode="decimal" placeholder="Not set"></label>${button('Save', 'ofSetFuel()', 'primary small')}</div>
-      ${f.fuel == null ? `<p class="notice">Until this is set, every price on the Sales desk shows ${STILL_NEEDED} beside the fuel surcharge.</p>` : ''}
-      ${f.fuelLog.length ? `<ul class="qc-log">${f.fuelLog.map((x) => `<li><strong>${fuelSay(x.from)} → ${fuelSay(x.to)}</strong><small>${ofStamp(x.at)}</small></li>`).join('')}</ul>` : ''}</section>
+    <section class="panel"><div class="panelhead"><h2>Fuel surcharge</h2><span class="pill ${ofFuelSet() ? 'good' : 'red'}">${ofFuelSet() ? esc(ofFuelSay()) : 'Not set'}</span></div>
+      <p>Added to every new custom building automatically. An order keeps the amount it was sold with.</p>
+      <div class="of-seg three" role="group" aria-label="How the fuel surcharge is figured">${Object.entries(OF_FUEL).map(([k, o]) => `<button type="button" class="${f.fuel.method === k ? 'on' : ''}" onclick="ofFuelMethod('${k}')"><strong>${o.name}</strong><small>${o.hint}</small></button>`).join('')}</div>
+      <div class="of-inline"><label>${OF_FUEL[f.fuel.method].label}<input id="of-fuel" type="number" min="0" step="0.01" value="${ofFuelValue() ?? ''}" inputmode="decimal" placeholder="Not set"></label>${button('Save', 'ofSetFuel()', 'primary small')}</div>
+      ${ofFuelExample()}
+      ${ofFuelSet() ? '' : `<p class="notice">Until this is set, every price on the Sales desk shows ${STILL_NEEDED} beside the fuel surcharge.</p>`}
+      ${f.fuelLog.length ? `<ul class="qc-log">${f.fuelLog.map((x) => `<li><strong>${esc(x.from)} → ${esc(x.to)}</strong><small>${ofStamp(x.at)}</small></li>`).join('')}</ul>` : ''}</section>
     <section class="panel"><h2>Delivery</h2>
       <div class="of-inline"><label>Free within (miles of the lot that sold it)<input type="number" min="0" max="500" value="${FREE_DELIVERY_MILES}" onchange="ofSetNum('freeMiles',this,0,500)" inputmode="numeric"></label></div>
       <div class="of-inline"><label>Past that, up to (miles)<input type="number" min="0" max="1000" value="${f.overTo}" onchange="ofSetNum('overTo',this,0,1000)" inputmode="numeric"></label><label>Charge ($)<input type="number" min="0" max="10000" value="${f.overFee}" onchange="ofSetNum('overFee',this,0,10000)" inputmode="decimal"></label></div>
-      <p class="source">Farther than ${f.overTo} miles is priced by the delivery coordinator. These match the delivery and blocking agreement.</p>
+      <p class="source">Farther than ${f.overTo} miles, Logistics approves the fee for that delivery. The first two match the delivery and blocking agreement; the terms and conditions still say 51 to 60 miles.</p>
       <h3>Extra charges the office can add</h3><ul class="of-feelist">${OF_FEES.map(([n, a]) => `<li><span>${n}</span><strong>${money(a)}</strong></li>`).join('')}</ul></section>
     <section class="panel"><h2>Cash sales</h2>
       <div class="of-inline"><label>Deposit at the time of order (%)<input type="number" min="0" max="100" value="${f.depositPct}" onchange="ofSetNum('depositPct',this,0,100)" inputmode="numeric"></label></div>
@@ -782,7 +843,7 @@ function officeSettings() {
       <div class="of-inline"><label>Add a purpose<input id="of-purpose" maxlength="40" placeholder="Example: First responder"></label>${button('Add', 'ofAddPurpose()', 'secondary small')}</div>
       <h3>Sales tax</h3><p class="of-soft">Comes from a tax service, by delivery address. Not connected in this preview, so tax shows as “from the tax service”.</p></section>
   </div>
-  ${opsNotes([['Free delivery miles and haul charges', 'Haul rates live in <code>mfg_haul_rate_rules</code>.']], ['A fuel surcharge setting with its change history. Turbo Assist has no fuel surcharge yet.', 'The deposit percent, the driver-payment switch and the discount purposes.', 'Sales tax: the plan <code>rto_tax_lookup.md</code> is not started.'])}`;
+  ${opsNotes([['Free delivery miles and haul charges', 'Haul rates live in <code>mfg_haul_rate_rules</code>.']], ['A fuel surcharge setting (a percent of the price, by size, or a flat amount) with its change history. Turbo Assist has no fuel surcharge yet.', 'The deposit percent, the driver-payment switch and the discount purposes.', 'Sales tax: the plan <code>rto_tax_lookup.md</code> is not started.'])}`;
 }
 
 function officeNotes() {
@@ -822,14 +883,15 @@ function officeNotes() {
 {
   const listBreakdown = breakdown;
   breakdown = function (c = S.c) {
-    const rows = listBreakdown(c);
-    if (OF.set.fuel != null)
-      for (const r of rows) if (r.name === 'Fuel surcharge') Object.assign(r, { amount: OF.set.fuel, needed: false, source: 'Set by the office · changes with the market' });
+    const rows = listBreakdown(c), row = rows.find((r) => r.name === 'Fuel surcharge');
+    if (!row) return rows;
+    const amount = ofFuelFor(c, rows.reduce((t, r) => t + (r === row ? 0 : r.amount), 0));
+    if (amount != null) Object.assign(row, { amount, needed: false, source: `Set by the office · ${ofFuelSay()}` });
     return rows;
   };
   const flag = sfFuelFlag;
   sfFuelFlag = function (html) {
-    return OF.set.fuel == null ? flag(html) : html;
+    return ofFuelSet() ? html : flag(html);
   };
 }
 
@@ -872,7 +934,7 @@ function officeNotes() {
     const fuelRow = s.path === 'lot' ? null : breakdown(s.c).find((r) => r.name === 'Fuel surcharge');
     ofRec(s);
     s.money.fuel = s.path === 'lot' ? 0 : fuelRow && !fuelRow.needed ? fuelRow.amount : null;
-    if (s.path === 'lot' && S.delivery) s.site = { ...S.delivery };
+    if (s.path === 'lot' && S.delivery) (s.site = { ...S.delivery, askedBy: 'Salesperson', askedAt: Date.now(), confirmed: null }), siteFeeSync(s);
     if (S.page === 'sale') render();
   };
 }
@@ -892,7 +954,7 @@ function officeNotes() {
     out.subtotal = Math.round((s.total - ofSum(m.discounts) + ofSum(m.fees)) * 100) / 100;
     if (out.monthly != null && s.billing?.term) out.monthly = payment(s.total - ofSum(m.discounts), s.billing.term);
     const d = ofDelivery(s);
-    out.delivery = d.miles == null ? 'To be confirmed' : d.fee === 0 ? 'FREE' : d.fee ? money(d.fee) : 'Priced by the coordinator';
+    out.delivery = d.miles == null ? 'To be confirmed' : d.fee === 0 ? 'FREE' : d.fee ? money(d.fee) : 'Fee to be approved by Logistics';
     return out;
   };
   /* The build sheet names the lot that sold it. */
@@ -950,7 +1012,7 @@ function officeNotes() {
         billingStreet: o.street, billingCity: o.zip === false ? '' : lot.town.replace(/ II$/, ''), billingState: o.zip === false ? '' : lot.state, billingZip: o.zip === false ? '' : lot.zip, same: true },
       signed: { invoice: day(at), terms: day(at), delivery: day(at) }, signatures: {},
       events: [{ time: stamp(new Date(at - 50 * 60e3)), text: `Order created by ${o.agent} at ${lot.town}` }, { time: stamp(new Date(at - 15 * 60e3)), text: 'Customer signed the invoice, terms and delivery agreement' }, { time: stamp(at), text: 'Submitted to administrator for review' }],
-      site: o.miles == null ? undefined : { miles: o.miles, access: 'Clear access', gate: '', noGate: true, ground: 'Level', notes: '' },
+      site: o.miles == null ? undefined : { miles: o.miles, access: 'Clear access', gate: '', noGate: true, ground: 'Level', notes: '', askedBy: 'Salesperson', askedAt: at.getTime() - 40 * 60e3, confirmed: null },
     };
     if (rto) s.rtoApp = { provider: 'Sample RTO company', signedOn: day(at), term: o.term, a: { dlState: lot.state, dlGiven: true, dobGiven: true, ssn4: '0000', billingSame: true, employer: 'Sample Employer', r1name: 'Sample Reference', r1phone: '(843) 555-0111', r1rel: 'Friend', r1state: lot.state, r2name: 'Sample Reference Two', r2phone: '(843) 555-0122', r2rel: 'Friend', r2state: lot.state, idPhoto: 'sample-license.jpg', property: 'Owns the property', cosigner: false } };
     S.sales.push(s);
@@ -958,6 +1020,7 @@ function officeNotes() {
     s.money.fuel = null;
     s.money.payments = (o.pays || []).map(([amount, method, confirmed]) => ({ amount: amount === 'all' ? total : amount === 'tenth' ? Math.round(total * 10) / 100 : amount, method, at: at.getTime(), confirmed: !!confirmed, confirmedAt: confirmed ? at.getTime() + 30 * 60e3 : undefined }));
     if (o.discount) s.money.discounts.push({ amount: o.discount[0], purpose: o.discount[1], ok: false, by: 'Salesperson' });
+    siteFeeSync(s);
     if (o.after) o.after(s);
     return s;
   };
@@ -968,7 +1031,7 @@ function officeNotes() {
     avery.c.sheet = { pos: {}, ok: Date.parse('2026-11-06T10:40:00') };
     avery.agent = 'Casey Brooks';
     avery.submittedAt = hoursAgo(3).toISOString();
-    avery.site = { miles: 12, access: 'Clear access', gate: '', noGate: true, ground: 'Level', notes: '' };
+    avery.site = { miles: 12, access: 'Clear access', gate: '', noGate: true, ground: 'Level', notes: '', askedBy: 'Salesperson', askedAt: Date.parse('2026-11-06T10:20:00'), confirmed: null };
     ofRec(avery);
     avery.money.payments = [{ amount: 605.84, method: 'Card at the lot', at: Date.parse('2026-11-06T10:45:00'), confirmed: false }];
   }
@@ -979,7 +1042,7 @@ function officeNotes() {
     after: (s) => (s.office.rtoCo = { state: 'sent', sent: Date.now() - 20 * 36e5 }) });
   /* Cash with a military discount to approve and a deposit to confirm. */
   make({ id: 'FLO-2121', lot: 'florence', customer: 'Robin Hale', agent: 'Jo Whitaker', hours: 5, c: { style: 'Utility', size: '12x20', siding: 'Lap', color: 'Sage Green', trimColor: 'Origami White', roof: 'Shingles', windows: 2 }, street: '77 Sample Pine Ct', miles: 44, discount: [300, 'Military'], pays: [['tenth', 'Card at the lot', false]] });
-  /* Cash with three problems: no deposit, under the price list, and 62 miles out. */
+  /* Cash with two problems (no deposit, under the price list), and 62 miles out: a delivery charge. */
   make({ id: 'CNW-0934', lot: 'conway', customer: 'Drew Ellison', agent: 'Lee Tran', hours: 7, c: { style: 'Utility', size: '10x12', color: 'Blue', trimColor: 'Origami White', roofColor: 'Galvalume', windows: 0 }, street: '5 Sample Marsh Ln', miles: 62, off: -150, pays: [] });
   /* On hold since yesterday: the floor plan was never confirmed. */
   make({ id: 'VID-3107', lot: 'vidalia', customer: 'Toni Marsh', agent: 'Kai Rivers', hours: 30, term: 60, plan: false, status: 'Correction requested', c: { style: 'Lofted', size: '10x20', color: 'Red', trimColor: 'Origami White', roofColor: 'Black' }, street: '31 Sample Peach St', miles: 9, pays: [[392.1, 'Card at the lot', true]],
@@ -988,8 +1051,8 @@ function officeNotes() {
       s.office.hold = { reason: 'Floor plan is not confirmed', note: 'Walk the customer through the floor plan and press Confirm layout, then submit again.', at: Date.now() - 22 * 36e5 };
       s.events.push({ time: stamp(hoursAgo(22)), text: 'Office placed the order on hold: Floor plan is not confirmed' });
     } });
-  /* Approved last week, at the plant. */
-  make({ id: 'GRV-0020', lot: 'graniteville', customer: 'Kelly Ardmore', agent: 'Max Dunn', hours: 150, status: 'Processed · Sold', c: { style: 'Studio', size: '10x16', color: 'Alpine Grey', trimColor: 'Black', roofColor: 'Black', windows: 2 }, street: '402 Sample Ridge Rd', miles: 22, pays: [['tenth', 'Card at the lot', true]],
+  /* Approved last week, at the plant, and 118 miles from the lot: Logistics has a fee to approve. */
+  make({ id: 'GRV-0020', lot: 'graniteville', customer: 'Kelly Ardmore', agent: 'Max Dunn', hours: 150, status: 'Processed · Sold', c: { style: 'Studio', size: '10x16', color: 'Alpine Grey', trimColor: 'Black', roofColor: 'Black', windows: 2 }, street: '402 Sample Ridge Rd', miles: 118, pays: [['tenth', 'Card at the lot', true]],
     after: (s) => {
       s.office.approved = { at: Date.now() - 140 * 36e5 };
       s.plantPhase = 3;

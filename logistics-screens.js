@@ -10,19 +10,20 @@ const lgMapLink = (text) => 'https://www.google.com/maps/search/?api=1&query=' +
 
 /* ---------- One building ---------- */
 function lgUnitRow(u, mode) {
-  const lot = lotById(u.lotId), hold = lgHold(u), home = u.leg && u.leg !== 'plant-lot', probs = home ? lgSiteProblems(u) : [], s = lgSale(u);
+  const lot = lotById(u.lotId), hold = lgHold(u), home = u.leg && u.leg !== 'plant-lot', probs = home ? lgSiteProblems(u) : [], s = lgSale(u), siteOpen = home ? lgSiteOpen(u) : '';
   const flags = [
     u.kind === 'stock' ? '<span class="ops-flag">Inventory for the lot</span>' : `<span class="ops-flag wait">Customer · ${esc(u.customer)}</span>`,
     u.leg && u.kind === 'order' ? `<span class="ops-flag ${u.leg === 'plant-lot' ? '' : 'wait'}">${u.leg === 'plant-lot' ? 'Through the lot' : LG_LEG[u.leg]}</span>` : '',
     lgWide(u) ? `<span class="ops-flag todo">Wide load · ${u.wid} ft</span>` : '',
     hold ? `<span class="ops-flag bad">${esc(hold)}</span>` : home && s ? `<span class="ops-flag ok">${esc(ofPayRule(s).text)}</span>` : '',
+    home ? `<span class="ops-flag ${siteOpen ? 'todo' : 'ok'}">${siteOpen ? (/^ask/.test(siteOpen) ? 'Site questions not asked' : 'Site not confirmed yet') : 'Site confirmed'}</span>` : '',
     ...probs.map((p) => `<span class="ops-flag todo">${esc(p)}</span>`),
   ].join('');
   const act = mode === 'pick'
     ? `<label class="lg-tick"><input type="checkbox" ${LG.pick.includes(u.id) ? 'checked' : ''} onchange="lgTogglePick('${u.id}',this.checked)" aria-label="Pick ${esc(u.name)} for a load"><span>Pick</span></label>`
     : mode === 'home' ? `<button type="button" class="primary small" ${hold ? 'disabled' : ''} onclick="lgNewHome('${u.id}')">Schedule delivery</button>` : '';
   const more = mode === 'pick' && u.kind === 'order' && (s || u.site) ? `<button type="button" class="link" onclick="lgSwitchPath('${u.id}')">${u.leg === 'plant-lot' ? 'Send plant to home instead' : 'Send through the lot instead'}</button>` : '';
-  const site = home && s ? `<button type="button" class="link" onclick="ofSiteForm('${s.id}')">${s.site ? 'Site answers' : 'Add site answers'}</button>` : '';
+  const site = home ? `<button type="button" class="link" onclick="lgSiteForm('${u.id}')">${siteOpen ? 'Confirm the site' : 'Site answers'}</button>` : '';
   return `<article class="ops-row lg-unit${LG.pick.includes(u.id) ? ' picked' : ''}"><span class="lg-size"><b>${u.wid} × ${u.len}</b><small>${u.len} ft long</small></span>
     <div class="grow"><div class="ops-rowtop"><strong>${esc(u.name.replace(u.size, '').trim())}</strong><span class="serial">${esc(u.id)}</span>${lgSample(u)}</div>
     <p class="ops-rowsub">To ${esc(lgDest(u))} · ready ${lgAgo(u.readyAt)}</p><div class="ops-flags">${flags}</div></div>
@@ -53,7 +54,12 @@ function lgBoardList() {
     <div class="ops-list">${g.list.sort((a, b) => a.readyAt - b.readyAt).map((u) => lgUnitRow(u, 'pick')).join('')}</div></div>`).join('');
   const sec = (k, title, n, body) => (show(k) && n ? `<h2 class="sectionhead qc-group">${title} <small>${n}</small></h2>${body}` : '');
   const order = { in_transit: 0, scheduled: 1, planned: 2 };
+  const fees = lgFeeList().filter((s) => !LG.q.trim() || `${s.customer} ${s.id} ${saleLot(s).town}`.toLowerCase().includes(LG.q.trim().toLowerCase()));
+  const feeRow = (s) => `<article class="ops-row"><span class="lg-size"><b>${ofDelivery(s).miles}</b><small>miles</small></span><div class="grow"><div class="ops-rowtop"><strong>${esc(s.customer)}</strong><span class="serial">${esc(s.id)}</span>${lgSample(s)}</div>
+    <p class="ops-rowsub">${esc(label(s.c))} · from the ${esc(saleLot(s).town)} lot · ${esc(siteLine(s))}</p><div class="ops-flags"><span class="ops-flag todo">Past ${OF.set.overTo} miles: the fee is yours to approve</span></div></div>
+    <button type="button" class="primary small" onclick="lgFeeForm('${s.id}')">Set the fee</button></article>`;
   const html = [
+    LG.tile === 'all' && fees.length ? `<h2 class="sectionhead qc-group">Delivery fees to approve <small>${fees.length}</small></h2><div class="ops-list">${fees.map(feeRow).join('')}</div>` : '',
     sec('road', 'On the road now', loads.filter((l) => l.state === 'in_transit').length, `<div class="ops-list">${loads.filter((l) => l.state === 'in_transit').map(lgLoadRow).join('')}</div>`),
     sec('plant', 'At the plant, ready to load', atPlant.length, plantHtml),
     sec('lot', 'At a lot, waiting for home delivery', atLot.length, `<div class="ops-list">${atLot.sort((a, b) => a.readyAt - b.readyAt).map((u) => lgUnitRow(u, 'home')).join('')}</div>`),
@@ -81,7 +87,7 @@ function lgBoard() {
     ['Build a load', 'A shipment for the plant load (<code>mintShipmentForProductionLoad</code>, codes like “AC”) with one route per building (<code>createOrgRoute</code>).'],
     ['Schedule delivery', 'A route from the lot to the customer: stops <code>dealer_holding</code> → <code>end_customer</code>.'],
     ['Plant to lot · plant to home · lot to home', 'Turbo Logistics has no leg field: the stops say it (<code>plant_origin</code>, <code>dealer_holding</code>, <code>end_customer</code>).'],
-  ], ['Picking several buildings and seeing their total length against a trailer.', 'Switching a building between through the lot and plant to home.', 'Holding a home delivery until the payment rule is met.'])}`;
+  ], ['Picking several buildings and seeing their total length against a trailer.', 'Switching a building between through the lot and plant to home.', 'Holding a home delivery until the payment rule is met.', 'Logistics approving the delivery fee past ' + OF.set.overTo + ' miles.', 'Confirming the delivery-site answers with the customer before a delivery is scheduled.'])}`;
 }
 
 /* ---------- One load ---------- */
@@ -103,6 +109,7 @@ function lgStopCard(load, i, big) {
   const lines = [
     day ? `<small class="${day.open ? '' : 'lg-bad'}">${esc(day.text)} on ${lgDay(load.date)}</small>` : '',
     !isLot && site ? `<small>${esc([site.access, site.noGate ? 'no gate' : site.gate ? site.gate + ' ft opening' : '', site.ground, site.notes].filter(Boolean).join(' · '))}</small>` : '',
+    !isLot && !stop.done ? `<small class="${lgSiteOpen(u) ? 'lg-bad' : 'lg-good'}">${lgSiteOpen(u) ? 'Site: ' + esc(lgSiteOpen(u)) : 'Site confirmed with the customer ' + lgStamp(site.confirmed)}</small>` : '',
     pay ? `<small class="${pay.ok ? '' : 'lg-bad'}">${esc(pay.text)}${stop.collected ? ` · driver collected ${money(stop.collected)}` : ''}</small>` : '',
     s && load.state === 'scheduled' ? `<small>${s.toldCustomer ? 'The customer has been told the day' : 'The salesperson tells the customer the day · not ticked yet'}</small>` : '',
     stop.done ? `<small class="lg-good">${isLot ? 'Unloaded' : 'Delivered'} ${lgStamp(stop.done)} · ${isLot ? 'received' : 'signed'} by ${esc(stop.proof?.by || '')}${stop.proof?.note ? ' · ' + esc(stop.proof.note) : ''}${stop.proof?.photo ? ' · photo ' + esc(stop.proof.photo) : ''}</small>` : stop.arrived ? `<small>Arrived ${lgStamp(stop.arrived)}</small>` : '',
@@ -113,7 +120,7 @@ function lgStopCard(load, i, big) {
   return `<div class="lg-stop${stop.done ? ' done' : next ? ' now' : ''}"><span class="lg-stopn">${stop.done ? icon('check', 16) : i + 1}</span><div class="grow">
     <strong>${isLot ? esc(lot.town) + ' lot' : esc(u.customer) + ' · customer delivery'}</strong><small>${where} · about ${miles} mi from ${i ? 'the stop before' : load.from.type === 'plant' ? 'the plant' : 'the lot'}</small>${lines}
     <ul class="lg-stopunits">${units.map((x) => `<li><b>${x.wid} × ${x.len}</b> ${esc(x.name.replace(x.size, '').trim())} <span class="serial">${esc(x.id)}</span>${x.kind === 'order' && isLot ? ` <span class="ops-flag wait">for ${esc(x.customer)}</span>` : ''}${lgWide(x) ? ' <span class="ops-flag todo">Wide</span>' : ''}${editable && !big ? ` <button type="button" class="of-x" aria-label="Take ${esc(x.name)} off this load" onclick="lgRemove('${load.id}','${x.id}')">×</button>` : ''}</li>`).join('')}</ul></div>
-    <div class="lg-stopacts">${acts}${addr || isLot ? `<a class="chipbtn" target="_blank" rel="noopener" href="${lgMapLink(isLot ? placeAddress(lot) : addr)}">${icon('pin', 16)} Directions</a>` : ''}</div></div>`;
+    <div class="lg-stopacts">${acts}${!isLot && editable && !big ? `<button type="button" class="${lgSiteOpen(u) ? 'primary' : 'secondary'} small" onclick="lgSiteForm('${u.id}')">${lgSiteOpen(u) ? 'Confirm the site' : 'Site answers'}</button>` : ''}${addr || isLot ? `<a class="chipbtn" target="_blank" rel="noopener" href="${lgMapLink(isLot ? placeAddress(lot) : addr)}">${icon('pin', 16)} Directions</a>` : ''}</div></div>`;
 }
 /* Buildings that could ride along: the same stops first, then the same area, oldest first. */
 function lgCandidates(load) {
@@ -178,6 +185,7 @@ function lgLoadPage() {
     'Adding up every building’s length against the trailer, and stopping a load that is too long. Turbo Logistics checks one unit at a time.',
     'The trailer drawing and the loading order.',
     'Warnings for a lot that is closed that day, a wide load, crossing a state line, and the delivery site.',
+    'Stopping a home delivery until Logistics has confirmed the site answers with the customer.',
     'Suggesting buildings for the same area.',
     'The driver taking the final payment at delivery.',
     'Signing on this screen. In Turbo Logistics the proof form opens in FastField.',
@@ -346,6 +354,7 @@ function lgNotesPage() {
       <li>Warnings for a closed lot, a wide load, a state line, a tight gate or a slope.</li>
       <li>Through the lot or plant to home as a choice on the building.</li>
       <li>Holding a home delivery until the payment rule is met, and the driver taking payment.</li>
+      <li>Site questions asked at the sale and confirmed by Logistics before scheduling; Logistics approving the fee past ${OF.set.overTo} miles.</li>
       <li>The lot signing for buildings; the customer signing on the driver’s screen instead of in FastField.</li>
       <li>Lot open days on the calendar, the sketch map of every lot, and adding a plant.</li>
     </ul></section>
