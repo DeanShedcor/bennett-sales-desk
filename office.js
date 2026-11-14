@@ -670,7 +670,7 @@ function ofAfterPanel(s) {
   return `<section class="panel"><div class="panelhead"><h2>After approval</h2><span class="pill ${o.released ? 'good' : 'blue'}">${o.released ? 'With Logistics' : 'With the plant'}</span></div>
     ${ofCheckRow({ state: 'ok', title: 'Approved by the office', text: o.approved ? ofStamp(o.approved.at) : 'Approved' })}
     ${lotSale ? '' : ofCheckRow({ state: built.ok || phase >= phaseNames.indexOf('Final QA') ? 'ok' : 'wait', title: 'Plant builds it', text: phase < 0 ? 'Not started' : phaseNames[Math.min(phase, phaseNames.length - 1)] }) + `<div class="of-phases">${chevronTrack(phaseNames, built.ok ? phaseNames.length : Math.max(phase, 0))}</div>`}
-    ${!lotSale && !o.released && phase < phaseNames.indexOf('Final QA') ? `<p class="of-standin"><b>Preview stand-in</b> There is no Production side here yet. <button type="button" class="link inline" onclick="ofPlantNext('${id}')">Production: move to ${phaseNames[phase + 1]}</button></p>` : ''}
+    ${!lotSale && !o.released && phase < phaseNames.indexOf('Final QA') && typeof prOpen === 'function' ? `<p class="of-standin"><b>Production</b> moves it through the plant. <button type="button" class="link inline" onclick="prOpen('${id}')">Open it on the Production board</button></p>` : ''}
     ${lotSale ? '' : ofCheckRow({ state: built.ok ? 'ok' : qcB ? 'wait' : 'todo', title: 'Passes plant QC', text: qcB ? built.text : 'After the plant reaches Final QA', act: qcB ? `<button type="button" class="secondary small" onclick="openBuild('${id}')">QC report</button>` : '' })}
     ${ofCheckRow({ state: pay.ok ? 'ok' : 'todo', title: 'Payment for a home delivery', text: pay.text })}
     ${pathPick}

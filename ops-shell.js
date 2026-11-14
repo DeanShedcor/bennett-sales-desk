@@ -1,7 +1,9 @@
-/* ops-shell.js: puts the Office and Logistics sides in the same shell as the Sales desk and Plant QC.
+/* ops-shell.js: puts the Office, Production and Logistics sides in the same shell as the Sales
+   desk and Plant QC.
 
-   One render() for all four sides. A page named "office" or "of-…" is the Office; "logi" or "lg-…"
-   is Logistics; everything else is handed back to the render the other two sides already share.
+   One render() for all five sides. A page named "office" or "of-…" is the Office; "prod" or
+   "pr-…" is Production; "logi" or "lg-…" is Logistics; everything else is handed back to the
+   render the other two sides already share.
    Loaded last. */
 
 /* Icons the two new sides use. Same drawing style as the rest (24 × 24, 2px round strokes). */
@@ -20,13 +22,15 @@ Object.assign(ICONS, {
 });
 document.querySelectorAll('[data-ops-icon]').forEach((el) => el.insertAdjacentHTML('afterbegin', icon(el.dataset.opsIcon, el.classList.contains('tab-sale') ? 24 : 22)));
 
-const OPS_SCREENS = { ...(typeof OFFICE_SCREENS === 'object' ? OFFICE_SCREENS : {}), ...(typeof LOGI_SCREENS === 'object' ? LOGI_SCREENS : {}) };
-const opsSide = (page) => (page === 'office' || String(page).startsWith('of-') ? 'office' : page === 'logi' || String(page).startsWith('lg-') ? 'logi' : null);
+const OPS_SCREENS = { ...(typeof OFFICE_SCREENS === 'object' ? OFFICE_SCREENS : {}), ...(typeof PROD_SCREENS === 'object' ? PROD_SCREENS : {}), ...(typeof LOGI_SCREENS === 'object' ? LOGI_SCREENS : {}) };
+const opsSide = (page) => (page === 'office' || String(page).startsWith('of-') ? 'office' : page === 'prod' || String(page).startsWith('pr-') ? 'prod' : page === 'logi' || String(page).startsWith('lg-') ? 'logi' : null);
 /* Detail screens: [page to go back to, its name, the title in the phone's top bar]. */
 function opsDetail(page) {
   if (page === 'of-order') return [OF.back, OF.back === 'of-orders' ? 'Orders' : OF.back === 'of-pay' ? 'Payments' : 'To do', ofSale(OF.id)?.customer || 'Order'];
   if (page === 'of-notes') return ['office', 'To do', 'About this preview'];
   if (page === 'lg-notes') return ['logi', 'Dispatch', 'About this preview'];
+  if (page === 'pr-notes') return ['prod', 'Board', 'About this preview'];
+  if (page === 'pr-unit') return [PR.back, PR.back === 'pr-list' ? 'Units' : 'Board', PR.id || 'Building'];
   if (page === 'lg-load' && typeof lgDetailNav === 'function') return lgDetailNav();
   return null;
 }

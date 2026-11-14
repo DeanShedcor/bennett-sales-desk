@@ -334,17 +334,17 @@ function sfSteps(s) {
   handoff.push({ title: 'Delivered and signed for', on: s.deliveredAt, text: s.deliveredAt ? `Delivered ${s.deliveredAt} · signed by ${esc(s.signatures?.receipt?.name || s.customer)}` : 'The driver collects the customer’s signature', hook: SF_HOOK.pod, only: SF_ONLY.pod });
   return { desk, handoff };
 }
-/* Where to act next. The Office, Plant QC and Logistics are their own sides of the preview, so
-   these are links to the right screen there. Production has no side yet: its button is a stand-in. */
+/* Where to act next. The Office, Production, Plant QC and Logistics are their own sides of the
+   preview, so these are links to the right screen there. */
 function sfStandins(s) {
   const lot = s.path === 'lot', after = s.status === 'Processed · Sold', qc = sfQc(s), b = [], o = s.office || {};
   const office = typeof ofOpen === 'function', logi = typeof lgOpenSale === 'function';
   if (['Submitted · Awaiting review', 'Correction requested'].includes(s.status) && office) b.push(button('Office: review this order ' + icon('arrow', 16), `ofOpen('${s.id}')`, 'secondary small'));
-  if (after && !lot && (s.plantPhase ?? -1) < SF_QA()) b.push(button(`Production: move to ${phaseNames[(s.plantPhase ?? -1) + 1]}`, 'sfPlantNext()', 'secondary small'));
+  if (after && !lot && (s.plantPhase ?? -1) < SF_QA()) b.push(typeof prOpen === 'function' ? button('Production: open this building ' + icon('arrow', 16), `prOpen('${s.id}')`, 'secondary small') : button(`Production: move to ${phaseNames[(s.plantPhase ?? -1) + 1]}`, 'sfPlantNext()', 'secondary small'));
   if (after && !lot && qc.b && !qc.passed) b.push(button('Plant QC: open the inspection ' + icon('arrow', 16), `openBuild('${s.id}')`, 'secondary small'));
   if (after && (lot || qc.passed) && !o.released && office) b.push(button('Office: release it for delivery ' + icon('arrow', 16), `ofOpen('${s.id}')`, 'secondary small'));
   if (after && o.released && logi) b.push(button((typeof saleLot === 'function' && saleLot(s).managerSchedules ? 'Schedule this delivery yourself ' : 'Logistics: open this building ') + icon('arrow', 16), `lgOpenSale('${s.id}')`, 'secondary small'));
-  return b.length ? `<div class="sf-standin"><strong>Where to act next in this preview</strong><span>The Office, Plant QC and Logistics are their own sides here (the switch at the top). Production has no side yet, so its button is a stand-in. Salespeople do not see these in Turbo Assist.</span><div class="actions">${b.join('')}</div></div>` : '';
+  return b.length ? `<div class="sf-standin"><strong>Where to act next in this preview</strong><span>The Office, Production, Plant QC and Logistics are their own sides here (the switch at the top). Salespeople do not see these buttons in Turbo Assist.</span><div class="actions">${b.join('')}</div></div>` : '';
 }
 /* The salesperson passes the delivery day to the customer; nothing texts the customer for them. */
 function sfTold() {

@@ -2,27 +2,28 @@
    (tiles that filter, grouped lists, a dark action bar), so all four sides read as one app. */
 
 /* ---------- Four sides, one switch ---------- */
-body[data-side="office"] [data-for="sales"], body[data-side="logi"] [data-for="sales"],
-body:not([data-side="office"]) [data-for="office"], body:not([data-side="logi"]) [data-for="logi"] { display: none !important; }
-body[data-side="office"] .sideswitch [data-side-btn="office"], body[data-side="logi"] .sideswitch [data-side-btn="logi"] { background: var(--surface); color: var(--ink); }
+body[data-side="office"] [data-for="sales"], body[data-side="logi"] [data-for="sales"], body[data-side="prod"] [data-for="sales"],
+body:not([data-side="office"]) [data-for="office"], body:not([data-side="logi"]) [data-for="logi"], body:not([data-side="prod"]) [data-for="prod"] { display: none !important; }
+body[data-side="office"] .sideswitch [data-side-btn="office"], body[data-side="logi"] .sideswitch [data-side-btn="logi"], body[data-side="prod"] .sideswitch [data-side-btn="prod"] { background: var(--surface); color: var(--ink); }
 body[data-side="office"][data-page="office"] .topcta[data-for="office"], body[data-side="logi"][data-page="logi"] .topcta[data-for="logi"] { display: inline-flex; }
 .sideswitch button { padding: 6px 10px; }
-/* Four sides need more of the top bar. Nothing in it wraps or squeezes: the place name goes
-   first, then the switch drops to the strip underneath, as it does on a phone. */
+/* Five sides do not fit beside the menu, so the switch sits in the strip under the top bar at
+   every width. Nothing in the top bar wraps or squeezes. On a phone the switch uses short names. */
+.sideswitch:not(.strip) { display: none !important; }
+.sideswitch.strip { display: inline-flex; }
 .brand { flex: none; }
 .topnav button { white-space: nowrap; }
-@media (max-width: 1440px) {
+@media (max-width: 1180px) {
   .location { display: none; }
-}
-body[data-side="qc"][data-page="qc"] .location { display: none; } /* its long button needs the room */
-@media (max-width: 1280px) {
-  .sideswitch:not(.strip) { display: none; }
-  .sideswitch.strip { display: inline-flex; }
-  .topbar-in { gap: 18px; }
 }
 @media (min-width: 981px) and (max-width: 1100px) {
   .topnav button { padding: 8px 10px; }
   .topcta { padding: 9px 12px; }
+}
+@media (max-width: 680px) {
+  .sideswitch.strip { max-width: 100%; }
+  .sideswitch.strip button { font-size: 0; padding: 6px 9px; }
+  .sideswitch.strip button::after { content: attr(data-short); font-size: 12.500px; }
 }
 
 /* ---------- Lists ---------- */
@@ -117,16 +118,16 @@ body[data-side="qc"][data-page="qc"] .location { display: none; } /* its long bu
 /* ---------- Phones and tablets: the same app feel the Plant QC side has ---------- */
 @media (max-width: 980px) {
   html { -webkit-tap-highlight-color: transparent; }
-  :is([data-side="office"], [data-side="logi"]) #app { overflow-x: clip; }
-  :is([data-side="office"], [data-side="logi"]) input, :is([data-side="office"], [data-side="logi"]) textarea, :is([data-side="office"], [data-side="logi"]) select { font-size: 16px; }
-  body:is([data-side="office"], [data-side="logi"])::before { display: block; }
-  :is([data-side="office"], [data-side="logi"]) .topbar { position: sticky; top: env(safe-area-inset-top, 0px); }
-  :is([data-side="office"], [data-side="logi"]) #app.qc-enter { animation: qc-in 0.18s ease-out; }
-  :is([data-side="office"], [data-side="logi"]) #app.qc-enter-detail > * { animation: qc-push 0.22s ease-out; }
-  :is([data-side="office"], [data-side="logi"]) .ops-bar { bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
+  :is([data-side="office"], [data-side="logi"], [data-side="prod"]) #app { overflow-x: clip; }
+  :is([data-side="office"], [data-side="logi"], [data-side="prod"]) input, :is([data-side="office"], [data-side="logi"], [data-side="prod"]) textarea, :is([data-side="office"], [data-side="logi"], [data-side="prod"]) select { font-size: 16px; }
+  body:is([data-side="office"], [data-side="logi"], [data-side="prod"])::before { display: block; }
+  :is([data-side="office"], [data-side="logi"], [data-side="prod"]) .topbar { position: sticky; top: env(safe-area-inset-top, 0px); }
+  :is([data-side="office"], [data-side="logi"], [data-side="prod"]) #app.qc-enter { animation: qc-in 0.18s ease-out; }
+  :is([data-side="office"], [data-side="logi"], [data-side="prod"]) #app.qc-enter-detail > * { animation: qc-push 0.22s ease-out; }
+  :is([data-side="office"], [data-side="logi"], [data-side="prod"]) .ops-bar { bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   .qc-detail .ops-bar { position: fixed; left: 0; right: 0; bottom: 0; margin: 0; border-radius: 0; z-index: 26; padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
-  :is([data-side="office"], [data-side="logi"]).qc-detail main { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
-  :is([data-side="office"], [data-side="logi"]).qc-detail main:has(.ops-bar) { padding-bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
+  :is([data-side="office"], [data-side="logi"], [data-side="prod"]).qc-detail main { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+  :is([data-side="office"], [data-side="logi"], [data-side="prod"]).qc-detail main:has(.ops-bar) { padding-bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (max-width: 680px) {
   .ops-tiles.three { grid-template-columns: minmax(0, 1fr); }
@@ -143,8 +144,8 @@ body[data-side="qc"][data-page="qc"] .location { display: none; } /* its long bu
   .of-acts { max-width: none; justify-content: flex-start; margin-left: 38px; }
   .of-seg { grid-template-columns: minmax(0, 1fr); }
   .of-phases, .of-path, .of-standin { margin-left: 0 !important; }
-  :is([data-side="office"], [data-side="logi"]) .modal-back { place-items: end stretch; padding: 0; }
-  :is([data-side="office"], [data-side="logi"]) .modal { max-width: none; border-radius: 20px 20px 0 0; padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px)); max-height: 88vh; animation: qc-sheet 0.24s ease-out; }
+  :is([data-side="office"], [data-side="logi"], [data-side="prod"]) .modal-back { place-items: end stretch; padding: 0; }
+  :is([data-side="office"], [data-side="logi"], [data-side="prod"]) .modal { max-width: none; border-radius: 20px 20px 0 0; padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px)); max-height: 88vh; animation: qc-sheet 0.24s ease-out; }
 }
 
 /* ---------- Logistics: buildings and loads ---------- */
@@ -328,4 +329,48 @@ a.chipbtn, a.secondary { text-decoration: none; color: var(--ink); }
 .lg-mgr { font-size: 14px; margin-top: 4px !important; }
 @media (max-width: 680px) {
   .lg-stopacts { flex: 1 1 calc(100% - 42px); min-width: 0; }
+}
+
+/* ---------- Production: the plant's board ---------- */
+.pr-pick { display: none; }
+.pr-board { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px; align-items: start; }
+.pr-col { background: color-mix(in srgb, var(--surface) 55%, var(--canvas)); border: 1px solid var(--line); border-radius: 12px; padding: 8px; min-width: 0; display: grid; gap: 8px; align-content: start; min-height: 150px; }
+.pr-col.edge { background: var(--surface-2); }
+.pr-col.over { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.pr-col > header { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding: 2px 4px 4px; }
+.pr-col > header strong { font: 700 13px/1.15 var(--display); }
+.pr-col > header span { font: 700 12.500px var(--body); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pr-empty { font-size: 12px; color: var(--muted); padding: 6px 4px; }
+.pr-more { font-size: 12.500px; padding: 2px 4px; justify-self: start; }
+.pr-card { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--navy-2); border-radius: 10px; padding: 9px 10px; display: grid; gap: 1px; cursor: grab; min-width: 0; }
+.pr-card.fixed { cursor: pointer; border-left-color: var(--line-strong); }
+.pr-card:hover { border-color: var(--ink); border-left-color: var(--amber-deep); }
+.pr-card.hold { border-left-color: var(--bad); background: #fff8f7; }
+.pr-card b { font: 800 16px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.pr-card .pr-style { font-weight: 600; font-size: 12.500px; line-height: 1.2; }
+.pr-card small { font-size: 11.500px; overflow-wrap: anywhere; line-height: 1.3; }
+.pr-card .pr-age { color: var(--steel); font-weight: 600; }
+.pr-card .ops-flags { margin-top: 5px; gap: 4px; }
+.pr-card .ops-flag { font-size: 10.500px; padding: 2px 6px; white-space: normal; }
+.pr-move { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pr-move button { padding: 16px 12px; font-size: 16px; }
+@media (max-width: 1280px) {
+  .pr-board { display: flex; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
+  .pr-col { flex: 0 0 176px; scroll-snap-align: start; }
+}
+@media (max-width: 980px) {
+  [data-side="prod"] .tabbar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 680px) {
+  .pr-pick { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--gutter-r)) 12px calc(-1 * var(--gutter-l)); padding: 0 var(--gutter-r) 0 var(--gutter-l); }
+  .pr-pick::-webkit-scrollbar { display: none; }
+  .pr-pick .chipbtn { flex: none; white-space: nowrap; }
+  .pr-board { display: block; overflow: visible; }
+  .pr-col { display: none; }
+  .pr-col.sel { display: grid; }
+  .pr-col > header { display: none; }
+  .pr-card b { font-size: 19px; }
+  .pr-card .pr-style { font-size: 14.500px; }
+  .pr-card small { font-size: 13px; }
+  .pr-card .ops-flag { font-size: 12px; }
 }
