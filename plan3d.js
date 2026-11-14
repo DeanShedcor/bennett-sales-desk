@@ -243,7 +243,7 @@ function p3Mesh(c, inside = false, yaw = 0) {
       const door = it.kind === 'door', roll = /roll/i.test(it.name), house = /lite|fiberglass/i.test(it.name), glassTop = /transom/i.test(it.name);
       const tall = Number((it.name.match(/×(\d+)/) || [])[1]) || 3;
       let hi = door ? (roll ? 7 : 6.67) : 6.5, lo = 0;
-      if (it.high) (lo = eave + 0.3), (hi = eave + 1.5);
+      if (it.high) (lo = eave + 0.42), (hi = eave + 1.42);
       else if (door) hi = Math.min(hi, wallTop - 0.5);
       else (hi = Math.min(hi, wallTop - 0.5)), (lo = Math.max(1.5, hi - tall));
       const a0 = it.at, a1 = it.at + it.w, black = '#17191c', white = '#f4f4f1', silver = '#c9cdd2', c3 = 0.29;
@@ -269,15 +269,18 @@ function p3Mesh(c, inside = false, yaw = 0) {
           quad(a0 - c3 - 0.04, a1 + c3 + 0.04, hi, hi + 0.3, 0.08, col.trim);
           if (out) poly([[a0 - c3 - 0.09, hi + 0.3], [a1 + c3 + 0.09, hi + 0.3], [a1 + c3 + 0.19, hi + 0.42], [a0 - c3 - 0.19, hi + 0.42]], 0.12, col.trim, true);
         } else {
-          poly([[a0 - c3, hi], [a1 + c3, hi], [a1 + c3 + 0.16, hi + 0.38], [a0 - c3 - 0.16, hi + 0.38]], 0.09, col.trim, true);
+          /* A transom, as built: a flat board over it and one under it, each running past the side boards. */
+          if (it.high) for (const y of [hi, lo - 0.27]) quad(a0 - c3 - 0.13, a1 + c3 + 0.13, y, y + 0.27, 0.09, col.trim);
+          else poly([[a0 - c3, hi], [a1 + c3, hi], [a1 + c3 + 0.16, hi + 0.38], [a0 - c3 - 0.16, hi + 0.38]], 0.09, col.trim, true);
           if (!it.high) poly([[a0 - c3 - 0.17, lo - 0.3], [a1 + c3 + 0.17, lo - 0.3], [a1 + c3 + 0.03, lo], [a0 - c3 - 0.03, lo]], 0.1, col.trim, true);
         }
         if (!door) {
           quad(a0, a1, lo, hi, 0.06, white);
           if (it.high) {
-            quad(a0 + 0.07, a1 - 0.07, lo + 0.07, hi - 0.07, 0.09, col.glass);
-            const n = Math.max(2, Math.round(it.w / 0.45));
-            for (let k = 1; k < n; k++) quad(a0 + (it.w * k) / n - 0.02, a0 + (it.w * k) / n + 0.02, lo + 0.07, hi - 0.07, 0.1, white, false);
+            /* White vinyl frame, one row of five upright panes. */
+            const fw = 0.085, gw = it.w - 2 * fw, n = Math.max(3, Math.round(it.w / 0.48));
+            quad(a0 + fw, a1 - fw, lo + fw, hi - fw, 0.09, col.glass);
+            for (let k = 1; k < n; k++) quad(a0 + fw + (gw * k) / n - 0.016, a0 + fw + (gw * k) / n + 0.016, lo + fw, hi - fw, 0.1, white, false);
           } else {
             /* Single-hung window, as built: a 2 by 2 grid in each sash and a thick meeting rail; outside, a
                screen covers the lower sash and its grid shows through it. */
@@ -350,6 +353,22 @@ function p3Mesh(c, inside = false, yaw = 0) {
           if (out) quad(a0, a1, lo - 0.12, lo + 0.02, 0.13, '#c5cacep', false);
         }
       }
+    }
+    /* Studio, as built: a trim band across the front wall, running between the transoms' side boards, and a
+       level band along each end wall just under the low eave. */
+    if (sh.studio && Math.abs(geo.n[0]) + Math.abs(geo.n[1]) > 0) {
+      const strip = (t0, t1, y0, y1) => {
+        const p = geo.at(t0), q = geo.at(t1), d = -0.065;
+        face([V(p[0] + geo.n[0] * d, p[1] + geo.n[1] * d, F + y0), V(q[0] + geo.n[0] * d, q[1] + geo.n[1] * d, F + y0), V(q[0] + geo.n[0] * d, q[1] + geo.n[1] * d, F + y1), V(p[0] + geo.n[0] * d, p[1] + geo.n[1] * d, F + y1)], col.trim);
+      };
+      const highs = lay.items.filter((x) => x.wi === w.i && x.high).sort((p, q) => p.at - q.at);
+      if (highs.length) {
+        let t = 0.16;
+        for (const [g0, g1] of [...highs.map((x) => [x.at - 0.29, x.at + x.w + 0.29]), [w.len - 0.16, w.len]]) {
+          if (g0 > t + 0.05) strip(t, g0, eave + 0.6, eave + 0.89);
+          t = g1;
+        }
+      } else if (Math.abs(topAt(ay) - topAt(by)) > 0.5) strip(0.16, w.len - 0.16, eave - 0.36, eave - 0.07);
     }
   }
   hide = false;
