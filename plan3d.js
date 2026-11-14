@@ -430,6 +430,26 @@ function p3Mesh(c, inside = false, yaw = 0) {
       for (const [dy, du] of [[-0.78, 0.1], [0.78, 0.1], [-0.78, 0.8], [0.78, 0.8]]) sq(W / 2 + dy * vw - 0.02, W / 2 + dy * vw + 0.02, v0 + du * vh - 0.02, v0 + du * vh + 0.02, PF + 0.003, p3Shade(col.trim, 0.7));
     }
   }
+  /* Studio, as built: a small white louvered vent high on each end wall, near the tall front corner, above the
+     trim band. A frame with the louvers set back inside it, in two rows of three slotted panels. */
+  if (!inside && c.style === 'Studio') {
+    const vw = 1.3, vh = 0.66, y1 = W - 1.25, y0 = y1 - vw, top = topAt(y0) - 0.42, bot = top - vh, PF = 0.07, fr = 0.07, white = '#f4f4f1';
+    if (bot > eave + 0.02) for (const [x, sgn] of [[0, -1], [L, 1]]) {
+      const P = (y, up, d) => V(x + sgn * d, y, F + up), sq = (ya, yb, ua, ub, d, hex) => face([P(ya, ua, d), P(yb, ua, d), P(yb, ub, d), P(ya, ub, d)], hex, false);
+      sq(y0, y1, bot, bot + fr, PF, white);
+      sq(y0, y1, top - fr, top, PF, white);
+      sq(y0, y0 + fr, bot + fr, top - fr, PF, white);
+      sq(y1 - fr, y1, bot + fr, top - fr, PF, white);
+      for (const [ya, yb, ua, ub] of [[y0, y1, bot, bot], [y0, y1, top, top], [y0, y0, bot, top], [y1, y1, bot, top]]) face([P(ya, ua, 0.005), P(yb, ub, 0.005), P(yb, ub, PF), P(ya, ua, PF)], white, false);
+      sq(y0 + fr, y1 - fr, bot + fr, top - fr, 0.012, '#1b1d20');
+      const iw = vw - 2 * fr, ih = vh - 2 * fr, cw = iw / 3, rh = ih / 2;
+      for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) {
+        const a = y0 + fr + k * cw + 0.025, b = a + cw - 0.05, u = bot + fr + r * rh + 0.025, t = u + rh - 0.05;
+        sq(a, b, u, t, 0.045, white);
+        for (let j = 0; j < 3; j++) sq(a + 0.04, b - 0.04, u + (t - u) * (0.2 + j * 0.27), u + (t - u) * (0.2 + j * 0.27) + 0.035, 0.047, '#2a2d31');
+      }
+    }
+  }
   /* Where the gable sheet of siding meets the wall sheet: a horizontal seam with a Z-flashing lip. */
   if (!metal && c.siding !== 'Lap' && c.style !== 'Studio') {
     seam = Math.max(seam, eave + 0.05);
