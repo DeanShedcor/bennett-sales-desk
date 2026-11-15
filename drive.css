@@ -1,0 +1,37 @@
+/* drive.css: drive time in load planning. */
+.dt-top { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; }
+.dt-top label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.dt-top input, .dt-fields input, .dt-pair input { padding: 9px 10px; border: 1.5px solid var(--line-strong); border-radius: 10px; font: 15px var(--body); background: var(--surface); }
+.dt-sum { display: flex; flex-wrap: wrap; gap: 8px 22px; flex: 1; }
+.dt-sum span { display: grid; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.dt-sum b { font: 800 20px var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.dt-sum .bad b { color: var(--bad); }
+.dt-line { list-style: none; margin: 14px 0 6px; padding: 0; }
+.dt-line li { display: grid; grid-template-columns: 82px 1fr; gap: 14px; position: relative; padding: 0 0 4px; }
+.dt-line time { text-align: right; font: 700 14px var(--body); font-variant-numeric: tabular-nums; padding-top: 1px; white-space: nowrap; }
+.dt-line div { border-left: 2px solid var(--line-strong); padding: 0 0 12px 18px; position: relative; }
+.dt-line li:not(.drive) div::before { content: ""; position: absolute; left: -7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 3px solid var(--navy); box-sizing: border-box; }
+.dt-line li.go div::before { background: var(--navy); }
+.dt-line li.warn div::before { border-color: var(--bad); }
+.dt-line li.info div::before { border-color: var(--amber-deep); }
+.dt-line li.drive div { border-left-style: dashed; padding-bottom: 10px; }
+.dt-line li:last-child div { border-left-color: transparent; padding-bottom: 0; }
+.dt-line b { display: block; font-size: 15px; }
+.dt-line small { display: block; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.dt-line .dt-flag { color: var(--bad); font-weight: 600; }
+.dt-line li.info .dt-flag { color: var(--warn); }
+.dt-panel .notice { display: flex; gap: 8px; align-items: flex-start; }
+.dt-panel .notice .icon { flex: none; margin-top: 1px; }
+.dt-eta { display: block; color: var(--steel); font-weight: 600; font-size: 13px; margin-top: 2px; }
+.dt-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px 14px; margin: 12px 0; }
+.dt-fields label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.dt-fields span { display: flex; align-items: center; gap: 8px; }
+.dt-fields input { width: 110px; }
+.dt-table { display: grid; max-height: 52vh; overflow: auto; }
+.dt-pair { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding: 9px 0; }
+.dt-pair b { display: block; }
+.dt-pair small { color: var(--muted); font-size: 12.5px; }
+.dt-pair.real small { color: var(--good); font-weight: 600; }
+.dt-pair label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.dt-pair input { width: 86px; text-align: right; }
+@media (max-width: 680px) { .dt-line li { grid-template-columns: 68px 1fr; gap: 10px; } .dt-line time { font-size: 13px; } }
