@@ -218,7 +218,10 @@ function taSearch(q) {
       for (const word of words) {
         let best = 0;
         for (const w of [word, ...(TA_ALSO[word] || [])]) {
-          const inTitle = x.title.includes(w), inHint = x.hint.includes(w), inTags = x.tags.includes(w), n = x.body.split(w).length - 1;
+          /* Match at the start of a word, so "high" does not find "GoHighLevel". */
+          const at = new RegExp('(^|[^a-z0-9])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+          const has = (text) => (at.lastIndex = 0, at.test(text));
+          const inTitle = has(x.title), inHint = has(x.hint), inTags = has(x.tags), n = (x.body.match(at) || []).length;
           best = Math.max(best, (inTitle ? 6 : 0) + (inTags ? 4 : 0) + (inHint ? 5 : 0) + Math.min(n, 5));
         }
         if (best) hits++;
@@ -230,6 +233,7 @@ function taSearch(q) {
     })
     .filter((r) => r.hits && r.score >= 2)
     .sort((x, y) => y.score - x.score)
+    .filter((r, i, all) => r.score >= all[0].score * 0.35)
     .slice(0, 8)
     .map((r) => r.a);
 }

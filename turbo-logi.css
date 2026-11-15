@@ -1,1 +1,95 @@
-/* turbo-logi.css: placeholder, filled in next. */
+/* turbo-logi.css: the Logistics pieces taken from Turbo Assist (turbo-logi.js). Everything here
+   is named lgx-… so it cannot touch the rules in ops.css. */
+
+/* Dispatch: the strip under the search box */
+.lgx-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -6px 0 16px; }
+.lgx-strip .chipbtn .icon { flex: none; }
+
+/* The load page: manifest, permit and record */
+.lgx-record h3 { font: 700 14px var(--body); color: var(--muted); margin-top: 18px; }
+.lgx-record p { font-size: 14px; line-height: 1.5; }
+.lgx-acts { margin-top: 0; }
+.lgx-acts .secondary .icon { flex: none; }
+.lgx-permit { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.lgx-badge { background: var(--amber-deep); color: var(--ink); border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.lgx-pill { display: inline-block; background: #e3edf5; color: var(--navy-2); border-radius: 6px; padding: 1px 7px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.lgx-stops { margin: 6px 0 0; padding: 0 0 0 20px; display: grid; gap: 8px; font-size: 14px; }
+.lgx-stops small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.lgx-qc { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; }
+.lgx-rules { margin-top: 16px !important; border-top: 1px solid var(--line); padding-top: 10px; }
+.lgx-rules summary { font-weight: 700; font-size: 14px; cursor: pointer; padding: 4px 0; }
+.lgx-rules ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 8px; font-size: 13.5px; line-height: 1.45; }
+small.lgx-kind { color: var(--steel) !important; font-weight: 600; }
+
+/* Manifest */
+.lgx-manifest { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 56vh; overflow: auto; }
+#lgx-print { display: none; }
+@media print {
+  body.lgx-printing > *:not(#lgx-print) { display: none !important; }
+  body.lgx-printing #lgx-print { display: block; white-space: pre-wrap; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; padding: 24px; color: #000; }
+}
+
+/* Split a load */
+.lgx-split { display: grid; gap: 8px; margin: 12px 0; }
+.lgx-split .checkrow { align-items: flex-start; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px; cursor: pointer; }
+.lgx-split .checkrow:has(input:checked) { border-color: var(--ink); background: #fffdf5; }
+.lgx-split input { margin-top: 3px; }
+.lg-code.lgx-long { width: auto; min-width: 52px; padding: 0 9px; font-size: 13.5px; letter-spacing: 0; }
+
+/* Every load: who can see what */
+.lgx-viewas { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: -4px 0 16px; }
+.lgx-viewas label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); min-width: 0; max-width: 100%; }
+.lgx-viewas select { padding: 8px 10px; border: 1.5px solid var(--line-strong); border-radius: 9px; background: var(--surface); color: var(--ink); font-weight: 600; min-width: 0; max-width: 100%; }
+.lgx-viewas small { color: var(--muted); font-size: 13px; }
+.lgx-hauler + .lgx-hauler { margin-top: 14px; }
+.lgx-hauler ol { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
+.lgx-hauler li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 14px; }
+.lgx-hauler li small { flex: 1 1 100%; font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lgx-hauler li span { flex: 1 1 220px; }
+.lgx-hauler li em { font-style: normal; color: var(--muted); font-size: 13px; }
+.lgx-hauler .chipbtn { padding: 5px 11px; font-size: 12.5px; text-decoration: none; color: var(--ink); }
+
+/* Calendar: the count for each day */
+.lgx-daycount { display: flex; flex-wrap: wrap; gap: 1px 8px; font-size: 11px; color: var(--muted); line-height: 1.35; }
+.lgx-daycount em { flex: 1 1 100%; font-style: normal; font-weight: 700; color: var(--ink); }
+
+/* Map: one tag for each load */
+.lgx-pin { cursor: pointer; }
+.lgx-pin rect { stroke: var(--surface); stroke-width: 1.5; fill: var(--navy); }
+.lgx-pin text { font: 800 8.5px var(--body); fill: #fff; pointer-events: none; }
+.lgx-pin.in_transit rect { fill: var(--amber-deep); }
+.lgx-pin.in_transit text { fill: var(--ink); }
+.lgx-pin.staged rect { fill: var(--steel); }
+.lgx-pin.delivered rect { fill: var(--good); }
+.lgx-pin:hover rect { stroke: var(--ink); }
+.lgx-pinlegend { margin-top: 6px; }
+.lg-legend i.lgx-key { width: 20px; height: 11px; border-radius: 4px; background: var(--navy); }
+.lg-legend i.lgx-key.in_transit { background: var(--amber-deep); }
+.lg-legend i.lgx-key.staged { background: var(--steel); }
+.lg-legend i.lgx-key.delivered { background: var(--good); }
+
+/* Trailers and haulers */
+.lgx-carrier { align-items: flex-start; }
+.lgx-carrier small { display: block; }
+.lgx-carrier .ops-flags { margin-top: 7px; }
+.lgx-carrier .secondary { flex: none; }
+.lgx-rigline b { color: var(--ink); }
+
+/* The site questions: what the knowledge base says */
+.lgx-siterule { margin-top: 14px; }
+.lgx-siterule p + p { margin-top: 6px; }
+
+/* Service jobs */
+.lgx-job .ops-rowacts { max-width: 320px; }
+.lgx-job .ops-rowacts button { white-space: nowrap; }
+.lgx-steps { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; line-height: 1.45; }
+
+@media (max-width: 680px) {
+  .lgx-viewas label { flex: 1 1 100%; flex-direction: column; align-items: stretch; gap: 4px; }
+  .lgx-viewas select { width: 100%; }
+  .lgx-pin { transform-box: fill-box; transform-origin: left bottom; transform: scale(1.5); }
+  .lgx-job .ops-rowacts { max-width: none; flex: 1 1 100%; }
+  .lgx-job .ops-rowacts .secondary { flex: 1; }
+  .lgx-carrier { flex-wrap: wrap; }
+  .lgx-manifest { font-size: 11.5px; padding: 12px; }
+}

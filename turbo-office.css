@@ -1,1 +1,105 @@
-/* turbo-office.css: placeholder, filled in next. */
+/* turbo-office.css: the Office additions that come from Turbo Assist (turbo-office.js).
+   Everything here is prefixed to- so it cannot touch the older Office rules in ops.css. */
+
+/* Office home: the summary counts and the daily digest */
+.to-summary { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 18px; }
+.to-sum { padding: 6px 12px 6px 7px; gap: 8px; font-size: 13px; }
+.to-sum .count { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); line-height: 18px; }
+.to-sum.hot { border-color: var(--bad); }
+.to-sum.hot .count { background: var(--bad); color: #fff; border-color: var(--bad); }
+.to-digest { margin-top: 20px; }
+.to-digest > summary { cursor: pointer; }
+.to-digest > summary strong { font: 700 17px/1.25 var(--display); margin-left: 4px; }
+.to-digest > summary small { display: block; color: var(--muted); font-size: 13px; margin: 2px 0 0 20px; }
+.to-digest-body { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 14px 16px; font-size: 14px; line-height: 1.5; }
+.to-digest-body p { margin: 0 0 8px; }
+.to-digest-body p:last-child { margin-bottom: 0; }
+.to-digest-body ul, .to-digest-body ol { margin: 0 0 10px 20px; padding: 0; }
+
+/* Order page: paperwork, signatures, the intake record */
+.to-sub { color: var(--muted); font-size: 13.5px; }
+.to-paper h3, .to-intake h3, .to-entry h3 { font: 700 13px var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); margin-top: 18px; }
+.to-doc { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); margin: 0 !important; }
+.to-doc strong { display: block; }
+.to-doc small { display: block; color: var(--muted); font-size: 13px; margin-top: 1px; overflow-wrap: anywhere; }
+.to-doc small b { color: var(--bad); }
+.to-doc.late strong { color: var(--bad); }
+.to-docside { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.to-docside .link { padding: 0; font-size: 13px; }
+.to-chip { display: inline-block; font-style: normal; font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); white-space: nowrap; }
+.to-chip.signed { background: var(--good-bg); color: var(--good); border-color: transparent; }
+.to-chip.sent, .to-chip.viewed { background: #e3edf5; color: var(--steel); border-color: transparent; }
+.to-chip.partially-signed, .to-chip.expired { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+.to-chip.declined { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+.to-five { border-top: 1px solid var(--line); padding-top: 10px; }
+.to-five > summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.to-line { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-top: 1px dashed var(--line); margin: 0 !important; }
+.to-five > summary + .to-line { border-top: 0; margin-top: 6px !important; }
+.to-line .ops-flag { flex: none; min-width: 46px; justify-content: center; }
+.to-line strong { display: block; font-size: 14px; }
+.to-line small { display: block; color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.to-events { margin-top: 4px; }
+.to-why { display: flex; gap: 8px; align-items: flex-start; background: #e9f0f6; color: var(--navy-2); border-radius: var(--r-sm); padding: 10px 12px; font-size: 13px; line-height: 1.45; }
+.to-why .icon { flex: none; margin-top: 2px; color: var(--steel); }
+
+/* Money panel: the typed tax percent */
+.to-taxrow { align-items: center; }
+.to-taxrow strong { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.to-taxin { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--muted); }
+.to-taxin input { width: 74px; padding: 7px 8px; border: 1.5px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; text-align: right; }
+.to-taxin input:focus { outline: 2px solid var(--amber); outline-offset: 1px; }
+.to-cancelpick { margin-top: 4px; }
+
+/* Settings: rent-to-own terms, rules, roles, the fuel suggestion */
+.to-settings { margin-top: 20px; }
+.to-wide { grid-column: 1 / -1; }
+.to-terms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.to-term { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; margin: 0; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; align-items: end; }
+.to-term legend { font: 700 16px var(--display); padding: 0 6px; }
+.to-term label { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); min-width: 0; }
+.to-term input[type="number"], .to-term select { display: block; width: 100%; margin-top: 4px; padding: 8px 9px; border: 1.5px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; min-width: 0; }
+.to-term input[disabled] { background: var(--surface-2); color: var(--muted); }
+.to-term .to-check { display: flex; align-items: center; gap: 7px; padding-bottom: 9px; }
+.to-termsay { grid-column: 1 / -1; font-size: 13px; color: var(--muted); margin: 0; }
+.to-tablewrap { overflow-x: auto; }
+.to-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.to-table th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 700; padding: 6px 8px; border-bottom: 1.5px solid var(--line-strong); white-space: nowrap; }
+.to-table td { padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.to-suggest { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #e9f0f6; border-radius: var(--r-sm); padding: 12px 14px; font-size: 13.5px; line-height: 1.45; }
+.to-suggest p { flex: 1 1 240px; margin: 0; color: var(--navy-2); }
+.to-roles li { align-items: flex-start; }
+.to-roles li span { flex: 0 0 34%; }
+.to-roles li small { display: block; color: var(--muted); font-size: 12.5px; }
+.to-roles li strong { font-weight: 500; text-align: right; line-height: 1.45; }
+.to-rules li { align-items: flex-start; }
+.to-rules li span { flex: 0 0 34%; }
+.to-rules li strong { text-align: right; font-weight: 600; line-height: 1.45; }
+
+/* Requests: returns and buildings that were not built here */
+.to-entry { margin-top: 12px; }
+.to-entry .of-inline select { display: block; width: 100%; margin-top: 5px; padding: 10px 12px; border: 1.5px solid var(--line-strong); border-radius: 9px; background: var(--surface); color: var(--ink); font: inherit; }
+.to-entry h3 { margin-top: 0; }
+.to-billform { margin-top: 16px; }
+
+@media (max-width: 980px) {
+  .to-terms { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 680px) {
+  .to-doc { flex-wrap: wrap; }
+  .to-doc > .grow { flex: 1 1 100%; }
+  .to-docside { flex-direction: row; align-items: center; gap: 10px; }
+  .to-term { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .to-roles li { flex-direction: column; gap: 4px; }
+  .to-roles li span { flex: none; }
+  .to-roles li strong, .to-rules li strong { text-align: left; }
+  .to-rules li { flex-direction: column; gap: 4px; }
+  .to-rules li span { flex: none; }
+  .to-sum { flex: 1 1 auto; justify-content: flex-start; }
+  /* The defaults table reads as one short block per term on a phone, so nothing scrolls sideways. */
+  .to-table thead { display: none; }
+  .to-table, .to-table tbody, .to-table tr { display: block; }
+  .to-table tr { padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .to-table td { display: inline-block; border: 0; padding: 0 12px 3px 0; white-space: normal; }
+  .to-table td[data-l]::before { content: attr(data-l) " "; color: var(--muted); font-size: 12px; }
+  .to-taxrow { flex-wrap: wrap; }
+}
