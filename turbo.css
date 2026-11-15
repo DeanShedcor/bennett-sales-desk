@@ -1,0 +1,181 @@
+/* turbo.css: the Answers panel, the bell, and the small pieces every side shares for what the
+   preview takes from Turbo Assist. Side-specific rules live in turbo-office.css, turbo-plant.css
+   and turbo-logi.css. */
+
+/* Top bar: Answers and the bell */
+.ta-topbtn { display: inline-flex; align-items: center; gap: 7px; background: none; border: 1.5px solid rgb(255 255 255 / 0.22); color: var(--on-dark); border-radius: 9px; padding: 7px 11px; font-size: 13.5px; font-weight: 600; white-space: nowrap; position: relative; }
+.ta-topbtn:hover { border-color: var(--on-dark); background: var(--navy); }
+.ta-topbtn .count { position: absolute; top: -7px; right: -7px; box-shadow: 0 0 0 2px var(--ink); }
+#ta-bell { padding: 7px 9px; }
+.topbar-right { gap: 10px; }
+@media (max-width: 1320px) { #ta-ans-btn span { display: none; } #ta-ans-btn { padding: 7px 9px; } }
+/* Phones: the raised button in the tab bar already is the Sales, Office and QC top-bar action,
+   so the top bar keeps the logo, Answers and the bell. Logistics keeps "Build a load". */
+@media (max-width: 680px) {
+  .ta-topbtn { border-color: transparent; padding: 7px; }
+  .topbar-right { gap: 2px; }
+  body:is([data-side="sales"], [data-side="office"], [data-side="qc"]) .topcta { display: none !important; }
+  .topcta { padding: 8px 12px; font-size: 13.5px; margin-left: 6px; }
+}
+@media (max-width: 400px) { .brand-logo { height: 30px; } .topcta { padding: 8px 9px; font-size: 13px; margin-left: 2px; } }
+@media print { .ta-topbtn, .ta-sheet-back { display: none !important; } }
+
+/* A small "why" link beside a control */
+.ta-tip { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; padding: 2px 0; color: var(--steel); font-size: 12.5px; font-weight: 600; text-decoration: underline; text-decoration-color: rgb(52 95 128 / 0.35); text-underline-offset: 3px; cursor: pointer; vertical-align: baseline; }
+.ta-tip:hover { color: var(--ink); text-decoration-color: currentColor; }
+.ta-tip .icon { flex: none; }
+.ta-rule { display: flex; gap: 10px; align-items: flex-start; background: #e9f0f6; color: var(--navy-2); border-radius: var(--r-sm); padding: 10px 12px; font-size: 13px; line-height: 1.45; }
+.ta-rule > .icon { flex: none; margin-top: 1px; color: var(--steel); }
+.ta-rule .ta-tip { margin-left: 4px; }
+.ta-from { font-size: 12px; color: var(--muted); }
+
+/* The Answers panel: a drawer on the right, a full sheet on a phone */
+.ta-sheet-back { position: fixed; inset: 0; z-index: 70; background: rgb(12 26 40 / 0.45); display: flex; justify-content: flex-end; }
+.ta-sheet { background: var(--surface); width: min(560px, 100%); height: 100%; display: flex; flex-direction: column; box-shadow: -18px 0 40px rgb(12 26 40 / 0.18); animation: ta-in 0.18s ease-out; }
+@keyframes ta-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ta-sheet { animation: none; } }
+.ta-sheet > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px 12px; padding-top: max(16px, env(safe-area-inset-top, 0px)); border-bottom: 1px solid var(--line); }
+.ta-sheet > header strong { font: 800 22px/1.1 var(--display); display: block; }
+.ta-sheet > header small { color: var(--muted); font-size: 12.5px; }
+.ta-tabs { display: flex; gap: 6px; padding: 10px 20px 0; }
+.ta-tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 6px 4px; margin-right: 14px; font-weight: 700; color: var(--muted); }
+.ta-tabs button.on { color: var(--ink); border-bottom-color: var(--amber); }
+#ta-ans-tools { padding: 14px 20px 0; }
+#ta-ans-tools .searchbar { margin-bottom: 10px; }
+#ta-ans-tools .search { border: 0; outline: 0; background: none; padding: 12px 0; width: 100%; font-size: 16px; }
+.ta-topics { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: thin; }
+.ta-topics .chipbtn { flex: none; padding: 5px 11px; font-size: 12.5px; }
+.ta-body { flex: 1; overflow: auto; padding: 6px 20px max(24px, env(safe-area-inset-bottom, 0px)); overscroll-behavior: contain; }
+.ta-body h3 { font: 700 14px var(--body); color: var(--muted); margin: 18px 0 4px; }
+.ta-ask { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ta-ask .chipbtn { font-size: 12.5px; padding: 6px 11px; text-align: left; }
+.ta-row { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: 0; border-top: 1px solid var(--line); padding: 12px 0; text-align: left; color: var(--muted); }
+.ta-row strong { display: block; color: var(--ink); font-size: 14.5px; }
+.ta-row small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12.5px; line-height: 1.4; margin-top: 2px; }
+.ta-row:hover strong { text-decoration: underline; }
+.ta-row .icon { flex: none; }
+.ta-best { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; margin-top: 10px; display: grid; gap: 8px; justify-items: start; }
+.ta-best small { font-size: 11.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--steel); }
+.ta-best strong { font: 700 18px/1.2 var(--display); }
+.ta-best p { font-size: 14.5px; line-height: 1.5; }
+.ta-article h2 { font: 800 24px/1.15 var(--display); margin: 6px 0 10px; }
+.ta-article .pillrow { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.ta-article .pill .icon { vertical-align: -2px; }
+.ta-hint { background: var(--good-bg); color: #0b5a3f; border-radius: var(--r-sm); padding: 12px 14px; font-size: 14px; line-height: 1.5; }
+.ta-article .notice { margin: 10px 0; display: flex; gap: 8px; align-items: flex-start; }
+.ta-article .notice .icon { flex: none; margin-top: 1px; }
+.ta-text { font-size: 14.5px; line-height: 1.6; }
+.ta-text h3 { font: 700 16px var(--display); color: var(--ink); margin: 20px 0 6px; }
+.ta-text p { margin: 8px 0; }
+.ta-text ul, .ta-text ol { margin: 8px 0 8px 20px; padding: 0; }
+.ta-text li { margin: 4px 0; }
+.ta-text code, .ta-article .source code { font-size: 12px; background: var(--surface-2); border-radius: 4px; padding: 1px 5px; }
+.ta-article .source { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ta-persona { border-top: 1px solid var(--line); padding: 12px 0; }
+.ta-persona p { color: var(--muted); font-size: 13.5px; line-height: 1.5; margin-top: 3px; }
+@media (max-width: 680px) { .ta-sheet { width: 100%; } }
+
+/* Notifications */
+.ta-notices { display: grid; }
+.ta-notice { display: flex; gap: 12px; align-items: flex-start; border-top: 1px solid var(--line); padding: 12px 0; }
+.ta-notice.new strong::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--amber-deep); margin-right: 7px; vertical-align: 1px; }
+.ta-notice p { font-size: 13.5px; line-height: 1.45; color: var(--muted); margin: 2px 0; }
+.ta-notice small { font-size: 12px; color: var(--muted); }
+.ta-notice .secondary { flex: none; }
+
+/* ---------- Sales desk ---------- */
+/* Home: ask a question, leads with their next step, the daily checklist, hand-offs */
+.ta-askbar { display: flex; gap: 10px; margin: 0 0 20px; align-items: stretch; }
+.ta-askbar .searchbar { flex: 1; margin: 0; }
+.ta-askbar .search { border: 0; outline: 0; background: none; padding: 13px 0; width: 100%; font-size: 15px; min-width: 0; }
+.ta-homegrid { margin-top: 20px; }
+.ta-lead .ta-next { display: flex; align-items: center; gap: 4px; margin-top: 4px; color: var(--steel); font-weight: 600; }
+.ta-lead .ta-next.late { color: var(--warn); }
+.ta-lead .ta-next .icon { flex: none; }
+.pillcol { display: grid; gap: 4px; justify-items: end; flex: none; }
+.ta-leadfacts { margin: 12px 0; }
+.ta-rule.ask { background: var(--warn-bg); color: var(--warn); }
+.ta-rule.ask > .icon { color: var(--warn); }
+.modal .ta-rule + .ta-rule { margin-top: 8px; }
+.ta-bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.ta-bar i { display: block; height: 100%; background: var(--good); border-radius: 99px; transition: width 0.2s ease; }
+.ta-checkrow { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding: 11px 0; margin: 0 !important; cursor: default; }
+label.ta-checkrow { cursor: pointer; }
+.ta-checkrow input { width: 20px; height: 20px; flex: none; accent-color: var(--good); }
+.ta-checkrow strong { display: block; font-size: 14.5px; }
+.ta-checkrow small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.ta-checkrow:has(input:checked) strong { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line-strong); }
+.ta-dots { display: grid; grid-template-columns: repeat(3, 8px); gap: 3px; flex: none; width: 30px; justify-content: center; }
+.ta-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.ta-dots i.on { background: var(--good); }
+.ta-check .ta-bar + .ta-checkrow { border-top: 0; }
+.ta-hand { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding: 11px 0; margin: 0 !important; }
+.panelhead + .ta-hand { margin-top: 12px !important; }
+.ta-hand strong { display: block; font-size: 14.5px; }
+.ta-hand small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.ta-hand .secondary { flex: none; }
+
+/* The price list and the add-ons step */
+.ta-pricebody h3 { font: 700 13px var(--body); color: var(--steel); margin: 16px 0 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+.ta-pricebody .pricelines li { padding: 6px 0; }
+.ta-addons { display: grid; gap: 8px; margin: 10px 0; }
+.ta-addon { display: flex; align-items: center; gap: 12px; border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 14px; background: var(--surface); }
+.ta-addon.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.ta-addon strong { display: block; font-size: 14.5px; }
+.ta-addon small { color: var(--muted); font-size: 12.5px; }
+.ta-addon .ta-sum { flex: none; font-variant-numeric: tabular-nums; }
+.ta-toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600; flex: none; cursor: pointer; }
+.ta-toggle input { width: 20px; height: 20px; accent-color: var(--ink); }
+.ta-qty { display: inline-flex; align-items: center; gap: 6px; flex: none; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.ta-qty input { width: 76px; padding: 8px 9px; border: 1.5px solid var(--line-strong); border-radius: 9px; font-size: 15px; text-align: right; background: var(--surface); }
+
+/* Rent-to-own estimate */
+.ta-rtofields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ta-rtowrap { overflow-x: auto; }
+.ta-rto { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ta-rto th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 8px 10px 8px 0; border-bottom: 1.5px solid var(--line-strong); white-space: nowrap; }
+.ta-rto td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--line); vertical-align: middle; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ta-min { background: var(--good-bg); color: var(--good); border: 0; border-radius: 99px; padding: 2px 9px; font-size: 12.5px; font-weight: 700; margin-left: 4px; }
+.ta-min:hover { outline: 1.5px solid var(--good); }
+.ta-chart td { white-space: normal; padding-right: 0; }
+.ta-chartscroll { max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+.ta-chartscroll table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ta-chartscroll th { position: sticky; top: 0; background: var(--surface-2); text-align: right; padding: 6px 10px; font-weight: 600; color: var(--muted); }
+.ta-chartscroll td { text-align: right; padding: 5px 10px; border-top: 1px solid var(--line); }
+.ta-chartscroll th:first-child, .ta-chartscroll td:first-child { text-align: left; }
+.ta-rtofacts { margin: 8px 0 0 18px; padding: 0; display: grid; gap: 5px; font-size: 13.5px; color: var(--muted); }
+.ta-rtolink { font-size: inherit; }
+.ta-quotefacts { font-size: 13.5px; line-height: 1.5; background: var(--surface-2); border-radius: var(--r-sm); padding: 12px 14px; margin-top: 12px; }
+.ta-dephint { font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: -4px; }
+#ta-due { font-size: 14px; }
+
+/* Order page, order search, stats */
+.ta-facts { margin: 0 0 20px; }
+.ta-facts li { line-height: 1.5; }
+.ta-serial { display: flex; gap: 10px; align-items: flex-start; background: #e9f0f6; color: var(--navy-2); border-radius: var(--r-sm); padding: 12px 14px; margin: -8px 0 20px; font-size: 14px; }
+.ta-serial .icon { flex: none; margin-top: 1px; }
+.ta-stats { margin-bottom: 20px; }
+.ta-stats .metricrow { margin: 12px 0 0; }
+
+@media (max-width: 980px) { .ta-homegrid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 680px) {
+  .ta-askbar .secondary { padding: 12px 14px; }
+  .ta-rtofields { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  /* Each term becomes a card: the payment first, nothing cut off to the side. */
+  .ta-rto thead { display: none; }
+  .ta-rto > tbody > tr:not(.ta-chart) { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: end; }
+  .ta-rto > tbody > tr:not(.ta-chart) > td { border: 0; padding: 0; white-space: normal; }
+  .ta-rto > tbody > tr:not(.ta-chart) > td:first-child { font-size: 17px; }
+  .ta-rto > tbody > tr:not(.ta-chart) > td:nth-child(4) { grid-row: 1; grid-column: 2; text-align: right; font-size: 17px; }
+  .ta-rto > tbody > tr:not(.ta-chart) > td:last-child { text-align: right; }
+  .ta-rto td[data-l]::before { content: attr(data-l); display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .ta-rto > tbody > tr.ta-chart, .ta-rto > tbody > tr.ta-chart > td { display: block; }
+  .ta-stats .metricrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ta-addon { flex-wrap: wrap; }
+  .ta-addon .grow { flex: 1 1 100%; }
+  .ta-lead { flex-wrap: wrap; row-gap: 8px; }
+  .ta-lead .grow { flex: 1 1 calc(100% - 60px); }
+  .ta-lead .pillcol { display: flex; flex-wrap: wrap; justify-items: start; margin-left: 56px; }
+  .ta-lead .rowarrow { display: none; }
+  .ta-hand, .ta-checkrow { align-items: flex-start; }
+}
