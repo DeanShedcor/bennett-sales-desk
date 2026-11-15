@@ -769,6 +769,11 @@ taNotesFor('of-requests', [
 ], ['The list of returns in one place with change orders and stock orders.']);
 taNotesFor('of-pay', [], ['With a tax percent typed on an order, the balance due and the amount a driver collects include the tax.']);
 
+/* The fuel surcharge is on: $0.30 a square foot of building, the rate the sample orders show.
+   The owner turned it on; the office can still change it in Settings. */
+Object.assign(OF.set.fuel, { method: 'size', perSqFt: 0.3 });
+OF.set.fuelLog.unshift({ from: 'not set', to: `by square foot · ${ofFuelSay()}`, at: Date.now() });
+
 /* ---------- Sample data ---------- */
 (function seedTurboOffice() {
   const ago = (h) => Date.now() - h * 36e5, stamp = (t) => ofStamp(t);
