@@ -261,7 +261,7 @@ function adUserPage() {
       }).join('')}</div></section>
     <section class="panel"><h2>Lots and plants</h2>${all ? '<p class="of-soft">All lots and plants.</p>' : `<label class="checkrow"><input type="checkbox" ${u.lots === 'all' ? 'checked' : ''} ${dis} onchange="adLot('${u.id}','all',this.checked)"> <b>All lots and plants</b></label>
       ${u.lots === 'all' ? '' : `<div class="ad-lots">${places.map(([id, name]) => `<label class="checkrow"><input type="checkbox" ${u.lots.includes(id) ? 'checked' : ''} ${dis} onchange="adLot('${u.id}','${id}',this.checked)"> ${esc(name)}</label>`).join('')}</div>`}
-      <p class="source">They see orders, buildings and loads for these places only.</p>`}</section>`;
+      <p class="source">They see orders, buildings and loads for these places only. Picking a plant covers every lot that plant builds for.</p>`}</section>`;
 }
 
 /* ---------- Prices ---------- */
@@ -477,6 +477,43 @@ function adPricesPage() {
     ], ['The grid you type into, the draft with old and new prices, and a day for the change to go live. Turbo Assist publishes a sheet at once.', 'Prices here are retail only. Cost, margin and wholesale stay in Turbo Assist’s manufacturing pricing and are not on this public page.', 'Windows, doors and electrical in the configurator’s own steps keep their built-in prices; buildings, lot prices and the price-list add-ons follow this page.'])}`;
 }
 
+/* ---------- Each person sees only their lots and plants ---------- */
+/* A lot is theirs when it is on their list, or when the plant that builds for it is. */
+function adLotOk(lotId, u = adMe()) {
+  if (!u || u.lots === 'all' || adIsOwner(u)) return true;
+  return u.lots.includes(lotId) || u.lots.includes('plant:' + (lotPlant(lotById(lotId) || {})?.id || ''));
+}
+const adLimited = (u = adMe()) => !!u && u.id !== 'u1' && !adIsOwner(u) && u.lots !== 'all';
+/* While a screen is being drawn, the lists it reads hold only this person's lots. The records
+   themselves are untouched, so nothing is lost when the view changes back. */
+function adScoped(draw) {
+  return function (...args) {
+    if (!adLimited()) return draw.apply(this, args);
+    const sales = S.sales, units = LG.units, loads = LG.loads;
+    const mine = new Set(units.filter((u) => adLotOk(u.lotId)).map((u) => u.id));
+    LG.loads = loads.filter((l) => (l.from?.type === 'lot' && adLotOk(l.from.id)) || l.stops.some((x) => x.units.some((id) => mine.has(id)) || (x.key.startsWith('lot:') && adLotOk(x.key.slice(4)))));
+    const riding = new Set(LG.loads.flatMap((l) => l.stops.flatMap((x) => x.units)));
+    LG.units = units.filter((u) => mine.has(u.id) || riding.has(u.id));
+    S.sales = sales.filter((x) => adLotOk(saleLot(x).id));
+    AD.scope = true;
+    try {
+      return draw.apply(this, args);
+    } finally {
+      Object.assign(S, { sales });
+      Object.assign(LG, { units, loads });
+      AD.scope = false;
+    }
+  };
+}
+for (const page of Object.keys(OPS_SCREENS)) OPS_SCREENS[page] = adScoped(OPS_SCREENS[page]);
+{
+  const allUnits = prUnits;
+  prUnits = function () {
+    const out = allUnits();
+    return AD.scope ? out.filter((u) => adLotOk(u.lotId)) : out;
+  };
+}
+
 /* ---------- Putting it in the app ---------- */
 Object.assign(OPS_SCREENS, { 'of-users': adUsersPage, 'of-user': adUserPage, 'of-prices': adPricesPage });
 {
@@ -518,9 +555,10 @@ document.addEventListener('click', (e) => {
     if (full) return;
     const app = $('#app'), name = AD_SECTIONS.find(([k]) => k === key)[1];
     if (me.status === 'pending') app.innerHTML = `<section class="panel ad-locked"><h1>Your access is under review.</h1><p>An owner has removed your account. You cannot sign in until a super user decides. If you think this is a mistake, contact a super user.</p></section>`;
+    else if (level !== 'none' && key === 'sales' && adLimited(me) && !adLotOk(DESK_LOT, me)) app.innerHTML = `<section class="panel ad-locked"><h1>This Sales desk is the ${esc(lotById(DESK_LOT).town)} lot.</h1><p>${esc(me.name)} works at ${esc(adLots(me))}, so this lot’s leads, buildings and orders are closed to them. Signed in for real, they would land on their own lot’s desk.</p></section>`;
     else if (level === 'none') app.innerHTML = `<section class="panel ad-locked"><h1>${esc(me.name)} has no access to ${name}.</h1><p>${me.status === 'active' ? 'An owner can give access under Users and permissions.' : 'This account is not active.'}</p></section>`;
     else if (level === 'read') app.querySelectorAll('input:not([type=search]):not([type=checkbox]):not([type=radio]), textarea, select:not(.ad-viewas select)').forEach((el) => !el.closest('.qc-filter, .searchbar, .ad-tools, .ad-viewas, .inlinefield') && (el.disabled = true));
-    app.insertAdjacentHTML('beforebegin', `<div id="ad-bar"><span>Viewing as <b>${esc(me.name)}</b> · ${AD_KIND[me.kind]}${me.title ? ', ' + esc(me.title) : ''} · ${name}: <b>${me.status === 'pending' ? 'locked out' : AD_LEVEL_NAME[level]}</b></span><button type="button" onclick="adView('u1')">Back to Super user A</button><button type="button" onclick="go('of-users')">Users</button></div>`);
+    app.insertAdjacentHTML('beforebegin', `<div id="ad-bar"><span>Viewing as <b>${esc(me.name)}</b> · ${AD_KIND[me.kind]}${me.title ? ', ' + esc(me.title) : ''} · ${name}: <b>${me.status === 'pending' ? 'locked out' : AD_LEVEL_NAME[level]}</b>${adLimited(me) ? ' · sees only ' + esc(adLots(me)) : ''}</span><button type="button" onclick="adView('u1')">Back to Super user A</button><button type="button" onclick="go('of-users')">Users</button></div>`);
   };
 }
 document.addEventListener('DOMContentLoaded', () => render());
