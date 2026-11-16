@@ -10,7 +10,7 @@
 @media (max-width: 680px) { #ad-gear { display: inline-flex !important; } }
 
 /* Pop-ups: the title and Close stay in view while a long pop-up scrolls. */
-.modal > .row:first-child { position: sticky; top: -24px; z-index: 3; background: var(--surface); margin: -24px -24px 0; padding: 20px 24px 10px; border-radius: 18px 18px 0 0; }
+.modal > .row:first-child { position: sticky; top: 0; z-index: 3; background: var(--surface); padding: 0 0 10px; box-shadow: 0 -26px 0 0 var(--surface); }
 .modal > .row:first-child + * { margin-top: 6px; }
 
 /* Printing: every side prints what is on the screen. The opening animation used to start again
