@@ -1,0 +1,36 @@
+/* phone-sizes.css: on a phone, things are big enough to tap and to read.
+
+   Rules for the whole app at phone width (680 px and under):
+   - anything you tap is at least 44 px tall and wide;
+   - boxes you type in use 16 px text, so an iPhone does not zoom the page;
+   - a step tracker reads "Step 2 of 5: Sold and signed" over a bar, in place of tiny sideways words.
+   phone-sizes.js catches whatever these rules miss and lifts small text to 14 px.
+   Loaded last so it wins over the older files. */
+@media (max-width: 680px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+  select,
+  textarea { font-size: 16px !important; min-height: 44px; }
+  input[type='file'] { font-size: 16px !important; min-height: 44px; }
+  input[type='checkbox'], input[type='radio'] { min-width: 22px; min-height: 22px; }
+
+  button, summary, [role='button'], .chipbtn { min-height: 44px; min-width: 44px; }
+  button.link { display: inline-flex; align-items: center; text-align: left; }
+  summary { display: flex; align-items: center; }
+  details > summary { list-style-position: inside; }
+
+  /* The top bar, the five-side switch and the phone's bottom bar. */
+  .topbar .brand, .topbar a, .topbar button { min-height: 44px; min-width: 44px; }
+  .previewstrip button, .previewstrip a { min-height: 44px; display: inline-flex; align-items: center; }
+  .previewstrip-in { row-gap: 2px; }
+
+  /* Step trackers: the words go above a thin bar. */
+  .chev::before { content: attr(aria-label); display: block; margin-bottom: 6px; font: 600 14px/1.3 var(--body); color: var(--ink); }
+  .chev .chev-row { padding-left: 0; gap: 3px; }
+  .chev .chev-row i, .chev.long .chev-row i { min-height: 10px; height: 10px; margin: 0; padding: 0; clip-path: none; border-radius: 5px; font-size: 0; }
+  .chev .chev-row i span { display: none; }
+  .dark .chev::before, .od-hero .chev::before { color: inherit; }
+}
+
+/* A link that lets a keyboard user jump past the menus to the page. */
+.skip-link { position: absolute; left: 12px; top: -80px; z-index: 5000; padding: 12px 18px; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 16px/1.2 var(--body); text-decoration: none; }
+.skip-link:focus { top: 10px; outline: 3px solid var(--ink); outline-offset: 2px; }

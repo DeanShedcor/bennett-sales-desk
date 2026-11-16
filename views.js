@@ -51,7 +51,7 @@ function head(kicker, title, lede = '') {
 function chevronTrack(names, stage, hold = false) {
   /* Always one row. Each word sits on its own line, and a long tracker in a narrow space turns
      its labels sideways so every stage still fits. */
-  return `<span class="chev${names.length > 5 ? ' long' : ''}" role="img" aria-label="${stage < names.length ? `Stage ${stage + 1} of ${names.length}: ${esc(names[stage])}` : 'All stages complete'}"><span class="chev-row" style="--n:${names.length}">${names
+  return `<span class="chev${names.length > 5 ? ' long' : ''}" role="img" aria-label="${stage < names.length ? `Step ${stage + 1} of ${names.length}: ${esc(names[stage])}` : 'All stages complete'}"><span class="chev-row" style="--n:${names.length}">${names
     .map((name, i) => `<i class="${i < stage ? 'done' : i === stage ? (hold ? 'now hold' : 'now') : ''}"><span>${names.length > 5 ? esc(name).replace(/ /g, '<br>') : esc(name)}</span></i>`)
     .join('')}</span></span>`;
 }
