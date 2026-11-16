@@ -72,7 +72,7 @@ showSaleReview = function () {
     s.signed = {};
     s.signatures = {};
     const last = s.events[s.events.length - 1];
-    if (last && /Submitted to administrator/.test(last.text)) s.events.pop();
+    if (last && /Sent to the office|Submitted to administrator/.test(last.text)) s.events.pop();
     sfLog(s, before < S.sales.length ? 'Order created · waiting on customer signatures' : 'Quote finalized · waiting on customer signatures');
     render();
     if (s.type === 'Rent-to-own' && !s.rtoApp) rtoApply(0);
@@ -242,7 +242,7 @@ function sfSubmit() {
   s.fulfillment = 'Review pending';
   s.discrepancy = false;
   s.rto = s.type === 'Rent-to-own' ? !!s.rtoApp : s.rto;
-  sfLog(s, 'Submitted to administrator for review');
+  sfLog(s, 'Sent to the office for review');
   render();
   toast('Submitted for admin review.');
 }

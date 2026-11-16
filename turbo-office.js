@@ -787,10 +787,10 @@ OF.set.fuelLog.unshift({ from: 'not set', to: `by square foot · ${ofFuelSay()}`
     robin.events = [
       { time: stamp(ago(24)), text: `Order created by ${robin.agent} at ${lot.town}` },
       { time: stamp(ago(23.5)), text: 'Customer signed the invoice, terms and delivery agreement' },
-      { time: stamp(ago(23)), text: 'Submitted to administrator for review' },
+      { time: stamp(ago(23)), text: 'Sent to the office for review' },
       { time: stamp(ago(20)), text: 'Office placed the order on hold: Customer or delivery address is incomplete' },
       { time: stamp(ago(20)), text: `The salesperson at ${lot.town} was notified in the app` },
-      { time: stamp(ago(5)), text: 'Submitted to administrator for review' },
+      { time: stamp(ago(5)), text: 'Sent to the office for review' },
     ];
     taNotify({ to: 'office', saleId: robin.id, go: `ofOpen('${robin.id}')`, at: ago(5), title: `Held order intake resubmitted (${TO_SOURCE[toSource(robin)]})`, body: 'An order intake you placed on hold has been resubmitted and is back in the review queue. Your hold reason was: "Customer or delivery address is incomplete". Open the Order Intake panel to review the revised submission.' });
   }

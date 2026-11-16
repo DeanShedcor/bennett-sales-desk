@@ -1432,7 +1432,7 @@ function submitSale() {
   s.status = "Submitted · Awaiting review";
   s.submittedAt = new Date().toISOString();
   s.fulfillment = "Review pending";
-  s.events.push({ text: "Submitted to administrator · simulated", time: new Date().toLocaleTimeString() });
+  s.events.push({ text: "Sent to the office", time: new Date().toLocaleTimeString() });
   if (s.path === "lot") lots[s.lot].status = "Pending";
   if (s.path === "lot" && S.delivery)
     s.events.push({ text: "Delivery: " + deliverySummary(), time: new Date().toLocaleTimeString() });

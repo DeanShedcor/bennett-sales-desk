@@ -299,7 +299,7 @@ function adBulk() {
     }
   }
   render();
-  toast(`${n} prices moved into the draft. Nothing is live until you publish.`);
+  toast(`${n} ${n === 1 ? 'price' : 'prices'} moved into the draft. Nothing is live until you publish.`);
 }
 function adApply(changes) {
   for (const d of changes) {
@@ -317,10 +317,10 @@ function adPublish() {
   if (date <= adToday()) {
     adApply(set.changes);
     AD.log.unshift(set);
-    toast(`${set.changes.length} prices are live.`);
+    toast(`${set.changes.length} ${set.changes.length === 1 ? 'price is' : 'prices are'} live.`);
   } else {
     AD.sched.push(set);
-    toast(`${set.changes.length} prices will go live ${adDay(date)}.`);
+    toast(`${set.changes.length} ${set.changes.length === 1 ? 'price' : 'prices'} will go live ${adDay(date)}.`);
   }
   render();
 }
@@ -451,7 +451,7 @@ function adDraftTab() {
       <ul class="pricelines ad-changes">${AD.draft.slice(0, 60).map((d) => `<li><span>${esc(adChangeName(d))}</span><strong><s>${money(d.old)}</s> ${money(d.new)} <button type="button" class="link inline" onclick='AD.draft=AD.draft.filter((x)=>adKey(x)!==adKey(${esc(JSON.stringify(d))}));render()'>undo</button></strong></li>`).join('')}</ul>${AD.draft.length > 60 ? `<p class="source">${AD.draft.length - 60} more not shown.</p>` : ''}
       ${adIsOwner() ? `<div class="ad-tools"><label>Goes live on<input id="ad-when" type="date" min="${adToday()}" value="${adToday()}"></label>${button('Publish', 'adPublish()')}${button('Throw the draft away', 'AD.draft=[];render()', 'secondary')}</div>` : '<p class="notice">Only an owner can publish.</p>'}
       <p class="source">Quotes and orders already written keep the price they were written with.</p>` : '<p class="muted">No changes waiting. Change a price on another tab, or upload a filled-in price sheet.</p>'}
-    ${AD.sched.length ? `<h3 class="ad-w">Set to go live later</h3>${AD.sched.map((s) => `<div class="ad-set"><span class="grow"><strong>${s.changes.length} prices · ${adDay(s.date)}</strong><small>Set up by ${esc(s.by)} ${adStamp(s.at)}</small></span>${adIsOwner() ? `<button type="button" class="secondary small" onclick="adGoLive('${s.id}')">Make it live now</button><button type="button" class="secondary small" onclick="adUnschedule('${s.id}')">Back to draft</button>` : ''}</div>`).join('')}` : ''}
+    ${AD.sched.length ? `<h3 class="ad-w">Set to go live later</h3>${AD.sched.map((s) => `<div class="ad-set"><span class="grow"><strong>${s.changes.length} ${s.changes.length === 1 ? 'price' : 'prices'} · ${adDay(s.date)}</strong><small>Set up by ${esc(s.by)} ${adStamp(s.at)}</small></span>${adIsOwner() ? `<button type="button" class="secondary small" onclick="adGoLive('${s.id}')">Make it live now</button><button type="button" class="secondary small" onclick="adUnschedule('${s.id}')">Back to draft</button>` : ''}</div>`).join('')}` : ''}
     ${AD.log.length ? `<h3 class="ad-w">Published</h3>${AD.log.map((s) => `<div class="ad-set"><span class="grow"><strong>${s.changes.length} prices · live ${adDay(s.date)}</strong><small>By ${esc(s.by)} · ${esc(s.changes.slice(0, 3).map(adChangeName).join(', '))}${s.changes.length > 3 ? '…' : ''}</small></span></div>`).join('')}` : ''}`;
 }
 function adSheetTab() {
@@ -531,7 +531,7 @@ Object.assign(OPS_SCREENS, { 'of-users': adUsersPage, 'of-user': adUserPage, 'of
 document.querySelector('.topbar-right').insertAdjacentHTML('afterbegin', `<button type="button" class="ta-topbtn" id="ad-gear" onclick="go('of-users')" aria-label="Users, permissions and pricing">${icon('sliders', 18)}</button>`);
 
 /* Viewing as someone else: what they cannot see is closed, what they can only read cannot be changed. */
-const AD_SAFE = /^(go\(|open|ofOpen|prOpen|lgOpen|adOpen|adView|taOpen|taClose|taAsk|taPriceList|taRtoOpen|closeModal|S\.\w+=|S\.\w+\s*=|AD\.(tab|model|lot|q)=|TA\.ans|OF\.(tab|payTab|tile|lot|q)|LG\.(tile|q|tab)|PR\.|Q\.|document\.getElementById\('of-list'\)|window\.print|event\.stop|if\(event\.target|this\.closest)/;
+const AD_SAFE = /^(go\(|open|ofOpen|ofDoc\(|ofContract\(|ofReviewNext\(|orderDoc\(|toOverdueList\(|toLotsList\(|opSetTab\(|opKeepFocus\(|OP\.\w+=|prOpen|lgOpen|adOpen|adView|taOpen|taClose|taAsk|taPriceList|taRtoOpen|closeModal|S\.\w+=|S\.\w+\s*=|AD\.(tab|model|lot|q)=|TA\.ans|OF\.(tab|payTab|tile|lot|q)|LG\.(tile|q|tab)|PR\.|Q\.|document\.getElementById\('of-list'\)|window\.print|event\.stop|if\(event\.target|this\.closest)/;
 document.addEventListener('click', (e) => {
   if (document.body.dataset.adRead !== '1') return;
   const el = e.target.closest('button, [onclick], input[type=checkbox], input[type=radio], input[type=file]');

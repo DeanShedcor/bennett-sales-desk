@@ -1045,7 +1045,7 @@ function officeNotes() {
       customerInfo: { firstName: first, lastName: rest.join(' '), email: `${first}.${rest.join('')}@example.com`.toLowerCase(), phone: `(${lot.phone.slice(0, 3)}) 555-01${n}`,
         billingStreet: o.street, billingCity: o.zip === false ? '' : lot.town.replace(/ II$/, ''), billingState: o.zip === false ? '' : lot.state, billingZip: o.zip === false ? '' : lot.zip, same: true },
       signed: { invoice: day(at), terms: day(at), delivery: day(at) }, signatures: {},
-      events: [{ time: stamp(new Date(at - 50 * 60e3)), text: `Order created by ${o.agent} at ${lot.town}` }, { time: stamp(new Date(at - 15 * 60e3)), text: 'Customer signed the invoice, terms and delivery agreement' }, { time: stamp(at), text: 'Submitted to administrator for review' }],
+      events: [{ time: stamp(new Date(at - 50 * 60e3)), text: `Order created by ${o.agent} at ${lot.town}` }, { time: stamp(new Date(at - 15 * 60e3)), text: 'Customer signed the invoice, terms and delivery agreement' }, { time: stamp(at), text: 'Sent to the office for review' }],
       site: o.miles == null ? undefined : { miles: o.miles, access: 'Clear access', gate: '', noGate: true, ground: 'Level', notes: '', askedBy: 'Salesperson', askedAt: at.getTime() - 40 * 60e3, confirmed: null },
     };
     if (rto) s.rtoApp = { provider: OF.set.rtoCos[0], signedOn: day(at), term: o.term, a: { dlState: lot.state, dlGiven: true, dobGiven: true, ssn4: '0000', billingSame: true, employer: 'Sample Employer', r1name: 'Sample Reference', r1phone: '(843) 555-0111', r1rel: 'Friend', r1state: lot.state, r2name: 'Sample Reference Two', r2phone: '(843) 555-0122', r2rel: 'Friend', r2state: lot.state, idPhoto: 'sample-license.jpg', property: 'Owns the property', cosigner: false } };

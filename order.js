@@ -17,7 +17,7 @@ const ORDER_SAMPLE = {
     { time: 'Nov 6, 10:31 AM', text: 'Customer signed the invoice, terms and delivery agreement' },
     { time: 'Nov 6, 10:44 AM', text: 'Rent-to-own application completed and contract signed' },
     { time: 'Nov 6, 10:45 AM', text: 'First payment of $605.84 collected' },
-    { time: 'Nov 6, 10:46 AM', text: 'Submitted to administrator' },
+    { time: 'Nov 6, 10:46 AM', text: 'Sent to the office for review' },
   ],
   invoice: {
     number: 'AA-20411', plan: 'RTO · 60 month · 1 pay', orderType: 'New · Off-lot sale', date: '11/06/2026', agent: 'Casey Brooks',

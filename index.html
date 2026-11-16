@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="./turbo-office.css?v=2">
 <link rel="stylesheet" href="./turbo-plant.css?v=2">
 <link rel="stylesheet" href="./turbo-logi.css?v=2">
-<link rel="stylesheet" href="./admin.css?v=3">
+<link rel="stylesheet" href="./admin.css?v=4">
 <link rel="stylesheet" href="./drive.css?v=2">
 <link rel="stylesheet" href="./firefly.css?v=3">
 <!-- Add to Home Screen on an iPhone or iPad: opens full screen like an app. -->
@@ -65,6 +65,7 @@
       <button data-for="office" data-nav="of-orders" onclick="go('of-orders')">Orders</button>
       <button data-for="office" data-nav="of-pay" onclick="go('of-pay')">Payments</button>
       <button data-for="office" data-nav="of-requests" onclick="go('of-requests')">Requests</button>
+      <button data-for="office" data-nav="of-bills" onclick="go('of-bills')">Company bills</button>
       <button data-for="office" data-nav="of-settings" onclick="go('of-settings')">Settings</button>
       <button data-for="prod" data-nav="prod" onclick="go('prod')">Board</button>
       <button data-for="prod" data-nav="pr-list" onclick="go('pr-list')">Units</button>
@@ -136,7 +137,7 @@
 <script src="./inventory.js?v=6"></script>
 <!-- Every sales lot and the plant, from buybennett.com. -->
 <script src="./places.js?v=1"></script>
-<script src="./core.js?v=16"></script>
+<script src="./core.js?v=17"></script>
 <script src="./lot.js?v=4"></script>
 <script src="./changes.js?v=1"></script>
 <script src="./views.js?v=26"></script>
@@ -149,9 +150,9 @@
 <script src="./qc-screens.js?v=1"></script>
 <script src="./buildsheet.js?v=9"></script>
 <script src="./order-docs.js?v=1"></script>
-<script src="./order.js?v=5"></script>
+<script src="./order.js?v=6"></script>
 <script src="./plan3d.js?v=17"></script>
-<script src="./sale-flow.js?v=14"></script>
+<script src="./sale-flow.js?v=15"></script>
 <script src="./hero-reality.js?v=2"></script>
 <!-- The Office, Logistics and Production sides. ops-shell.js puts them in the same shell as the other two. -->
 <script src="./office.js?v=6"></script>
@@ -166,15 +167,17 @@
 <script src="./turbo-data.js?v=1"></script>
 <script src="./turbo.js?v=3"></script>
 <script src="./turbo-sales.js?v=4"></script>
-<script src="./turbo-office.js?v=4"></script>
+<script src="./turbo-office.js?v=5"></script>
 <script src="./turbo-plant.js?v=2"></script>
 <script src="./turbo-logi.js?v=2"></script>
 <!-- Users and permissions, and Model pricing. -->
-<script src="./admin.js?v=3"></script>
+<script src="./admin.js?v=4"></script>
 <!-- Guard rails on money, prices, settings and super users. -->
 <script src="./office-guards.js?v=1"></script>
 <!-- One price list for options, the damage waiver line, lot limits everywhere. -->
 <script src="./office-link.js?v=1"></script>
+<!-- The rest of the Office review: ask-first steps, names, filters, people checks, settings sections. -->
+<script src="./office-polish.js?v=1"></script>
 <!-- Drive time in load planning, from a stored table. -->
 <script src="./drive-data.js?v=1"></script>
 <script src="./drive.js?v=2"></script>
