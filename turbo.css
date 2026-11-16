@@ -179,3 +179,6 @@ label.ta-checkrow { cursor: pointer; }
   .ta-lead .rowarrow { display: none; }
   .ta-hand, .ta-checkrow { align-items: flex-start; }
 }
+
+/* The Sales desk's yellow top-bar button is gone: mid-sale it read as "finish the sale". Start a sale stays on Home and in the phone's tab bar. */
+.topcta[data-for="sales"] { display: none !important; }

@@ -32,6 +32,7 @@
 .dt-pair b { display: block; }
 .dt-pair small { color: var(--muted); font-size: 12.5px; }
 .dt-pair.real small { color: var(--good); font-weight: 600; }
+.dt-pair.typed small { color: var(--steel); font-weight: 700; }
 .dt-pair label { font-size: 13px; color: var(--muted); white-space: nowrap; }
 .dt-pair input { width: 86px; text-align: right; }
 @media (max-width: 680px) { .dt-line li { grid-template-columns: 68px 1fr; gap: 10px; } .dt-line time { font-size: 13px; } }
