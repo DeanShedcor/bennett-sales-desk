@@ -52,6 +52,19 @@ shinglePrice = function (c) {
     return salesPackageReference(c, name);
   };
 }
+/* A Garage Package building is built with 7 ft sidewalls, so choosing the package sets the wall height
+   and the tall-wall line is priced with it (the owner, Nov 16, 2026). */
+{
+  const deskChange = change;
+  change = function (key, value, resolve) {
+    deskChange(key, value, resolve);
+    if (S.c.package === 'Garage Package' && usesWoodOptions(S.c) && Number(S.c.wallHeight) !== 7) {
+      S.c.wallHeight = 7;
+      render();
+      if (key === 'wallHeight') toast('The Garage Package is built with 7 ft sidewalls.');
+    }
+  };
+}
 /* The list prices packages on any building that offers them, not only a Basic Utility. */
 packageAmount = function (c, name = c.package) {
   return packageReference(c, name);

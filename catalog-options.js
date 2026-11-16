@@ -120,10 +120,10 @@ function packageVariantMarkup(c) {
       '</div><p class="source">Left and right are as you face the front of the building.</p>';
   }
   if (c.package === 'Garage Package') {
-    if (garageTooNarrow(c)) return '<p class="checkrow static"><strong>6 × 7 ft roll-up door</strong> · A 10-wide building cannot fit the package’s 8 × 7 door, so the 8 × 7 is credited and a 6 × 7 is added.</p>';
+    if (garageTooNarrow(c)) return '<p class="checkrow static"><strong>6 × 7 ft roll-up door</strong> · A 10-wide building cannot fit the package’s 8 × 7 door, so the 8 × 7 is credited and a 6 × 7 is added. The package is built with 7 ft sidewalls.</p>';
     return '<div class="fields"><label>Roll-up door size<select onchange="change(\'garageDoorWidth\',+this.value)">'+
       garageDoorWidths.map(width=>`<option value="${width}" ${width===garageDoor(c)?'selected':''}>${width} × 7 ft${width===8?' · standard':''}</option>`).join('')+
-      '</select></label></div><p class="source">The package comes with the 8 × 7 door. Choosing the 6 × 7 credits the 8 × 7 and adds the 6 × 7.</p>';
+      '</select></label></div><p class="source">The package comes with the 8 × 7 door. Choosing the 6 × 7 credits the 8 × 7 and adds the 6 × 7. The package is built with 7 ft sidewalls.</p>';
   }
   if (c.package === 'Dormer Package') {
     const current = dormerOption(c);
