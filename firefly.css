@@ -5,15 +5,20 @@
 .ff-bug:active { cursor: grabbing; }
 .ff-bug svg, .ff-bug .ff-glow { grid-area: 1 / 1; }
 .ff-glow { width: 44px; height: 44px; border-radius: 50%; background: rgb(var(--ff)); filter: blur(9px); opacity: 0.8; animation: ff-sine 3.2s ease-in-out infinite; }
-.ff-bug svg { position: relative; animation: ff-hover 4.6s ease-in-out infinite; filter: drop-shadow(0 2px 3px rgb(12 26 40 / 0.35)); }
-.ff-wing { fill: #fff; opacity: 0.92; stroke: rgb(12 26 40 / 0.35); stroke-width: 0.6; }
-.ff-body { fill: #0c1a28; }
-.ff-tail { fill: rgb(var(--ff)); }
-.ff-head .ff-tail, .ff-panel .ff-tail { fill: rgb(var(--ff)); }
+.ff-bug svg { position: relative; animation: ff-hover 2.4s ease-in-out infinite; }
+.ff-wing { fill: #fff; opacity: 0.88; stroke: rgba(var(--ff), 1); stroke-width: 0.7; transform-box: fill-box; animation: ff-flutter 0.16s ease-in-out infinite alternate; }
+.ff-wing.a, .ff-wing.c { transform-origin: 100% 50%; }
+.ff-wing.b, .ff-wing.d { transform-origin: 0% 50%; }
+.ff-wing.c, .ff-wing.d { animation-delay: 0.08s; opacity: 0.7; }
+.ff-halo { fill: rgb(var(--ff)); opacity: 0.45; }
+.ff-orb { fill: rgb(var(--ff)); }
+.ff-core { fill: #fff; opacity: 0.95; }
+.ff-fairy { overflow: visible; filter: drop-shadow(0 0 4px rgba(var(--ff), 0.95)) drop-shadow(0 1px 2px rgb(12 26 40 / 0.3)); }
 .ff-n { position: absolute; top: 0; right: 0; background: #0c1a28; color: #fff; border-radius: 99px; font: 700 11px var(--body); padding: 1px 6px; box-shadow: 0 0 0 2px #fff; }
+@keyframes ff-flutter { from { transform: scaleY(1); } to { transform: scaleY(0.6); } }
 @keyframes ff-sine { 0%, 100% { opacity: 0.55; transform: scale(0.9); } 50% { opacity: 0.95; transform: scale(1.08); } }
 @keyframes ff-heart { 0%, 100% { opacity: 0.6; transform: scale(0.95); } 12% { opacity: 1; transform: scale(1.25); } 24% { opacity: 0.7; transform: scale(1); } 36% { opacity: 1; transform: scale(1.2); } 55% { opacity: 0.6; transform: scale(0.95); } }
-@keyframes ff-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes ff-hover { 0%, 100% { transform: translate(0, 1px); } 25% { transform: translate(1.5px, -3px); } 50% { transform: translate(0, -5px); } 75% { transform: translate(-1.5px, -2px); } }
 @keyframes ff-flick { 0% { opacity: 1; } 33% { opacity: 0; } 50% { opacity: 0; } 100% { opacity: 1; } }
 #ff-root[data-intent="discovery"] .ff-glow { animation-duration: 4.4s; }
 #ff-root[data-intent="teaching"] .ff-glow { animation-duration: 2.6s; }
@@ -22,10 +27,11 @@
 #ff-root[data-speed="calm"] .ff-glow { animation-duration: 7s; }
 #ff-root[data-speed="calm"] .ff-bug svg { animation: none; }
 #ff-root[data-speed="lively"] .ff-glow { animation-duration: 1.8s; }
-#ff-root.still .ff-glow, #ff-root.still .ff-bug svg { animation: none; opacity: 0.9; }
+#ff-root.still .ff-glow, #ff-root.still .ff-bug svg, #ff-root.still .ff-wing { animation: none; opacity: 0.9; }
+#ff-root[data-speed="calm"] .ff-wing { animation-duration: 0.5s; }
 .ff-bug.flick { animation: ff-flick 0.5s linear; }
 .ff-bug.listening .ff-glow { animation: ff-heart 0.9s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .ff-glow, .ff-bug svg, .ff-bug.flick, .ff-panel, .ff-card, .ff-welcome { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .ff-wing, .ff-glow, .ff-bug svg, .ff-bug.flick, .ff-panel, .ff-card, .ff-welcome { animation: none !important; } }
 
 /* The panel */
 .ff-panel { position: fixed; right: 22px; bottom: 176px; z-index: 82; width: 388px; max-height: calc(100vh - 90px); display: flex; flex-direction: column; background: var(--surface); border-radius: 20px; border: 1px solid var(--line); box-shadow: 0 2px 6px rgb(12 26 40 / 0.08), 0 24px 60px rgb(12 26 40 / 0.28); overflow: hidden; font-size: 14px; animation: ff-in 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
@@ -34,8 +40,6 @@
 .ff-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px 12px; background: radial-gradient(120% 160% at 0% 0%, rgba(var(--ff), 0.32), transparent 55%), var(--ink); color: var(--on-dark); }
 .ff-head b { font: 800 18px var(--display); }
 .ff-head small { flex: 1; color: var(--on-dark-muted); font-size: 12.5px; }
-.ff-head .ff-wing { fill: #fff; }
-.ff-head .ff-body { fill: #2b445c; }
 .ff-x { background: none; border: 0; color: inherit; font-size: 22px; line-height: 1; padding: 2px 6px; border-radius: 8px; opacity: 0.8; }
 .ff-x:hover { opacity: 1; background: rgb(255 255 255 / 0.12); }
 .ff-tabs { display: flex; gap: 2px; padding: 0 10px; background: var(--ink); }
