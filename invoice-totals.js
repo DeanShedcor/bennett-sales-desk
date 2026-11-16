@@ -65,3 +65,22 @@
     totals.innerHTML = out.join('');
   };
 }
+
+/* The customer's view of a quote carries no builder notes and no demo labels. The staff view keeps
+   them. Drawn last, so no other layer puts them back. Existing function hooked: quoteView(customer). */
+{
+  const baseQuote = quoteView;
+  quoteView = function (customer = false) {
+    const html = baseQuote(customer);
+    if (!customer) return html;
+    return html
+      .replace(/<p class="source">Estimated with[^<]*<\/p>/, '<p class="source">Monthly payments are estimates. Deposit, taxes and approval are set on the rent-to-own agreement.</p>')
+      .replace('<p class="source">Manager signature · demonstration only</p>', '<p class="source">Manager signature</p>')
+      .replace(/<p class="source">The link contains the immutable quote snapshot[^<]*<\/p>/, '')
+      .replace(/<p class="source">All actions are simulations[^<]*<\/p>/, '')
+      .replace(/<button class="link" onclick="currentQ\(\)\.expiredDemo[^>]*>[^<]*<\/button>/, '')
+      .replace('Pay deposit · simulate', 'Pay deposit').replace('Deposit simulated ✓', 'Deposit recorded ✓').replace('RTO form simulated ✓', 'Application started ✓')
+      .replace('Accepted · simulation', 'Accepted')
+      .replace(/<br><small>[^<]*<\/small><\/td><td>/g, '</td><td>');
+  };
+}

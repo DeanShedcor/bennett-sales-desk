@@ -375,12 +375,12 @@ function sfTold() {
   render();
 }
 function sfRow(x, now) {
-  const notes = S.sfNotes === false ? '' : `${x.hook ? `<small class="sf-hook"><b>Turbo Assist</b> ${x.hook}</small>` : ''}${x.only ? `<small class="sf-only"><b>Preview only</b> ${x.only}</small>` : ''}`;
+  const notes = !S.sfNotes ? '' : `${x.hook ? `<small class="sf-hook"><b>Turbo Assist</b> ${x.hook}</small>` : ''}${x.only ? `<small class="sf-only"><b>Preview only</b> ${x.only}</small>` : ''}`;
   return `<div class="od-doc sf-step${now ? ' now' : ''}${x.block ? ' blocked' : ''}"><span class="od-check ${x.on ? 'on' : ''}">${x.on ? icon('check', 16) : ''}</span><div class="grow"><strong>${x.title}</strong><small>${x.text}</small>${x.extra || ''}${notes}</div>${x.act || ''}</div>`;
 }
 function sfPanel(s) {
   const { desk, handoff } = sfSteps(s), all = [...desk, ...handoff], now = all.find((x) => !x.on && !x.optional), done = all.filter((x) => x.on).length;
-  return `<section class="panel sf-panel"><div class="panelhead"><h2>Next steps</h2><span class="sf-headr"><button type="button" class="link" onclick="S.sfNotes=S.sfNotes===false;render()">${S.sfNotes === false ? 'Show' : 'Hide'} product notes</button><span class="pill ${now ? 'amber' : 'good'}">${now ? `${done} of ${all.length} done` : 'Complete'}</span></span></div>
+  return `<section class="panel sf-panel"><div class="panelhead"><h2>Next steps</h2><span class="sf-headr"><button type="button" class="link" onclick="S.sfNotes=!S.sfNotes;render()">${S.sfNotes ? 'Hide' : 'Show'} builder notes</button><span class="pill ${now ? 'amber' : 'good'}">${now ? `${done} of ${all.length} done` : 'Complete'}</span></span></div>
     ${s.toConfirm?.length && !['Processed · Sold', 'Delivered'].includes(s.status) ? `<div class="sf-toconfirm"><strong>Office confirms at admin review</strong><ul>${s.toConfirm.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
     <h3 class="sf-group">At the desk</h3>${desk.map((x) => sfRow(x, x === now)).join('')}
     <h3 class="sf-group">Handoffs <small>other apps do these; the desk shows where the order is</small></h3>${handoff.map((x) => sfRow(x, x === now)).join('')}

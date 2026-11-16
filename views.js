@@ -866,7 +866,11 @@ function summary() {
       <div class="deal-total"><small>${totalLabel}</small><strong>${money(n)}</strong></div>
       <div class="deal-flags">${budgetStatus(n)}${review.length ? `<button type="button" class="budget warn" onclick="S.expanded=true;refreshSummary()">${icon('alert', 14)} ${review.length} to confirm</button>` : ''}</div>
       <div class="summaryactions">${
-        S.path === 'stock'
+        /* Before the last step the bar's one button is Continue, so nobody presses a finish button
+           thinking it moves them on. The finish buttons appear on the last step only. */
+        S.path !== 'lot' && S.step < steps.length - 1
+          ? button('Continue ' + icon('arrow', 18), 'goStep(S.step+1)', 'primary bar-continue')
+          : S.path === 'stock'
           ? button((locked ? icon('lock', 16) + ' ' : '') + 'Submit stock order ' + (locked ? '' : icon('arrow', 18)), 'whenBuildReady(stockOrderReview)', 'primary' + lockedClass)
           : site
           ? button((locked ? icon('lock', 16) + ' ' : '') + 'Request a site review', 'whenBuildReady(startSiteReview)', 'primary' + lockedClass)
