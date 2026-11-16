@@ -107,7 +107,7 @@ const FF_TOURS = [
     start: () => go('home'), steps: [
       { sel: '.home-actions .primary', title: 'Press “Start a sale”', text: 'Every sale starts here, whether the building is on the lot or still an idea.', until: () => S.page === 'start' },
       { sel: `.startcard .primary[onclick="begin('lot')"]`, title: 'Press “Browse my lot”', text: 'A building on the lot keeps its serial number and its features all the way through.', until: () => S.page === 'lot' },
-      { sel: '.lotcard .photobtn', title: 'Pick a building', text: 'Any one. Filters at the top narrow the lot by size, style or monthly budget.', until: () => S.page === 'unit' },
+      { sel: () => ffEl('.lotcard .photobtn') || ffEl('.sp-lotrow'), title: 'Pick a building', text: 'Any one. Filters at the top narrow the lot by size, style or monthly budget.', until: () => S.page === 'unit' },
       { sel: '.unitprice', title: 'Price, cash or monthly', text: 'The rent-to-own payments follow the terms the office set. Tap a term to switch.' },
       { sel: '.unitactions .primary', hands: false, title: 'This button starts the sale', text: 'It opens the delivery questions, then the paperwork. I stop here so nothing real starts by accident.' },
     ] },
@@ -228,25 +228,39 @@ function ffTick() {
   if (!ring || !card) return;
   const lost = !el && Date.now() - FF.stepAt > 2500;
   card.classList.toggle('lost', lost);
+  const vw = innerWidth, vh = innerHeight, cw = Math.min(340, vw - 24), ch = card.offsetHeight || 170;
   if (!el) {
     ring.style.display = 'none';
-    card.style.cssText = 'left:50%;top:38%;transform:translateX(-50%)';
+    card.style.cssText = `left:${Math.round((vw - cw) / 2)}px;top:${Math.round(Math.max(70, Math.min(vh * 0.38, vh - ch - 14)))}px;width:${cw}px`;
     card.querySelector('.ff-lost').hidden = !lost;
     return;
   }
-  if (!FF.scrolled) {
-    FF.scrolled = true;
-    const r0 = el.getBoundingClientRect();
-    if (r0.top < 90 || r0.bottom > innerHeight - 190) el.scrollIntoView({ block: 'center', behavior: 'auto' });
+  /* Bring the control into view, and keep doing it while the screen settles (a new screen can
+     finish drawing after the first look). It stops once the person scrolls or taps for themselves. */
+  const r0 = el.getBoundingClientRect(), topSafe = 84, botSafe = vh - (ch + 46), pinned = ffPinned(el);
+  const fresh = Date.now() - FF.stepAt < 3500 || !FF.scrolled;
+  if (!pinned && fresh && !(FF.userAt > FF.stepAt)) {
+    const tall = r0.height > botSafe - topSafe;
+    const want = tall ? topSafe : Math.max(topSafe, Math.round((topSafe + botSafe - r0.height) / 2));
+    const off = tall ? Math.abs(r0.top - topSafe) > 48 : r0.top < topSafe - 2 || r0.bottom > botSafe + 2;
+    if (off) window.scrollBy({ top: r0.top - want, behavior: 'auto' });
   }
-  const r = el.getBoundingClientRect(), pad = 6, vw = innerWidth, vh = innerHeight, tall = Math.min(r.height, vh - 150);
+  FF.scrolled = true;
+  const r = el.getBoundingClientRect(), pad = 6, tall = Math.min(r.height, vh - 150);
   ring.style.cssText = `display:block;left:${Math.max(4, r.left - pad)}px;top:${Math.max(4, r.top - pad)}px;width:${Math.min(vw - 8, r.width + pad * 2)}px;height:${tall + pad * 2}px`;
-  const cw = Math.min(340, vw - 24), ch = card.offsetHeight || 170, below = r.top + tall + pad + 14, above = r.top - pad - 14 - ch;
-  const top = below + ch < vh - 12 ? below : above > 70 ? above : Math.max(70, vh - ch - 14);
+  const below = r.top + tall + pad + 14, above = r.top - pad - 14 - ch;
+  /* Under the control if there is room, else over it, else along the bottom. Always fully on screen. */
+  const top = Math.max(70, Math.min(vh - ch - 12, below + ch < vh - 12 ? below : above > 70 ? above : vh - ch - 14));
   card.style.cssText = `left:${Math.min(vw - cw - 12, Math.max(12, r.left))}px;top:${top}px;width:${cw}px`;
   card.querySelector('.ff-lost').hidden = true;
   if (FF.home !== 'bell') ffBugTo(Math.min(vw - 60, r.right - 8), Math.max(60, r.top - 34));
 }
+/* A bar or button that stays put while the page scrolls (the bottom bar, the phone's tabs). */
+function ffPinned(el) {
+  for (let e = el; e && e !== document.body; e = e.parentElement) if (/fixed|sticky/.test(getComputedStyle(e).position)) return true;
+  return false;
+}
+for (const type of ['wheel', 'touchmove', 'keydown']) window.addEventListener(type, (e) => { if (!e.target.closest || !e.target.closest('#ff-root')) FF.userAt = Date.now(); }, { passive: true, capture: true });
 setInterval(ffTick, 200);
 /* A step the person does by pressing the real control moves on when they press it. */
 document.addEventListener('click', (e) => {
