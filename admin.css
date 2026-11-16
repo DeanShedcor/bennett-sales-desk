@@ -44,3 +44,28 @@
 .ad-set small { color: var(--muted); font-size: 12.5px; }
 .ad-steps { margin: 10px 0 10px 20px; display: grid; gap: 12px; line-height: 1.5; }
 @media (max-width: 680px) { .ad-entry { grid-template-columns: minmax(0, 1fr); } .ad-seg { width: 100%; } .ad-seg button { flex: 1; padding: 9px 6px; } #ad-gear { display: none; } }
+
+/* Guard rails (office-guards.js) */
+button.og-locked, button.og-locked:hover { opacity: 0.45; cursor: not-allowed; text-decoration: none; }
+.og-lockmsg { display: inline-flex; align-items: center; font-size: 12.5px; font-weight: 700; color: var(--warn); background: var(--warn-bg); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.og-big span, .og-big .og-pct { color: var(--bad); }
+.og-big { background: var(--bad-bg); margin: 0 -8px; padding-left: 8px !important; padding-right: 8px !important; border-radius: 8px; }
+.og-flag { font-style: normal; font-size: 12px; font-weight: 700; color: var(--bad); background: var(--bad-bg); border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; margin-left: 6px; white-space: nowrap; }
+.og-pct { font-size: 12.5px; font-weight: 700; color: var(--muted); margin-left: 6px; }
+.og-bignote { border-left: 0; }
+.og-all { max-height: 520px; overflow: auto; padding-right: 4px; }
+.og-sum s, .og-changes s { color: var(--muted); font-weight: 400; margin-right: 6px; }
+.og-h { font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); margin: 16px 0 4px; }
+.og-undone { display: block; color: var(--good) !important; font-weight: 700; }
+.og-changes { list-style: none; padding: 0; margin: 0 0 6px; }
+.og-changes li { display: grid; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.og-tablewrap { overflow-x: auto; }
+.og-ex { width: 100%; border-collapse: collapse; font-size: 14px; }
+.og-ex th, .og-ex td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.og-ex th { color: var(--muted); font-size: 12.5px; }
+.og-ex tr.og-diff td { background: var(--warn-bg); font-weight: 700; }
+.og-ex .og-flag { color: var(--warn); background: #fff; }
+.og-over { margin-top: 10px; }
+.og-exempt { margin-top: 8px; font-size: 14px; }
+.og-history { margin-top: 18px; }
+.og-superlock .actions { justify-content: center; }
