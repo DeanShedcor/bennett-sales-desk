@@ -531,7 +531,7 @@ Object.assign(OPS_SCREENS, { 'of-users': adUsersPage, 'of-user': adUserPage, 'of
 document.querySelector('.topbar-right').insertAdjacentHTML('afterbegin', `<button type="button" class="ta-topbtn" id="ad-gear" onclick="go('of-users')" aria-label="Users, permissions and pricing">${icon('sliders', 18)}</button>`);
 
 /* Viewing as someone else: what they cannot see is closed, what they can only read cannot be changed. */
-const AD_SAFE = /^(go\(|open|ofOpen|ofDoc\(|ofContract\(|ofReviewNext\(|orderDoc\(|toOverdueList\(|toLotsList\(|opSetTab\(|opKeepFocus\(|OP\.\w+=|prOpen|lgOpen|adOpen|adView|taOpen|taClose|taAsk|taPriceList|taRtoOpen|closeModal|S\.\w+=|S\.\w+\s*=|AD\.(tab|model|lot|q)=|TA\.ans|OF\.(tab|payTab|tile|lot|q)|LG\.(tile|q|tab)|PR\.|Q\.|document\.getElementById\('of-list'\)|window\.print|event\.stop|if\(event\.target|this\.closest)/;
+const AD_SAFE = /^(go\(|open|ofOpen|ofDoc\(|ofContract\(|ofReviewNext\(|orderDoc\(|toOverdueList\(|toLotsList\(|opSetTab\(|opKeepFocus\(|OP\.\w+=|prOpen|lgOpen|adOpen|adView|taOpen|taClose|taAsk|taPriceList|taRtoOpen|lgxManifest\(|lgpRunSheet\(|lgpRunSheetPrint\(|closeModal|S\.\w+=|S\.\w+\s*=|AD\.(tab|model|lot|q)=|TA\.ans|OF\.(tab|payTab|tile|lot|q)|LG\.(tile|q|tab)|PR\.|Q\.|document\.getElementById\('of-list'\)|window\.print|event\.stop|if\(event\.target|this\.closest)/;
 document.addEventListener('click', (e) => {
   if (document.body.dataset.adRead !== '1') return;
   const el = e.target.closest('button, [onclick], input[type=checkbox], input[type=radio], input[type=file]');

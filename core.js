@@ -1637,8 +1637,13 @@ function loadHash() {
       toast("This quote link could not be read.");
     }
   }
+  /* An address that names another screen (#office/order/…): do not draw Home first, so its pictures
+     are not downloaded for nothing. app-shell.js opens the named screen once every side is loaded. */
+  if (!hashBooted && location.hash.length > 1 && !location.hash.startsWith("#quote=") && !/^#sales\/?$/.test(location.hash)) S.page = "boot";
+  hashBooted = true;
   render();
 }
+let hashBooted = false;
 window.addEventListener("hashchange", loadHash);
 
 /* 3D reference models per style: [Basic, Classic, Elite] variants where they exist. */

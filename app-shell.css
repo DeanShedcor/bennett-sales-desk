@@ -1,0 +1,29 @@
+/* app-shell.css: shared by every side. Loaded last. */
+
+/* No yellow button in the top bar on any side. Each side's first screen keeps the action. */
+.topcta { display: none !important; }
+.as-first { margin: 0 0 16px; }
+.as-first button { min-height: 48px; display: inline-flex; align-items: center; gap: 8px; }
+.as-back { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 12px; min-height: 44px; font-weight: 600; }
+
+/* The gear (users and pricing) is reachable on a phone too. */
+@media (max-width: 680px) { #ad-gear { display: inline-flex !important; } }
+
+/* Pop-ups: the title and Close stay in view while a long pop-up scrolls. */
+.modal > .row:first-child { position: sticky; top: -24px; z-index: 3; background: var(--surface); margin: -24px -24px 0; padding: 20px 24px 10px; border-radius: 18px 18px 0 0; }
+.modal > .row:first-child + * { margin-top: 6px; }
+
+/* Printing: every side prints what is on the screen. The opening animation used to start again
+   on paper and leave the page blank. Bars, the guide and messages never print. */
+@media print {
+  #app, #app *, #app.qc-enter, #app.qc-enter-detail > * { animation: none !important; transition: none !important; }
+  #app, #app.qc-enter-detail > * { opacity: 1 !important; transform: none !important; }
+  .topbar, .previewstrip, .tabbar, .appnav, #toast, #ff-root, #ad-bar, .ta-sheet-back, .ops-notes, .as-first, .as-back, .pg-undo { display: none !important; }
+  body, main, #app { background: #fff !important; }
+  /* The invoice and the other order papers print from their pop-up (it used to be hidden on paper). */
+  body:has(.od-paper) .modal-back { display: block !important; }
+  /* Rows and cards that are buttons on screen are content on paper. */
+  #app button:has(strong), #app button:has(small), #app button:has(h3), #app button:has(h4), #app button:has(span + span) { display: revert !important; border-color: #b4c0cc; }
+  #app .panel, #app .card, #app section { box-shadow: none !important; }
+  #app .ops-row, #app .od-doc, #app tr { break-inside: avoid; }
+}

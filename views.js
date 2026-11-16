@@ -135,8 +135,8 @@ function heroScene() {
         <linearGradient id="sc-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d6189"/><stop offset=".5" stop-color="#7f9fbb"/><stop offset=".82" stop-color="#d3cdb6"/><stop offset="1" stop-color="#f3d8a2"/></linearGradient>
         <radialGradient id="sc-sun" gradientUnits="userSpaceOnUse" cx="1560" cy="585" r="1300"><stop offset="0" stop-color="#ffe6b0" stop-opacity=".95"/><stop offset=".3" stop-color="#ffcf8a" stop-opacity=".45"/><stop offset="1" stop-color="#ffcf8a" stop-opacity="0"/></radialGradient>
         <linearGradient id="sc-field" gradientUnits="userSpaceOnUse" x1="0" y1="590" x2="0" y2="1300"><stop offset="0" stop-color="#bdb16c"/><stop offset=".12" stop-color="#9e9550"/><stop offset=".3" stop-color="#857c3b"/><stop offset=".62" stop-color="#756d33"/><stop offset="1" stop-color="#595326"/></linearGradient>
-        <symbol id="sc-oak" viewBox="70 20 1440 250" preserveAspectRatio="none"><image href="./shed-hero.png" width="1600" height="901"/></symbol>
-        <pattern id="sc-turf" width="520" height="84" patternUnits="userSpaceOnUse"><g id="sc-turf-tile"><svg width="260" height="42" viewBox="335 802 260 42" preserveAspectRatio="none"><image href="./shed-hero.png" width="1600" height="901"/></svg></g><use href="#sc-turf-tile" transform="translate(520 0) scale(-1 1)"/><use href="#sc-turf-tile" transform="translate(0 84) scale(1 -1)"/><use href="#sc-turf-tile" transform="translate(520 84) scale(-1 -1)"/></pattern>
+        <symbol id="sc-oak" viewBox="70 20 1440 250" preserveAspectRatio="none"><image href="./shed-hero.webp?v=1" width="1600" height="901"/></symbol>
+        <pattern id="sc-turf" width="520" height="84" patternUnits="userSpaceOnUse"><g id="sc-turf-tile"><svg width="260" height="42" viewBox="335 802 260 42" preserveAspectRatio="none"><image href="./shed-hero.webp?v=1" width="1600" height="901"/></svg></g><use href="#sc-turf-tile" transform="translate(520 0) scale(-1 1)"/><use href="#sc-turf-tile" transform="translate(0 84) scale(1 -1)"/><use href="#sc-turf-tile" transform="translate(520 84) scale(-1 -1)"/></pattern>
         <linearGradient id="sc-near" gradientUnits="userSpaceOnUse" x1="0" y1="610" x2="0" y2="760"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>
         <mask id="sc-nearmask" maskUnits="userSpaceOnUse" x="-3200" y="590" width="5600" height="710"><rect x="-3200" y="590" width="5600" height="710" fill="url(#sc-near)"/></mask>
         <filter id="sc-haze" x="-5%" y="-20%" width="110%" height="140%"><feGaussianBlur stdDeviation="2.200"/><feColorMatrix type="matrix" values="0.62 0.1 0 0 0.16  0.08 0.62 0 0 0.17  0.05 0.1 0.5 0 0.14  0 0 0 1 0"/></filter>
@@ -160,8 +160,8 @@ function heroScene() {
       <ellipse cx="1300" cy="640" rx="1500" ry="60" fill="#ffe9ad" opacity=".35" filter="url(#sc-softer)"/>
       <g filter="url(#sc-bloom)">${blooms}</g>
     </svg>
-    <img class="shed-halo" src="./shed-hero.png" alt="" aria-hidden="true">
-    <img class="shed-hero" src="./shed-hero.png" alt="White Bennett building with a covered porch beneath a spreading oak" width="1600" height="901" fetchpriority="high">
+    <img class="shed-halo" src="./shed-hero.webp?v=1" alt="" aria-hidden="true">
+    <img class="shed-hero" src="./shed-hero.webp?v=1" alt="White Bennett building with a covered porch beneath a spreading oak" width="1600" height="901" fetchpriority="high">
   </div>`;
 }
 
