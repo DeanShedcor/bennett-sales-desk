@@ -353,35 +353,35 @@ function toRtoSaved(what) {
 function toRtoUseTurbo() {
   TO.rtoStart ||= clone(TA.rto.terms);
   for (const d of TA.rto.turbo) Object.assign(taRtoTerm(d.months) || {}, { divisor: d.divisor, downType: 'payments', down: d.down, epo: d.epo });
-  toRtoSaved('Turbo Assist’s defaults put in for 24, 36 and 48 months');
+  toRtoSaved('Turbo Assist’s numbers put back for 24, 36 and 48 months');
 }
 function toRtoReset() {
   if (!TO.rtoStart) return;
   TA.rto.terms.splice(0, TA.rto.terms.length, ...clone(TO.rtoStart));
   TO.rtoStart = null;
-  toRtoSaved('Back to the numbers from the public listing');
+  toRtoSaved('Back to the numbers this page started with');
 }
 function toRtoPanel() {
   const price = 6018, same = (a, b) => Math.abs(a - b) < 0.0005, edited = !!TO.rtoStart;
   const num = (m, key, value, extra = '') => `<input type="number" value="${value}" ${extra} onchange="toRtoSet(${m},'${key}',this.value)">`;
   return `<section class="panel to-wide"><div class="panelhead"><h2>Rent-to-own terms</h2><span class="pill blue">${esc(TA.rto.provider)}</span></div>
-    <p>The Sales desk figures every monthly payment from this table: the price divided by the divisor. ${taTip('rto-overview', 'How rent-to-own works')}</p>
+    <p>The Sales desk works out every monthly payment from this table: the price divided by the number below. These are Turbo Assist’s own numbers, so both give the customer the same payment. ${taTip('rto-overview', 'How rent-to-own works')}</p>
     <div class="to-terms">${TA.rto.terms.map((t) => `<fieldset class="to-term"><legend>${t.months} months</legend>
-      <label>Divisor${num(t.months, 'divisor', t.divisor, 'min="0.01" step="0.1" inputmode="decimal"')}</label>
-      <label>Down Type<select onchange="toRtoSet(${t.months},'downType',this.value)"><option value="payments" ${t.downType === 'payments' ? 'selected' : ''}>Payments</option><option value="percent" ${t.downType === 'percent' ? 'selected' : ''}>Percentage</option></select></label>
-      <label>Down Value${t.downType === 'payments' ? num(t.months, 'down', t.down, 'min="1" max="12" step="1" inputmode="numeric"') : num(t.months, 'down', toCents(t.down * 100), 'min="1" max="50" step="0.5" inputmode="decimal"')}</label>
-      <label class="to-check"><input type="checkbox" ${t.balloon ? 'checked' : ''} onchange="toRtoSet(${t.months},'balloon',this.checked)"> Balloon?</label>
-      <label>Balloon Pmts${num(t.months, 'balloonPayments', t.balloonPayments, `min="0" step="1" inputmode="numeric" ${t.balloon ? '' : 'disabled'}`)}</label>
-      <label>Payoff percent<input type="number" value="${t.epo == null ? '' : toCents(t.epo * 100)}" min="1" max="100" step="1" inputmode="numeric" placeholder="Not set" onchange="toRtoSet(${t.months},'epo',this.value)"></label>
+      <label>Divide the price by${num(t.months, 'divisor', t.divisor, 'min="0.01" step="0.1" inputmode="decimal"')}</label>
+      <label>Money down is<select onchange="toRtoSet(${t.months},'downType',this.value)"><option value="payments" ${t.downType === 'payments' ? 'selected' : ''}>A number of payments</option><option value="percent" ${t.downType === 'percent' ? 'selected' : ''}>A percent of the price</option></select></label>
+      <label>${t.downType === 'payments' ? 'How many payments down' : 'Percent down'}${t.downType === 'payments' ? num(t.months, 'down', t.down, 'min="1" max="12" step="1" inputmode="numeric"') : num(t.months, 'down', toCents(t.down * 100), 'min="1" max="50" step="0.5" inputmode="decimal"')}</label>
+      <label class="to-check"><input type="checkbox" ${t.balloon ? 'checked' : ''} onchange="toRtoSet(${t.months},'balloon',this.checked)"> One big last payment?</label>
+      <label>The last payment is this many payments${num(t.months, 'balloonPayments', t.balloonPayments, `min="0" step="1" inputmode="numeric" ${t.balloon ? '' : 'disabled'}`)}</label>
+      <label>Pay off early for this percent of what is left<input type="number" value="${t.epo == null ? '' : toCents(t.epo * 100)}" min="1" max="100" step="1" inputmode="numeric" placeholder="Not set" onchange="toRtoSet(${t.months},'epo',this.value)"></label>
       <p class="to-termsay">${money(payment(price, t.months))} a month on a ${money(price)} building · ${t.downType === 'payments' ? toPlural(t.down, 'payment') : toCents(t.down * 100) + '%'} down</p></fieldset>`).join('')}</div>
-    <h3>Turbo Assist’s built-in defaults</h3>
-    <div class="to-tablewrap"><table class="to-table"><thead><tr><th>Months</th><th>Divisor</th><th>Down</th><th>Payoff</th><th>On ${money(price)}</th><th>This table</th></tr></thead><tbody>
-      ${TA.rto.turbo.map((d) => { const t = taRtoTerm(d.months); return `<tr><td data-l="Months">${d.months}</td><td data-l="Divisor">${d.divisor}</td><td data-l="Down">${toPlural(d.down, 'payment')}</td><td data-l="Payoff">${Math.round(d.epo * 100)}%</td><td data-l="On ${money(price)}">${money(price / d.divisor)}</td><td>${same(t.divisor, d.divisor) ? '<span class="ops-flag ok">Same divisor</span>' : `<span class="ops-flag todo">${t.divisor} here</span>`}</td></tr>`; }).join('')}
-      <tr><td data-l="Months">60</td><td colspan="4" class="of-soft">Turbo Assist has no 60-month default</td><td><span class="ops-flag todo">${taRtoTerm(60).divisor} here</span></td></tr></tbody></table></div>
-    <p class="notice">Turbo Assist’s 36 and 48 month defaults (25.2 and 33.6) do not match the payments a public lot listing shows, which work out to 21.6 and 24.6. This preview started from the listing, with one payment down. Neither set is the contract: put the real ones in.</p>
-    <div class="actions">${button('Use Turbo Assist’s defaults', 'toRtoUseTurbo()', 'secondary small')}${edited ? button('Back to the listing numbers', 'toRtoReset()', 'secondary small') : ''}</div>
+    <h3>Turbo Assist’s numbers, side by side</h3>
+    <div class="to-tablewrap"><table class="to-table"><thead><tr><th>Months</th><th>Divide by</th><th>Down</th><th>Early payoff</th><th>On ${money(price)}</th><th>This table</th></tr></thead><tbody>
+      ${TA.rto.turbo.map((d) => { const t = taRtoTerm(d.months); return `<tr><td data-l="Months">${d.months}</td><td data-l="Divide by">${d.divisor}</td><td data-l="Down">${toPlural(d.down, 'payment')}</td><td data-l="Early payoff">${Math.round(d.epo * 100)}%</td><td data-l="On ${money(price)}">${money(price / d.divisor)}</td><td>${same(t.divisor, d.divisor) ? '<span class="ops-flag ok">Same</span>' : `<span class="ops-flag todo">${t.divisor} here</span>`}</td></tr>`; }).join('')}
+      <tr><td data-l="Months">60</td><td colspan="4" class="of-soft">Turbo Assist has no 60-month plan yet</td><td><span class="ops-flag todo">${taRtoTerm(60).divisor} here</span></td></tr></tbody></table></div>
+    <p class="notice">These numbers were copied from Turbo Assist on Nov 16, 2026. The 60-month line is not in Turbo Assist yet, so it follows the same rule as the other three: check it. If the agreement with the rent-to-own company says something different, type it here.</p>
+    <div class="actions">${button('Put Turbo Assist’s numbers back', 'toRtoUseTurbo()', 'secondary small')}${edited ? button('Undo my changes', 'toRtoReset()', 'secondary small') : ''}</div>
     ${TO.rtoLog.length ? `<ul class="qc-log">${TO.rtoLog.slice(0, 4).map((x) => `<li><strong>${esc(x.what)}</strong><small>${ofStamp(x.at)}</small></li>`).join('')}</ul>` : ''}
-    <p class="source">Sales Console pulls these term rows. Divisor and required down are managed here. Adding or removing a term length is done in Turbo Assist; this preview keeps 24, 36, 48 and 60 months.</p></section>`;
+    <p class="source">The Sales desk reads this table. Adding or taking away a length (like 72 months) is done in Turbo Assist. This page keeps 24, 36, 48 and 60 months.</p></section>`;
 }
 
 /* ---------- Hold, resubmit, cancel, approve, release: Turbo Assist's wording and notices ---------- */
@@ -503,8 +503,9 @@ function toEntrySave() {
 }
 function toReturnsBlock() {
   const say = { repossessed: 'Repossessed', returned: 'Returned', repo_intake: 'Repo intake', cash_purchase: 'Cash purchase' };
-  return `<h2 class="sectionhead qc-group">Returns and buildings brought in <small>${TO.returns.length}</small></h2>
-  <div class="ops-list">${TO.returns.map((r) => `<article class="ops-row"><div class="grow"><div class="ops-rowtop"><strong>${esc(r.serial)}</strong><span class="serial">${esc(r.what)}</span><span class="pill ${r.title ? 'red' : 'blue'}">${say[r.kind]}</span>${r.sample ? '<span class="pill ghost">Sample</span>' : ''}</div>
+  const mine = TO.returns.filter(ofMine);
+  return `<h2 class="sectionhead qc-group">Returns and buildings brought in <small>${mine.length}</small></h2>
+  <div class="ops-list">${mine.map((r) => `<article class="ops-row"><div class="grow"><div class="ops-rowtop"><strong>${esc(r.serial)}</strong><span class="serial">${esc(r.what)}</span><span class="pill ${r.title ? 'red' : 'blue'}">${say[r.kind]}</span>${r.sample ? '<span class="pill ghost">Sample</span>' : ''}</div>
       <p class="ops-rowsub">${esc(r.where)} · ${ofStamp(r.at)}${r.note ? ' · ' + esc(r.note) : ''}</p>
       <div class="ops-flags">${r.title ? `<span class="ops-flag wait">Service job: ${esc(r.title)}</span>` : '<span class="ops-flag ok">Joins that lot’s inventory under this serial</span>'}</div></div>
       ${r.saleId ? `<button type="button" class="secondary small" onclick="ofOpen('${r.saleId}')">Order</button>` : ''}</article>`).join('') || '<div class="panel emptystate"><strong>No returns</strong><p>A repossessed or returned building shows here with its service job.</p></div>'}</div>

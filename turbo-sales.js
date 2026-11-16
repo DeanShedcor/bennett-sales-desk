@@ -198,7 +198,8 @@ const TA_ADDONS = [
   ['Greenhouse Irrigation', 'Greenhouse irrigation', 'each', (c) => c.style === 'Greenhouse'],
   ['Greenhouse Hose Connection Package', 'Greenhouse hose connection', 'each', (c) => c.style === 'Greenhouse'],
 ];
-const taListPrice = (name) => (TA_PRICE_OPTIONS.find((o) => o.name === name) || TA_PRICE_PACKAGES.find((o) => o.name === name))?.price ?? null;
+/* The published list, with the lot's own price when it has one (office-link.js). */
+const taListPrice = (name) => (typeof plPrice === 'function' ? plPrice(name) : null) ?? (TA_PRICE_OPTIONS.find((o) => o.name === name) || TA_PRICE_PACKAGES.find((o) => o.name === name))?.price ?? null;
 const taAddon = (name) => TA_ADDONS.find((a) => a[0] === name);
 const taAddonQty = (c, name) => {
   const a = taAddon(name), q = c.extras?.[name];

@@ -385,7 +385,7 @@ function adSheetLoad(text) {
     const lot = lotName ? LOTS.find((x) => [x.id, x.town, lotTown(x)].some((v) => v.toLowerCase() === lotName.toLowerCase())) : null;
     if (!(price > 0) || (lotName && !lot)) bad.push(name + (size ? ' ' + size : ''));
     else if (size && PRICE_LIST[name]?.[size] != null) adPrice(lot ? { kind: 'lot', lot: lot.id, model: name, size } : { kind: 'shed', model: name, size }, price, true), n++;
-    else if (!size && adItem(name) && !lot) adPrice({ kind: 'item', name }, price, true), n++;
+    else if (!size && adItem(name)) adPrice(lot ? { kind: 'lot', lot: lot.id, model: 'item', size: name } : { kind: 'item', name }, price, true), n++;
     else bad.push(name + (size ? ' ' + size : ''));
   }
   AD.tab = 'draft';
@@ -423,7 +423,7 @@ function adSheetPick(input) {
 /* ---------- Screens: prices ---------- */
 function adPriceInput(d, current, label) {
   const dr = adDraftOf(d), edit = adCan('pricing');
-  return `<label class="ad-cell${dr ? ' changed' : ''}"><span>${label}</span><input type="number" min="0" step="1" inputmode="decimal" value="${dr ? dr.new : current}" ${edit ? '' : 'disabled'} aria-label="${esc(label)} price" onchange='adPrice(${esc(JSON.stringify(d))},this.value)'>${dr ? `<small>was ${money(dr.old)}</small>` : ''}</label>`;
+  return `<label class="ad-cell${dr ? ' changed' : ''}"><span>${label}</span><input type="number" min="0" step="1" inputmode="decimal" value="${dr ? dr.new : current}" ${edit ? '' : 'disabled'} aria-label="${esc(String(label).replace(/<[^>]+>/g, ' '))} price" onchange='adPrice(${esc(JSON.stringify(d))},this.value)'>${dr ? `<small>was ${money(dr.old)}</small>` : ''}</label>`;
 }
 function adGridTab() {
   const sizes = PRICE_LIST[AD.model], widths = [...new Set(Object.keys(sizes).map((s) => Number(s.split('x')[0])))].sort((a, b) => a - b);
@@ -435,16 +435,16 @@ function adGridTab() {
 function adItemsTab() {
   const q = AD.q.trim().toLowerCase(), list = adItems().filter(({ x }) => !q || x.name.toLowerCase().includes(q)), groups = [...new Set(list.map((x) => x.group))];
   return `<label class="searchbar">${icon('orders', 18)}<input class="search" type="search" placeholder="Search options and packages" value="${esc(AD.q)}" onchange="AD.q=this.value;render()"></label>
-    ${groups.map((g) => `<h3 class="ad-w">${esc(g)}</h3><div class="ad-grid wide">${list.filter((x) => x.group === g).map(({ x }) => adPriceInput({ kind: 'item', name: x.name }, x.price, x.name + (x.unit && x.unit !== 'each' ? ` · per ${x.unit}` : ''))).join('')}</div>`).join('') || '<p class="muted">Nothing matches.</p>'}`;
+    ${groups.map((g) => `<h3 class="ad-w">${esc(g)}</h3><div class="ad-grid wide">${list.filter((x) => x.group === g).map(({ x }) => adPriceInput({ kind: 'item', name: x.name }, x.price, esc(x.name) + (x.unit && x.unit !== 'each' ? ` · per ${x.unit}` : '') + (typeof plNote === 'function' ? plNote(x.name) : ''))).join('')}</div>`).join('') || '<p class="muted">Nothing matches.</p>'}`;
 }
 function adLotTab() {
   const lot = AD.lot || DESK_LOT, sizes = PRICE_LIST[AD.model], own = Object.entries(AD.over[lot] || {});
   return `<p>A lot can sell a model at its own price. Everything else at that lot stays on the main list.</p>
     <div class="ad-tools"><label>Lot<select onchange="AD.lot=this.value;render()">${LOTS.map((l) => `<option value="${l.id}" ${l.id === lot ? 'selected' : ''}>${esc(lotTown(l))}</option>`).join('')}</select></label><label>Model<select onchange="AD.model=this.value;render()">${Object.keys(PRICE_LIST).map((m) => `<option ${m === AD.model ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></label></div>
-    ${own.length ? `<p class="ad-hint">${esc(lotById(lot).town)} has its own price on: ${own.map(([k, v]) => `${esc(k.replace('|', ' ').replace('x', ' × '))} ${money(v)}`).join(' · ')}</p>` : ''}
-    <div class="ad-grid">${Object.keys(sizes).sort((a, b) => a.split('x')[0] - b.split('x')[0] || a.split('x')[1] - b.split('x')[1]).map((s) => adPriceInput({ kind: 'lot', lot, model: AD.model, size: s }, adNow(AD.model, s, lot), s.replace('x', ' × '))).join('')}</div>`;
+    ${own.length ? `<p class="ad-hint">${esc(lotById(lot).town)} has its own price on: ${own.map(([k, v]) => `${esc(k.startsWith('item|') ? k.slice(5) : k.replace('|', ' ').replace('x', ' × '))} ${money(v)}`).join(' · ')}</p>` : ''}
+    <div class="ad-grid">${Object.keys(sizes).sort((a, b) => a.split('x')[0] - b.split('x')[0] || a.split('x')[1] - b.split('x')[1]).map((s) => adPriceInput({ kind: 'lot', lot, model: AD.model, size: s }, adNow(AD.model, s, lot), s.replace('x', ' × '))).join('')}</div>${typeof plLotItems === 'function' ? plLotItems(lot) : ''}`;
 }
-const adChangeName = (d) => (d.kind === 'item' ? d.name : `${d.model} ${d.size.replace('x', ' × ')}${d.kind === 'lot' ? ' · ' + lotById(d.lot).town + ' only' : ''}`);
+const adChangeName = (d) => (d.kind === 'item' ? d.name : d.model === 'item' ? `${d.size} · ${lotById(d.lot).town} only` : `${d.model} ${d.size.replace('x', ' × ')}${d.kind === 'lot' ? ' · ' + lotById(d.lot).town + ' only' : ''}`);
 function adDraftTab() {
   const up = AD.draft.filter((d) => d.new > d.old).length;
   return `${AD.draft.length ? `<p><b>${AD.draft.length}</b> prices changed: ${up} up, ${AD.draft.length - up} down. Nothing is live yet.</p>
@@ -497,7 +497,8 @@ function adScoped(draw) {
     S.sales = sales.filter((x) => adLotOk(saleLot(x).id));
     AD.scope = true;
     try {
-      return draw.apply(this, args);
+      const out = draw.apply(this, args);
+      return typeof out === 'string' && typeof adScopeText === 'function' ? adScopeText(out) : out;
     } finally {
       Object.assign(S, { sales });
       Object.assign(LG, { units, loads });
@@ -537,7 +538,8 @@ document.addEventListener('click', (e) => {
   if (!el || el.closest('.topbar, .previewstrip, .tabbar, #ad-bar, .ta-sheet-back, .sideswitch') || el.closest('summary')) return;
   if (el.type === 'submit' && el.closest('form.ta-askbar')) return;
   const code = (el.getAttribute('onclick') || '').trim();
-  if (el.tagName !== 'INPUT' && (AD_SAFE.test(code) || /Close|Cancel|Back/.test(el.textContent))) return;
+  /* Only a plain Close, Cancel or Back button is let through by its words. "Close (free letter)" closes a load, so it is not. */
+  if (el.tagName !== 'INPUT' && (AD_SAFE.test(code) || /^[←\s]*(Close|Cancel|Back|Go back)[\s×]*$/.test(el.textContent.trim()))) return;
   e.preventDefault();
   e.stopPropagation();
   toast(`${adMe().name} can look here but not change anything.`);

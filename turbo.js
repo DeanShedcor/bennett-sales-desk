@@ -33,10 +33,13 @@ const TA = {
     provider: 'JMAG',
     taxPct: 0,
     terms: [
-      { months: 24, divisor: 16.8, downType: 'payments', down: 1, balloon: false, balloonPayments: 0, epo: 0.62 },
-      { months: 36, divisor: 21.6, downType: 'payments', down: 1, balloon: false, balloonPayments: 0, epo: 0.58 },
-      { months: 48, divisor: 24.6, downType: 'payments', down: 1, balloon: false, balloonPayments: 0, epo: 0.55 },
-      { months: 60, divisor: 27.2, downType: 'payments', down: 1, balloon: false, balloonPayments: 0, epo: null }, /* Turbo Assist's defaults have no 60-month term */
+      /* Turbo Assist's own numbers (DEFAULT_RTO_TERMS in src/lib/rto/rtoTermSettings.ts, commit b42d324), so both
+         products quote the same payment: the owner's choice, Nov 16, 2026. Turbo Assist has no 60-month
+         term; 60 follows the same rule as the other three (months × 0.7, one payment down per year). */
+      { months: 24, divisor: 16.8, downType: 'payments', down: 2, balloon: false, balloonPayments: 0, epo: 0.62 },
+      { months: 36, divisor: 25.2, downType: 'payments', down: 3, balloon: false, balloonPayments: 0, epo: 0.58 },
+      { months: 48, divisor: 33.6, downType: 'payments', down: 4, balloon: false, balloonPayments: 0, epo: 0.55 },
+      { months: 60, divisor: 42, downType: 'payments', down: 5, balloon: false, balloonPayments: 0, epo: null },
     ],
     turbo: [
       { months: 24, divisor: 16.8, down: 2, epo: 0.62 },
@@ -109,7 +112,7 @@ function taNotify(n) {
   taChrome();
   return item;
 }
-const taNoticesFor = (side = taSide()) => TA.notices.filter((n) => n.to === side).sort((a, b) => b.at - a.at);
+const taNoticesFor = (side = taSide()) => TA.notices.filter((n) => n.to === side && (typeof adSeesRec !== 'function' || adSeesRec(n))).sort((a, b) => b.at - a.at);
 function taAgo(t) {
   const m = Math.max(0, Math.round((Date.now() - t) / 60000));
   return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;

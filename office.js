@@ -561,6 +561,10 @@ function ofRow(s, extra = '') {
     <div class="ops-flags">${flags}${extra}</div></div>
     <button type="button" class="${stage === 'review' ? 'primary' : 'secondary'} small" onclick="ofOpen('${s.id}')">${stage === 'review' ? 'Review' : 'Open'} ${icon('arrow', 16)}</button></article>`;
 }
+/* A person limited to some lots sees only those lots' requests (the rule lives in office-link.js). */
+function ofMine(x) {
+  return typeof adSeesRec !== 'function' || adSeesRec(x);
+}
 const ofFilterBar = (redraw) => `<div class="qc-filter"><label class="searchbar">${icon('orders', 18)}<input class="search" type="search" placeholder="Search customer, order or lot" aria-label="Search customer, order or lot" value="${esc(OF.q)}" oninput="OF.q=this.value;${redraw}"></label>
   <label class="ops-select">Lot<select onchange="OF.lot=this.value;render()"><option value="All">All ${LOTS.length} lots</option>${LOTS.map((l) => `<option value="${l.id}" ${OF.lot === l.id ? 'selected' : ''}>${esc(lotTown(l))}</option>`).join('')}</select></label></div>`;
 
@@ -571,7 +575,7 @@ function ofGroups() {
   const pays = [];
   all.filter((s) => ofStage(s) !== 'cancelled').forEach((s) => (ofRec(s), s.money.payments.forEach((p, i) => !p.confirmed && pays.push({ s, p, i }))));
   const release = all.filter((s) => ofStage(s) === 'approved' && !ofRec(s).released && ofBuilt(s).ok);
-  const changes = S.changes.filter((c) => !c.declined && c.done === 1), stock = S.stock.filter((r) => (r.stage || 0) === 0 && r.status === 'Pending');
+  const changes = S.changes.filter((c) => !c.declined && c.done === 1 && ofMine(c)), stock = S.stock.filter((r) => (r.stage || 0) === 0 && r.status === 'Pending' && ofMine(r));
   return { review: review.filter((s) => !waitingRto.includes(s)), rto: waitingRto, pays, release, changes, stock, hold: all.filter((s) => ofStage(s) === 'hold') };
 }
 function officeList() {
@@ -791,8 +795,8 @@ function ofStockRow(r) {
     <div class="ops-rowacts"><button type="button" class="link" onclick="cancelStock(${n});toast('Stock order declined.')">Decline</button><button type="button" class="primary small" onclick="advanceStock(${n});toast('Approved. Sent to the plant.')">Approve · to the plant</button></div></article>`;
 }
 function officeRequests() {
-  const changes = S.changes.filter((c) => !c.declined && c.done === 1), plant = S.changes.filter((c) => !c.declined && c.done === 2);
-  const stock = S.stock.filter((r) => (r.stage || 0) === 0 && r.status === 'Pending'), building = S.stock.filter((r) => (r.stage || 0) > 0 && r.status === 'Pending');
+  const changes = S.changes.filter((c) => !c.declined && c.done === 1 && ofMine(c)), plant = S.changes.filter((c) => !c.declined && c.done === 2 && ofMine(c));
+  const stock = S.stock.filter((r) => (r.stage || 0) === 0 && r.status === 'Pending' && ofMine(r)), building = S.stock.filter((r) => (r.stage || 0) > 0 && r.status === 'Pending' && ofMine(r));
   return `${head('Office · all ' + LOTS.length + ' lots', 'Requests from the lots.', 'A change to a building that is already ordered, or a building a lot wants for its own stock. Both need the office before the plant acts.')}
   <h2 class="sectionhead qc-group">Change orders <small>${changes.length} waiting on the office</small></h2>
   <div class="ops-list">${changes.map(ofChangeRow).join('') || '<div class="panel emptystate"><strong>No change orders waiting</strong><p>Nothing needs the office right now.</p></div>'}</div>

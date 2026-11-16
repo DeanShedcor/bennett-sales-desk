@@ -654,7 +654,7 @@ function electricalExtrasMarkup() {
       `<button type="button" ${disabled ? 'disabled' : ''} aria-label="${aria}" onclick="setElectricalExtra('${key}',${value})">${icon(ic, 16)}</button>`;
     return `<div class="extrarow"><span class="grow"><strong>${name}</strong><small>${hint} · ${price === null ? 'price to confirm' : '+' + money(price) + ' each'}</small></span><span class="stepper" role="group" aria-label="${name} quantity">${btn(qty - 1, 'minus', off || qty <= 0, 'One fewer')}<output>${qty}</output>${btn(qty + 1, 'plus', off || qty >= 10, 'One more')}</span></div>`;
   }).join('');
-  return `<section class="panel elec-extras"><div class="panelhead"><h3>Add extras</h3>${off ? '<span class="pill amber">Choose a package first</span>' : ''}</div>${rows}<p class="source">Each extra light, switch or receptacle adds $50.00 and is listed on the quote.</p></section>`;
+  return `<section class="panel elec-extras"><div class="panelhead"><h3>Add extras</h3>${off ? '<span class="pill amber">Choose a package first</span>' : ''}</div>${rows}<p class="source">Each extra light, switch or receptacle adds ${money(electricalExtraPrices.extraLights)} and is listed on the quote.</p></section>`;
 }
 
 /* Updates only the extras panel and the price bar, so the 3D model is not reloaded. */
