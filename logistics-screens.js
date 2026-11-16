@@ -2,7 +2,7 @@
 
 const lgAgo = (t) => {
   const h = Math.max(0, Math.round((Date.now() - t) / 36e5));
-  return h < 1 ? 'under an hour' : h < 48 ? lgPlural(h, 'hour') : lgPlural(Math.round(h / 24), 'day');
+  return h < 1 ? 'under an hour' : h < 24 ? lgPlural(h, 'hour') : lgPlural(Math.round(h / 24), 'day'); /* a day or more is said in days */
 };
 const lgSample = (x) => (x.sample ? '<span class="pill ghost">Sample</span>' : '');
 const lgMatch = (u) => !LG.q.trim() || `${u.id} ${u.name} ${u.customer} ${lotById(u.lotId).town}`.toLowerCase().includes(LG.q.trim().toLowerCase());

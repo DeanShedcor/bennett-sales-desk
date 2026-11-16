@@ -90,7 +90,7 @@ function dtReach(load, at) {
 }
 /* When the truck leaves: the time the dispatcher typed, else early enough to reach the customer when
    promised (never before 5:00 AM), else the usual time. */
-const dtStart = (load) => {
+let dtStart = (load) => {
   if (!load.leave) {
     const p = dtPromise(load);
     if (p) return Math.max(5 * 60, Math.floor((p.target - dtReach(load, p.at)) / 5) * 5);
@@ -165,7 +165,7 @@ function dtPanel(load) {
       <li class="drive"><time></time><div><small>${dtLong(p.back.min)} · ${Math.round(p.back.miles)} mi back, empty</small></div></li>
       <li class="go"><time>${dtClock(p.end)}</time><div><b>Back at ${esc(from)}</b><small>${dtLong(p.day)} from leaving to back</small></div></li></ol>
     ${over ? `<p class="notice">${icon('alert', 16)} ${dtLong(p.drive)} of driving is over the ${DT.set.maxDrive} hours one driver may drive in a day. Split the run or plan an overnight.</p>` : long ? `<p class="notice">${icon('alert', 16)} ${dtLong(p.day)} on duty is over the ${DT.set.maxDay}-hour day. Split the run or plan an overnight.</p>` : ''}
-    <p class="source">${p.allReal ? `From the stored road times: the road’s car time plus ${DT.set.truckPct}% for a loaded truck.` : p.stops.some((x) => x.leg.part) ? 'Plant and lot legs are from the stored road times. The last miles to a customer’s home are estimated from the miles on the delivery record.' : 'Estimated from distance and truck speed.'} ${load.date ? '' : 'Pick a day to check each lot’s hours. '}Speeds and unload times are set on the Trailers screen.</p></section>`;
+    <p class="source">${p.allReal ? `From the stored road times: the road’s car time plus ${p.wide ? Math.round(DT.set.truckPct * 1.6) + '% for a wide load' : DT.set.truckPct + '% for a loaded truck'}.` : p.stops.some((x) => x.leg.part) ? 'Plant and lot legs are from the stored road times. The last miles to a customer’s home are estimated from the miles on the delivery record.' : 'Estimated from distance and truck speed.'} ${load.date ? '' : 'Pick a day to check each lot’s hours. '}Speeds and unload times are set on the Trailers screen.</p></section>`;
 }
 /* The same plan, in the places a dispatcher already looks. */
 {
@@ -202,7 +202,7 @@ function dtPanel(load) {
     const num = (key, label, unit, min, max) => `<label>${label}<span><input type="number" min="${min}" max="${max}" value="${DT.set[key]}" onchange="dtSet('${key}',this.value,${min},${max})"> ${unit}</span></label>`;
     const card = `<section class="panel dt-settings"><div class="panelhead"><h2>Drive time</h2><span class="pill ${real === all ? 'good' : 'amber'}">${real} of ${all} pairs are road times</span></div>
       <p>Load planning figures drive time from a stored table of every plant and lot pair, so it does not depend on an outside map service.</p>
-      <div class="dt-fields">${num('truckPct', 'A loaded truck is slower than a car by', '%', 0, 60)}${num('mph', 'Loaded truck, to a home', 'mph', 25, 70)}${num('wideMph', 'Wide load, to a home', 'mph', 25, 70)}${num('emptyMph', 'Coming back empty', 'mph', 25, 75)}${num('lotMin', 'Unload at a lot, each building', 'min', 5, 120)}${num('homeMin', 'Set a building at a home', 'min', 10, 240)}${num('maxDrive', 'Most driving in a day', 'hours', 4, 14)}<label>Usual time to leave<span><input type="time" value="${DT.set.leave}" onchange="DT.set.leave=this.value;render()"></span></label></div>
+      <div class="dt-fields">${num('truckPct', 'A loaded truck is slower than a car by', '%', 0, 60)}${num('mph', 'Loaded truck, to a home', 'mph', 25, 70)}${num('wideMph', 'Wide load, to a home', 'mph', 25, 70)}${num('emptyMph', 'Coming back empty', 'mph', 25, 75)}${num('lotMin', 'Unload at a lot, each building', 'min', 5, 120)}${num('homeMin', 'Set a building at a home', 'min', 10, 240)}${num('maxDrive', 'Most driving in a day', 'hours', 4, 14)}${num('maxDay', 'Longest day, leaving to back', 'hours', 6, 18)}<label>Usual time to leave<span><input type="time" value="${DT.set.leave}" onchange="DT.set.leave=this.value;render()"></span></label></div>
       <div class="actions">${button('Open the drive-time table', 'dtTable()', 'secondary')}</div>
       <p class="source">Road miles and times between the plant and the lots were looked up once from OpenStreetMap road data and are stored here. They are car times, slowed by the percent above; a wide load is slowed more and an empty truck less. The miles to a customer’s home are still figured at the speeds above. Eleven hours of driving and a fourteen-hour day are the federal limits for one driver. Map data © OpenStreetMap contributors.</p></section>`;
     return at < 0 ? html + card : html.slice(0, at) + card + html.slice(at);

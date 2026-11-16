@@ -1,0 +1,77 @@
+/* logi-polish.js: Logistics, second batch from the review. */
+
+/* 1. live times */
+.lgp-after { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--warn); font-weight: 600; font-size: 14px; }
+.lgp-after svg { flex: none; margin-top: 2px; }
+.dt-line li.done div::before { background: var(--good); border-color: var(--good); }
+.dt-line li.now div::before { background: var(--amber); border-color: var(--ink); }
+.dt-line li.done b { color: var(--good); }
+
+/* 2. calendar */
+.lgp-daycount em { font-weight: 800; font-style: normal; }
+.lg-chip .lgp-times { font-size: 12px; font-style: normal; font-weight: 700; color: var(--ink); margin-top: 2px; }
+.lg-chip .lgp-shutflag { display: flex; align-items: flex-start; gap: 4px; font-size: 12px; font-style: normal; font-weight: 700; color: var(--bad); margin-top: 2px; }
+.lg-chip .lgp-shutflag svg { flex: none; margin-top: 1px; }
+.lg-chip.lgp-shut { border-left-color: var(--bad); box-shadow: inset 0 0 0 1.5px var(--bad); }
+.lgp-move { align-self: flex-start; font-size: 12.5px; min-height: 32px; text-align: left; margin: -4px 0 2px; }
+
+/* 3. permit */
+.lgp-permit { display: grid; gap: 10px; }
+.lgp-permit p { margin: 0; }
+.lgp-permit .checkrow { margin: 0; }
+
+/* 5. map on a phone */
+.lgp-hit { fill: transparent; pointer-events: all; cursor: pointer; }
+.lgp-maplist { display: none; }
+@media (max-width: 680px) {
+  .lgp-maplist { display: block; margin-top: 12px; }
+  .lgp-maplist p { margin: 0 0 4px; font-size: 14px; color: var(--muted); }
+  .lgp-maplist p b { color: var(--ink); margin-right: 6px; }
+  .lgp-maplist h3 { margin: 12px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--steel); }
+  .lgp-lotlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .lgp-lotlist button { min-height: 52px; text-align: left; border: 1.5px solid var(--line-strong); border-radius: 10px; background: var(--surface); padding: 8px 10px; display: grid; gap: 1px; color: var(--ink); }
+  .lgp-lotlist button.on { border-color: var(--ink); background: var(--warn-bg); }
+  .lgp-lotlist b { font-size: 15px; }
+  .lgp-lotlist small { font-size: 12.5px; color: var(--muted); }
+  .lgp-servicebtn { min-height: 48px; padding: 10px 16px; font-size: 15px; }
+}
+
+/* 7. damage */
+.lgp-damage { margin: 0 0 10px; }
+
+/* 8. small slips */
+button.lgp-late { border: 0; cursor: pointer; min-height: 32px; font: inherit; font-size: 12.5px; font-weight: 700; }
+button.lgp-late:hover { filter: brightness(0.96); }
+.dt-top input[type="time"] { min-width: 138px; }
+.dt-fields input[type="time"] { min-width: 138px; }
+.lgp-useroad { display: block; margin-top: 2px; font-size: 13px; min-height: 28px; text-align: left; }
+.dt-pair small b { color: var(--ink); }
+.lgp-viewline { margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); font-size: 14.5px; }
+.lgp-viewline svg { vertical-align: -3px; margin-right: 4px; }
+
+/* 9. the run sheet */
+.lgp-rs { color: var(--ink); }
+.lgp-rs-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; border-bottom: 3px solid var(--ink); padding-bottom: 10px; }
+.lgp-rs-head small { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--steel); }
+.lgp-rs-head h3 { margin: 2px 0 0; font: 800 26px/1.1 var(--display); }
+.lgp-rs-count { text-align: right; }
+.lgp-rs-count b { display: block; font: 800 30px/1 var(--display); }
+.lgp-rs-count span { font-size: 12.5px; color: var(--muted); }
+.lgp-rs-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 18px; margin: 14px 0; }
+.lgp-rs-facts span { display: grid; gap: 1px; }
+.lgp-rs-facts small { font-size: 12px; color: var(--muted); }
+.lgp-rs-facts b { font-size: 15px; }
+.lgp-rs p { margin: 4px 0; font-size: 14.5px; }
+.lgp-rs-stops { list-style: none; margin: 14px 0 8px; padding: 0; display: grid; gap: 10px; }
+.lgp-rs-stops > li { display: grid; grid-template-columns: 38px 1fr; gap: 12px; border: 1.5px solid var(--line-strong); border-radius: 12px; padding: 12px 14px; break-inside: avoid; }
+.lgp-rs-stops > li.start { background: var(--surface-2); }
+.lgp-rs-n { width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font: 800 16px var(--display); }
+.lgp-rs-stops h4 { margin: 0 0 4px; font: 700 17px/1.2 var(--display); }
+.lgp-rs-stops ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: 14.5px; }
+#lgp-print { display: none; }
+@media (max-width: 680px) { .lgp-rs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lgp-rs-head h3 { font-size: 21px; } }
+@media print {
+  body.lgp-printing > *:not(#lgp-print) { display: none !important; }
+  body.lgp-printing #lgp-print { display: block; padding: 20px; background: #fff; }
+  body.lgp-printing .lgp-rs-n { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
