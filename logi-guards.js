@@ -137,9 +137,9 @@ function lggStartForm(id) {
 }
 function lggRoadCancelForm(id) {
   const load = lgLoad(id), left = load.stops.filter((x) => !x.done).flatMap(lgStopUnits), done = load.stops.filter((x) => x.done).length;
-  modal(`Cancel ${lgLoadName(load).toLowerCase()} on the road?`, `<p>The truck has left. ${done ? `${lgPlural(done, 'stop')} already done will stay done. ` : ''}The ${lgPlural(left.length, 'building')} still on the trailer go back to ${esc(lgOriginName(load))}, ready for another load.</p>
+  modal(`Cancel ${lgLoadName(load)} on the road?`, `<p>The truck has left. ${done ? `${lgPlural(done, 'stop')} already done will stay done. ` : ''}The ${lgPlural(left.length, 'building')} still on the trailer ${left.length === 1 ? 'goes' : 'go'} back to ${esc(lgOriginName(load))}, ready for another load.</p>
     <label class="field">Why is it being cancelled?<input id="lgg-cancel-why" maxlength="160" placeholder="Example: the truck broke down"></label>
-    <div class="actions">${button('Keep it going', 'closeModal()', 'secondary')}${button('Cancel this load', `lggRoadCancel('${id}')`)}</div>`);
+    <div class="actions">${button('Keep it going', 'closeModal()', 'secondary')}${button(load.kind === 'haul' ? 'Cancel this load' : 'Cancel this delivery', `lggRoadCancel('${id}')`)}</div>`);
   document.getElementById('lgg-cancel-why')?.focus();
 }
 function lggRoadCancel(id) {
@@ -283,7 +283,7 @@ function lggTake(loadId, unitId) {
         html = html.slice(0, bar[0]) + `<div class="ops-bar lgg-warnbar"><div class="grow"><strong>${lgPlural(warns.length, 'warning')}</strong><small>${esc(warns[0].text)}${warns.length > 1 ? ` · and ${warns.length - 1} more` : ''}${ok ? ` · reason given: ${esc(load.why.reason)}` : ''}</small></div><button type="button" class="ops-quiet" onclick="lgCancelForm('${id}')">Cancel</button><button type="button" class="primary" onclick="lgSchedule('${id}')">${ok ? 'Schedule' : 'Schedule with a reason'}</button></div>` + html.slice(bar[1]);
     }
     if (bar && load.state === 'in_transit')
-      html = html.slice(0, bar[1]).replace(/(<div class="ops-bar"><div class="grow">.*?<\/small><\/div>)/s, `$1<button type="button" class="ops-quiet" onclick="lggRoadCancelForm('${id}')">Cancel load</button>`) + html.slice(bar[1]);
+      html = html.slice(0, bar[1]).replace(/(<div class="ops-bar"><div class="grow">.*?<\/small><\/div>)/s, `$1<button type="button" class="ops-quiet" onclick="lggRoadCancelForm('${id}')">${load.kind === 'haul' ? 'Cancel load' : 'Cancel delivery'}</button>`) + html.slice(bar[1]);
     return html;
   };
 }
