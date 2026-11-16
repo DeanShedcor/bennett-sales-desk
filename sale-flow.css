@@ -62,3 +62,6 @@
 @keyframes sf-fade { from { opacity: 0; } }
 @keyframes sf-pop { from { transform: scale(.94); opacity: 0; } }
 @keyframes sf-flash { 0%, 35% { box-shadow: 0 0 0 4px #ffb703; background: #fff4d1; } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+.sf-locked { display: inline-flex; align-items: center; gap: 6px; margin-right: 10px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.sf-locked svg { width: 15px; height: 15px; }

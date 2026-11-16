@@ -178,6 +178,25 @@ function sfSign(kind) {
   const left = sfMissing(s);
   toast(kind === 'receipt' ? 'Delivered. The order is complete.' : left.length ? `Signed. ${left.length} left before admin review.` : 'Everything is in. Ready to submit for admin review.');
 }
+/* The delivery answers set the delivery charge, so they lock once the invoice is signed.
+   Changing them means taking the signature off first; the customer signs the new total. */
+function sfUnsignAsk() {
+  const s = sfSale();
+  if (!s) return;
+  modal('Unsign the invoice to change the delivery answers?', `<p>The customer signed the invoice on ${esc(s.signed?.invoice || '')}. The delivery answers can change the total, so the signature comes off first and the customer signs the invoice again afterwards.</p>
+    <div class="actions">${button('Keep it signed', 'closeModal()', 'secondary')}${button('Unsign and change', 'sfUnsign()', 'primary')}</div>`);
+}
+function sfUnsign() {
+  const s = sfSale();
+  if (!s) return;
+  if (s.signed) delete s.signed.invoice;
+  if (s.signatures) delete s.signatures.invoice;
+  sfLog(s, 'Invoice signature removed to change the delivery answers');
+  closeModal();
+  render();
+  ofSiteForm(s.id);
+  toast('Invoice unsigned. Change the answers, then the customer signs again.');
+}
 /* Sign a document: the document itself, then the signature box under it. */
 function sfSignDoc(kind) {
   const s = sfSale();
@@ -306,7 +325,7 @@ function sfSteps(s) {
   if (!lot && typeof siteMissing === 'function') {
     const gaps = siteMissing(s.site), d = s.site && typeof ofDelivery === 'function' ? ofDelivery(s) : null;
     desk.push({ title: 'Delivery site questions', on: !gaps.length, text: !gaps.length ? `${esc(siteLine(s))}${d ? ' · ' + esc(d.text) : ''}` : s.site ? `Still to ask: ${gaps.join(', ')}` : 'Miles from the lot, the narrowest gate, access and the ground. Ask before the customer signs, so a delivery charge is on the invoice.',
-      act: signing ? `<button type="button" class="secondary small" onclick="ofSiteForm('${s.id}')">${s.site ? 'Change' : 'Answer'}</button>` : '', hook: SF_HOOK.site, only: SF_ONLY.site });
+      act: !signing ? '' : signed.invoice && s.site ? `<span class="sf-locked">${icon('lock')} Locked: the invoice is signed</span><button type="button" class="secondary small" onclick="sfUnsignAsk()">Unsign and change</button>` : `<button type="button" class="secondary small" onclick="ofSiteForm('${s.id}')">${s.site ? 'Change' : 'Answer'}</button>`, hook: SF_HOOK.site, only: SF_ONLY.site });
   }
   if (rto)
     desk.push({ title: 'Rent-to-own application', on: s.rtoApp, text: s.rtoApp ? 'All parts done' : `${Math.max(0, Math.min((s.rtoStep || 0) - 1, 5))} of 5 parts done`, act: signing && !s.rtoApp ? button(s.rtoStep > 1 && RTOF.sale === s.id ? 'Continue' : 'Start', s.rtoStep > 1 && RTOF.sale === s.id ? `rtoApply(${Math.min(s.rtoStep, RTO_LAST)})` : 'rtoApply(0)', 'secondary small') : '', hook: SF_HOOK.rto, only: SF_ONLY.rto });
