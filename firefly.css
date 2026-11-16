@@ -6,16 +6,18 @@
 .ff-bug svg, .ff-bug .ff-glow { grid-area: 1 / 1; }
 .ff-glow { width: 44px; height: 44px; border-radius: 50%; background: rgb(var(--ff)); filter: blur(9px); opacity: 0.8; animation: ff-sine 3.2s ease-in-out infinite; }
 .ff-bug svg { position: relative; animation: ff-hover 2.4s ease-in-out infinite; }
-.ff-wing { fill: #fff; opacity: 0.88; stroke: rgba(var(--ff), 1); stroke-width: 0.7; transform-box: fill-box; animation: ff-flutter 0.16s ease-in-out infinite alternate; }
+.ff-wing { fill: #fff; opacity: 0.88; stroke: rgba(var(--ff), 1); stroke-width: 0.7; transform-box: fill-box; animation: ff-flutter 0.24s ease-in-out infinite alternate; }
 .ff-wing.a, .ff-wing.c { transform-origin: 100% 50%; }
 .ff-wing.b, .ff-wing.d { transform-origin: 0% 50%; }
 .ff-wing.c, .ff-wing.d { animation-delay: 0.08s; opacity: 0.7; }
-.ff-halo { fill: rgb(var(--ff)); opacity: 0.45; }
+.ff-halo { fill: rgb(var(--ff)); opacity: 0.4; }
+.ff-body { fill: #0c1a28; }
+.ff-head .ff-body { fill: #31506b; }
 .ff-orb { fill: rgb(var(--ff)); }
-.ff-core { fill: #fff; opacity: 0.95; }
+.ff-core { fill: #fff; opacity: 0.85; }
 .ff-fairy { overflow: visible; filter: drop-shadow(0 0 4px rgba(var(--ff), 0.95)) drop-shadow(0 1px 2px rgb(12 26 40 / 0.3)); }
 .ff-n { position: absolute; top: 0; right: 0; background: #0c1a28; color: #fff; border-radius: 99px; font: 700 11px var(--body); padding: 1px 6px; box-shadow: 0 0 0 2px #fff; }
-@keyframes ff-flutter { from { transform: scaleY(1); } to { transform: scaleY(0.6); } }
+@keyframes ff-flutter { from { transform: scaleY(1); } to { transform: scaleY(0.72); } }
 @keyframes ff-sine { 0%, 100% { opacity: 0.55; transform: scale(0.9); } 50% { opacity: 0.95; transform: scale(1.08); } }
 @keyframes ff-heart { 0%, 100% { opacity: 0.6; transform: scale(0.95); } 12% { opacity: 1; transform: scale(1.25); } 24% { opacity: 0.7; transform: scale(1); } 36% { opacity: 1; transform: scale(1.2); } 55% { opacity: 0.6; transform: scale(0.95); } }
 @keyframes ff-hover { 0%, 100% { transform: translate(0, 1px); } 25% { transform: translate(1.5px, -3px); } 50% { transform: translate(0, -5px); } 75% { transform: translate(-1.5px, -2px); } }

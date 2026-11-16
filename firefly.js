@@ -2,8 +2,7 @@
 
    This follows Turbo Assist's own Firefly (bennett-buddy b42d324, docs/planning/firefly_intent.md,
    which is the canonical behavior, and src/lib/firefly). What is kept from it:
-   - One Firefly with a glow (drawn here as a ball of light with four wings; Turbo Assist's is an
-     oval body with two wings). Click opens the panel; Esc or a
+   - One Firefly: a small oval body with two wings and a glow (here the tail carries the light). Click opens the panel; Esc or a
      click outside closes it. It can float (drag it anywhere) or dock in the notification bell.
    - Four jobs, in this order: attention, the next step, Ask and tours, Personal Assistant.
    - Color is the meaning: discovery blue, teaching green, guidance amber, focus purple,
@@ -365,8 +364,8 @@ function ffConfirm(i, yes) {
 }
 
 /* ---------- Drawing ---------- */
-/* A ball of light with four fluttering wings: our own drawing of a fairy light, in the color of what it means. */
-const ffBugSvg = (size = 30) => `<svg class="ff-fairy" width="${size}" height="${size}" viewBox="0 0 30 30" aria-hidden="true"><g transform="rotate(46 15 15)"><ellipse class="ff-wing a" cx="6" cy="15" rx="8.6" ry="3.7"/></g><g transform="rotate(-46 15 15)"><ellipse class="ff-wing b" cx="24" cy="15" rx="8.6" ry="3.7"/></g><g transform="rotate(-18 15 15)"><ellipse class="ff-wing c" cx="8.6" cy="16" rx="5.6" ry="2.5"/></g><g transform="rotate(18 15 15)"><ellipse class="ff-wing d" cx="21.4" cy="16" rx="5.6" ry="2.5"/></g><circle class="ff-halo" cx="15" cy="15" r="8.4"/><circle class="ff-orb" cx="15" cy="15" r="5.6"/><circle class="ff-core" cx="15" cy="15" r="3"/></svg>`;
+/* A firefly: a small dark body, two wings that flutter, and a tail that glows in the color of what it means. */
+const ffBugSvg = (size = 30) => `<svg class="ff-fairy" width="${size}" height="${size}" viewBox="0 0 30 30" aria-hidden="true"><g transform="rotate(34 15 13)"><ellipse class="ff-wing a" cx="7.4" cy="13" rx="7.8" ry="3.3"/></g><g transform="rotate(-34 15 13)"><ellipse class="ff-wing b" cx="22.6" cy="13" rx="7.8" ry="3.3"/></g><circle class="ff-halo" cx="15" cy="20" r="6.2"/><ellipse class="ff-body" cx="15" cy="15" rx="3.9" ry="6.6"/><circle class="ff-orb" cx="15" cy="20" r="3.7"/><circle class="ff-core" cx="15" cy="19.4" r="1.6"/></svg>`;
 const ffBtn = (text, code, cls = 'ff-go') => `<button type="button" class="${cls}" onclick="${code}">${text}</button>`;
 function ffAnswerHtml(a) {
   return `<div class="ff-ans${a.cheer ? ' cheer' : ''}"><b>${esc(a.title)}</b><p>${esc(a.text)}</p><div class="ff-row">${a.tour ? ffBtn('Take a tour', `ffTourStart('${a.tour}')`) : ''}${a.show ? ffBtn('Show me', `ffShow('${a.show}')`, 'ff-ghost') : ''}${a.go ? ffBtn(a.label || 'Take me there', `ffClose();${a.go}`) : ''}${a.article ? ffBtn('Read the article', `ffClose();taOpenAnswers('${a.article}')`, a.tour ? 'ff-ghost' : 'ff-go') : ''}${a.flag ? ffBtn('Flag it for the team', "FF.answer={title:'Flagged',text:'Sent to the team that writes the answers. Preview: nothing is sent.'};ffDraw()", 'ff-ghost') : ''}</div></div>`;
@@ -534,7 +533,7 @@ function ffWelcome(force) {
 }
 
 /* ---------- Mounting ---------- */
-document.body.insertAdjacentHTML('beforeend', `<div id="ff-root"><button type="button" class="ff-bug" id="ff-bug"><span class="ff-glow"></span>${ffBugSvg(40)}<span class="ff-n" hidden></span></button><section class="ff-panel" id="ff-panel" role="dialog" aria-label="Firefly" hidden></section></div>`);
+document.body.insertAdjacentHTML('beforeend', `<div id="ff-root"><button type="button" class="ff-bug" id="ff-bug"><span class="ff-glow"></span>${ffBugSvg(36)}<span class="ff-n" hidden></span></button><section class="ff-panel" id="ff-panel" role="dialog" aria-label="Firefly" hidden></section></div>`);
 ffHome();
 {
   /* Drag to move (the bug chases the pointer), click to open, double-click or a long press to talk. */
