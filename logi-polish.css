@@ -75,3 +75,6 @@ button.lgp-late:hover { filter: brightness(0.96); }
   body.lgp-printing #lgp-print { display: block; padding: 20px; background: #fff; }
   body.lgp-printing .lgp-rs-n { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* "12:31 AM next day" wraps under the time instead of running over the stop's name */
+.dt-line time { white-space: normal; line-height: 1.25; }
