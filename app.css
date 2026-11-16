@@ -681,3 +681,16 @@ th { background: var(--surface-2); font-weight: 700; }
 .sp-sitefee { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 14px; font-size: 15px; }
 .sp-withdelivery { font-size: 15px; }
 @media (max-width: 680px) { .sp-perfrow { flex-direction: column; align-items: stretch; } .sp-perfwhen { justify-items: start; max-width: none; text-align: left; grid-auto-flow: column; justify-content: start; gap: 8px; align-items: center; } }
+
+/* Electrical placement question */
+.ep-card { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 16px 0 0; padding: 18px 20px; border-radius: var(--r); border: 2px solid var(--line-strong); background: var(--surface); }
+.ep-card.ask { border-color: var(--amber-deep); background: var(--warn-bg); }
+.ep-card.done { border-color: var(--good); background: var(--good-bg); }
+.ep-card.done > svg { color: var(--good); flex: none; }
+.ep-card .grow { display: grid; gap: 4px; flex: 1; min-width: 240px; }
+.ep-card strong { font-size: 17px; }
+.ep-card small { font-size: 14px; color: var(--ink); }
+.ep-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.ep-card button { min-height: 48px; padding: 0 22px; font-size: 16px; }
+.ep-card.nudge { animation: ep-nudge 0.5s ease; }
+@keyframes ep-nudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
