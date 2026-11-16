@@ -192,7 +192,7 @@ function lgLoadPage() {
     ['Schedule · Start the run · Delivered', 'Route states planned → scheduled → in transit → delivered (<code>transitionOrgRouteState</code>). Scheduling tells the salesperson to relay the day (<code>notifyRouteDeliveryStateTransition</code>).'],
     ['Arrived · Unload here', 'The driver stamps the stop (<code>stampDriverStop</code>) and fills the proof form in FastField: photo, GPS and signature. Turbo Ops owns that form and files it to the deal paperwork.'],
     ['Take a building off', 'Splitting a unit from its shipment, with a reason (<code>splitUnitFromShipment</code>).'],
-    ['Miles', '<code>computeOrgRouteMileage</code> measures real road miles. The miles here are rough.'],
+    ['Miles', '<code>computeOrgRouteMileage</code> measures road miles with a map service. Here the road miles between the plant and every lot are stored in the app; only the last miles to a customer’s home are an estimate.'],
     ['Not drawn here', 'Turbo Logistics can email or download a route manifest for a hauler without an account (<code>emailLogisticsRouteManifest</code>).'],
   ], [
     'Adding up every building’s length against the trailer. A load that is too long needs the dispatcher’s override and a reason; Turbo Logistics checks one unit at a time and only warns.',
@@ -298,7 +298,7 @@ function lgPlaces() {
     const d = lotDay(l, lgToday()), n = LG.units.filter((u) => u.lotId === l.id && u.leg).length;
     return `<button type="button" class="lg-lot${LG.place === 'lot:' + l.id ? ' on' : ''}" onclick="LG.place='lot:${l.id}';render();scrollTo(0,0)"><strong>${esc(l.town)}</strong><small>${esc(l.street)} · ${esc(l.phone)}</small><span class="ops-flags"><span class="ops-flag">about ${milesBetween(lotPlant(l), l)} mi</span><span class="ops-flag ${d.open ? 'ok' : 'bad'}">${d.open ? 'Open today' : d.appt ? 'Appointment today' : 'Closed today'}</span>${n ? `<span class="ops-flag wait">${lgPlural(n, 'building')} to move</span>` : ''}</span></button>`;
   }).join('')}</div>`).join('')}
-  <p class="lede-small" style="margin-top:20px">Addresses, phone numbers and open days are from the lot pages on buybennett.com. Miles are rough, measured from town to town.</p>
+  <p class="lede-small" style="margin-top:20px">Addresses, phone numbers and open days are from the lot pages on buybennett.com. Miles between the plant and the lots are road miles, saved in the app.</p>
   ${opsNotes([['Which plant builds for a lot', '<code>resolveDealerPlant</code>: the lot’s own setting, then its dealer, then the organisation’s default plant.'], ['Miles', '<code>computeOrgRouteMileage</code> uses real road miles.'], ['A map', 'Logistics → Map (<code>LogisticsMapPanel</code>) shows a route’s stops on Google Maps with directions.']], ['This sketch map of every lot and plant, with the buildings headed to each.', 'Adding a plant on this screen.', 'Lot open days. Turbo Assist’s location list is out of date against the website: it still has Newberry, Greenwood, Goldsboro and Wilson, and lacks Moncks Corner II, Statesville, Salisbury and Mocksville.'])}`;
 }
 
@@ -381,10 +381,10 @@ function lgNotesPage() {
     <section class="panel"><h2>Sample data</h2><ul>
       <li>Trailers, drivers, haulers, buildings and loads are made up. So is every customer.</li>
       <li>The ${LOTS.length} lots, their addresses and open days are from buybennett.com. The plant is at ${esc(placeAddress(PLANTS[0]))}.</li>
-      <li>Miles are rough, measured town to town.</li>
+      <li>Miles and drive times between the plant and the lots are real road numbers, saved in the app. The last miles to a customer’s home are an estimate.</li>
     </ul></section>
     <section class="panel"><h2>Not built</h2><ul>
-      <li>Real maps, road miles and drive times.</li>
+      <li>A live map with traffic. (Road miles and drive times are saved in the app.)</li>
       <li>Texts or emails to anyone.</li>
       <li>Permits and escorts beyond a tick box.</li>
       <li>Saving. Reloading the page starts over.</li>

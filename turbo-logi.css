@@ -93,3 +93,24 @@ small.lgx-kind { color: var(--steel) !important; font-weight: 600; }
   .lgx-carrier { flex-wrap: wrap; }
   .lgx-manifest { font-size: 11.5px; padding: 12px; }
 }
+
+/* logi-guards.js */
+.lgg-take { margin-left: 8px; min-height: 36px; padding: 6px 14px; white-space: nowrap; }
+.lg-stopunits li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.lgg-warnlist { margin: 6px 0 14px; padding-left: 20px; display: grid; gap: 6px; }
+.lgg-warnlist li { color: var(--warn); font-weight: 600; }
+.lgg-warnbar strong { color: var(--amber); }
+.lgg-fold summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; cursor: pointer; min-height: 44px; }
+.lgg-fold summary b { font-family: var(--display); font-size: 22px; }
+.lgg-fold summary span { color: var(--muted); font-size: 14px; }
+.lgg-fold details[open] summary { margin-bottom: 10px; }
+.lgg-mine { margin: 0 0 14px; font-weight: 600; color: var(--muted); }
+.lgg-call { margin-left: 6px; }
+.lgg-system { margin-top: 16px; border-top: 1px dashed var(--line-strong); padding-top: 12px; }
+.lgg-system summary { cursor: pointer; font-weight: 700; color: var(--steel); }
+.dt-why { display: block; max-width: 260px; font-weight: 500; font-size: 12.5px; color: var(--muted); text-align: left; }
+button.dt-why { padding: 0; }
+@media (max-width: 680px) {
+  .lgg-take { min-height: 44px; }
+  .tabbar button[data-nav="lg-drive"] span { white-space: normal; line-height: 1.05; }
+}

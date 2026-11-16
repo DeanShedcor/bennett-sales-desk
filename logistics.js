@@ -632,7 +632,7 @@ if (typeof doSignoff === 'function') {
 /* ---------- Trailers, haulers and plants ---------- */
 function lgRigForm(id) {
   const r = lgRig(id) || { name: '', feet: 40, haul: true, home: false, driver: '', carrierId: LG.carriers[0].id };
-  modal(id ? 'Change this trailer' : 'Add a trailer', `<div class="fields"><label>Name<input id="lg-rig-name" maxlength="40" value="${esc(r.name)}" placeholder="Example: Rig 5"></label>
+  modal(id ? 'Change this trailer' : 'Add a trailer', `<div class="fields"><label>Name<input id="lg-rig-name" maxlength="40" value="${esc(r.name)}" placeholder="Example: Trailer 5"></label>
     <label>Trailer length (ft)<input id="lg-rig-feet" type="number" min="0" max="80" step="1" value="${r.feet || ''}" inputmode="numeric"></label>
     <label>Usual driver<input id="lg-rig-driver" maxlength="40" value="${esc(r.driver)}" placeholder="Made-up name in this preview"></label>
     <label>Who runs it<select id="lg-rig-carrier">${LG.carriers.map((c) => `<option value="${c.id}" ${r.carrierId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label></div>
@@ -670,7 +670,7 @@ function lgPlantForm() {
     <label>State<select id="lg-pl-state">${['SC', 'NC', 'GA'].map((x) => `<option>${x}</option>`).join('')}</select></label>
     <label>ZIP<input id="lg-pl-zip" maxlength="10" inputmode="numeric"></label>
     <label>Nearest Bennett lot<select id="lg-pl-near">${LOTS.map((l) => `<option value="${l.id}">${esc(lotTown(l))}</option>`).join('')}</select></label></div>
-    <p class="source">The nearest lot places the plant on the map in this preview and gives rough miles. Turbo Logistics measures real road miles from the address.</p>
+    <p class="source">The nearest lot places a new plant on the map in this preview. Miles for a new plant are an estimate until its road miles are looked up.</p>
     <label class="checkrow"><input id="lg-pl-take" type="checkbox" checked> Serve every lot that is closer to this plant than to its current one</label>
     <div class="actions">${button('Add the plant', 'lgPlantSave()')}${button('Cancel', 'closeModal()', 'secondary')}</div>`);
 }

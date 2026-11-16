@@ -49,7 +49,52 @@ const dtLong = (min) => {
   const m = Math.round(min / 5) * 5, h = Math.floor(m / 60);
   return h ? `${h} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}` : `${m} min`;
 };
+/* What the customer was told, as minutes of the day: the window they were promised and the time to aim for.
+     Only a load with a customer's home on it has a promise; a plant load to the lots leaves at the usual time.
+     A feature the product still has to accept: Turbo Logistics keeps the window as a label only. */
+const dtTimes = (text) => {
+  const out = [];
+  for (const m of String(text || '').matchAll(/(\d{1,2})(?::(\d\d))?\s*(am|pm)?|noon/gi)) {
+    if (/noon/i.test(m[0])) { out.push(720); continue; }
+    let h = Number(m[1]);
+    const ap = (m[3] || '').toLowerCase();
+    if (h > 23) continue;
+    if (ap === 'pm' && h < 12) h += 12;
+    else if (ap === 'am' && h === 12) h = 0;
+    else if (!ap && h >= 1 && h <= 6) h += 12; /* "2" with no AM or PM means the afternoon */
+    out.push(h * 60 + Number(m[2] || 0));
+  }
+  return out;
+};
+function dtPromise(load) {
+  const at = load.stops.findIndex((x) => !lgStopIsLot(x));
+  if (at < 0) return null;
+  if (load.window === 'Morning') return { at, from: 8 * 60, to: 12 * 60, target: 9 * 60, words: 'the morning' };
+  if (load.window === 'Afternoon') return { at, from: 12 * 60, to: 17 * 60, target: 13 * 60, words: 'the afternoon' };
+  const t = /Specific/.test(load.window || '') ? dtTimes(load.windowNote) : [];
+  if (load.window === 'Specific time' && t.length) return { at, from: t[0] - 30, to: t[0] + 30, target: t[0], words: dtClock(t[0]) };
+  if (load.window === 'Specific window' && t.length) return { at, from: t[0], to: t[1] > t[0] ? t[1] : t[0] + 120, target: t[0], words: `${dtClock(t[0])} to ${dtClock(t[1] > t[0] ? t[1] : t[0] + 120)}` };
+  return null;
+}
+/* Minutes from leaving to reaching stop number `at`: the driving, and the unloading at the stops before it. */
+function dtReach(load, at) {
+  const mph = lgLoadUnits(load).some(lgWide) ? DT.set.wideMph : DT.set.mph;
+  let from = { p: lgOrigin(load), extra: 0 }, t = 0;
+  for (let i = 0; i <= at; i++) {
+    const stop = load.stops[i], next = lgSpot(stop);
+    t += dtLeg(from, next, mph).min;
+    if (i < at) t += stop.units.length * (lgStopIsLot(stop) ? DT.set.lotMin : DT.set.homeMin);
+    from = next;
+  }
+  return t;
+}
+/* When the truck leaves: the time the dispatcher typed, else early enough to reach the customer when
+   promised (never before 5:00 AM), else the usual time. */
 const dtStart = (load) => {
+  if (!load.leave) {
+    const p = dtPromise(load);
+    if (p) return Math.max(5 * 60, Math.floor((p.target - dtReach(load, p.at)) / 5) * 5);
+  }
   const [h, m] = (load.leave || DT.set.leave).split(':').map(Number);
   return h * 60 + (m || 0);
 };
@@ -63,7 +108,7 @@ function dtLeg(a, b, mph) {
 /* The whole run: leave, each stop's arrival, wait, unload and departure, then home again. */
 function dtPlan(load) {
   const origin = { p: lgOrigin(load), extra: 0 }, wide = lgLoadUnits(load).some(lgWide), mph = wide ? DT.set.wideMph : DT.set.mph;
-  const day = load.date ? new Date(load.date + 'T12:00:00').getDay() : null;
+  const day = load.date ? new Date(load.date + 'T12:00:00').getDay() : null, promise = dtPromise(load);
   let at = origin, t = dtStart(load), drive = 0, onSite = 0, miles = 0, allReal = true;
   const stops = load.stops.map((stop) => {
     const next = lgSpot(stop), leg = dtLeg(at, next, mph), isLot = lgStopIsLot(stop), n = stop.units.length;
@@ -77,6 +122,8 @@ function dtPlan(load) {
         else if (arrive + unload > h[1] * 60) flag = { level: 'warn', text: arrive > h[1] * 60 ? `arrives after the lot closes at ${clock(h[1])}` : `still unloading when the lot closes at ${clock(h[1])}` };
       }
     }
+    /* A customer's stop is checked against what the customer was told. */
+    if (!isLot && promise && !stop.done && (arrive < promise.from - 15 || arrive > promise.to + 15)) flag = { level: 'warn', promise: true, text: `gets there about ${dtClock(arrive)}, but the customer was told ${promise.words}` };
     const leave = arrive + wait + unload;
     drive += leg.min;
     onSite += wait + unload;
@@ -90,11 +137,17 @@ function dtPlan(load) {
   drive += back.min;
   miles += back.miles;
   const end = t + back.min, start = dtStart(load);
-  return { start, stops, back, end, drive, onSite, miles, day: end - start, wide, mph, allReal: allReal && back.real };
+  return { start, stops, back, end, drive, onSite, miles, out: miles - back.miles, day: end - start, wide, mph, promise, allReal: allReal && back.real };
 }
 function dtLeave(id, value) {
   const load = lgLoad(id);
-  if (!load || !/^\d\d:\d\d$/.test(value)) return;
+  if (!load) return;
+  if (value === '') {
+    delete load.leave; /* back to the time worked out from what the customer was told */
+    lgNote(load, `Leaves at ${dtClock(dtStart(load))}, set from the promised time`);
+    return render();
+  }
+  if (!/^\d\d:\d\d$/.test(value)) return;
   load.leave = value;
   lgNote(load, `Leaves at ${dtClock(dtStart(load))}`);
   render();
@@ -104,7 +157,7 @@ function dtPanel(load) {
   const p = dtPlan(load), open = ['planned', 'scheduled'].includes(load.state), from = lgOriginName(load);
   const over = p.drive > DT.set.maxDrive * 60, long = p.day > DT.set.maxDay * 60;
   return `<section class="panel dt-panel"><div class="panelhead"><h2>Drive time</h2><span class="pill ${p.allReal ? 'good' : 'amber'}">${p.allReal ? 'Road times' : 'Estimate'}</span></div>
-    <div class="dt-top"><label>Leaves at<input type="time" value="${load.leave || DT.set.leave}" ${open ? '' : 'disabled'} onchange="dtLeave('${load.id}',this.value)"></label>
+    <div class="dt-top"><label>Leaves at<input type="time" value="${String(Math.floor(p.start / 60)).padStart(2, '0')}:${String(Math.round(p.start % 60)).padStart(2, '0')}" ${open ? '' : 'disabled'} onchange="dtLeave('${load.id}',this.value)">${p.promise && !load.leave ? `<small class="dt-why">Set so the truck gets there in ${esc(p.promise.words)}, as the customer was told.</small>` : p.promise && open ? `<button type="button" class="link dt-why" onclick="dtLeave('${load.id}','')">Use the promised time</button>` : ''}</label>
       <div class="dt-sum"><span><b>${dtLong(p.drive)}</b>driving</span><span><b>${dtLong(p.onSite)}</b>at stops</span><span><b>${Math.round(p.miles)} mi</b>round trip</span><span class="${long ? 'bad' : ''}"><b>${dtClock(p.end)}</b>back at ${esc(load.from.type === 'plant' ? 'the plant' : 'the lot')}</span></div></div>
     <ol class="dt-line"><li class="go"><time>${dtClock(p.start)}</time><div><b>Leave ${esc(from)}</b><small>${p.wide ? 'Wide load: slower than a normal load' : 'Loaded truck'}</small></div></li>
       ${p.stops.map((s) => `<li class="drive"><time></time><div><small>${dtLong(s.leg.min)} · ${Math.round(s.leg.miles)} mi</small></div></li>
@@ -121,7 +174,7 @@ function dtPanel(load) {
     const out = base(load);
     if (!load.stops.length || !['planned', 'scheduled'].includes(load.state)) return out;
     const p = dtPlan(load);
-    for (const s of p.stops) if (s.flag?.level === 'warn') out.push({ level: 'warn', text: `${s.name}: the truck ${s.flag.text} (leaving at ${dtClock(p.start)}).`, dt: true });
+    for (const s of p.stops) if (s.flag?.level === 'warn') out.push({ level: 'warn', text: `${s.name}: the truck ${s.flag.text} (leaving at ${dtClock(p.start)}).`, dt: true, promise: !!s.flag.promise });
     if (p.drive > DT.set.maxDrive * 60) out.push({ level: 'warn', text: `About ${dtLong(p.drive)} of driving: over the ${DT.set.maxDrive} hours one driver may drive in a day.`, dt: true });
     else if (p.day > DT.set.maxDay * 60) out.push({ level: 'warn', text: `About ${dtLong(p.day)} from leaving to back: over the ${DT.set.maxDay}-hour day.`, dt: true });
     return out;
