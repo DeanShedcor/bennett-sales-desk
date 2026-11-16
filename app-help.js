@@ -400,6 +400,6 @@ function ahName() {
     baseRender.apply(this, arguments);
     try { ahName(); ahRest(); } catch (e) {}
   };
-  new MutationObserver(() => { clearTimeout(AH.naming); AH.naming = setTimeout(() => { try { ahName(); } catch (e) {} }, 120); }).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver(() => { clearTimeout(AH.naming); AH.naming = setTimeout(() => { try { ahName(); ahRest(); } catch (e) {} }, 120); }).observe(document.body, { childList: true, subtree: true });
   ahName();
 }

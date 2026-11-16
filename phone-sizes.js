@@ -8,7 +8,7 @@
 {
   const PHONE = window.matchMedia('(max-width: 680px)');
   const TAP = 'button, a[href], input:not([type=hidden]), select, textarea, [role=button], summary';
-  const SKIP = 'svg, canvas, model-viewer, #ff-bug, .no-fit, .lg-map, .dt-line';
+  const SKIP = 'svg, canvas, model-viewer, #ff-bug, .no-fit, .lg-map';
   const seen = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 ? r : null; };
 
   function fitTaps(root) {
