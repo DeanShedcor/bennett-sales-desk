@@ -645,3 +645,16 @@ th { background: var(--surface-2); font-weight: 700; }
 .sd-card strong { font-family: var(--display); font-size: 20px; }
 .sd-card span { color: var(--muted); font-size: 14px; }
 .sd-card .actions { margin: 0; }
+
+/* sales-polish.js */
+.sp-fielderror { display: block; margin-top: 5px; color: var(--bad); font-weight: 600; font-size: 13px; }
+.sp-zero { display: grid; gap: 4px; margin: 12px 0; padding: 14px 16px; border-radius: var(--r-sm); background: var(--warn-bg); color: var(--warn); }
+.sp-zero .actions { margin-top: 8px; }
+.sp-nocancel { color: var(--muted); font-size: 13px; }
+.sp-next { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.sp-next .grow { display: grid; gap: 3px; flex: 1; min-width: 220px; }
+.sp-next strong { font-family: var(--display); font-size: 20px; }
+.sp-next span { color: var(--muted); font-size: 14px; }
+.sp-next .actions { margin: 0; }
+.sp-builds[hidden], .sp-builds [hidden], .changesummary[hidden], .changesummary [hidden], .sectionhead[hidden] { display: none !important; }
+.ta-leadfacts a { color: var(--steel); font-weight: 600; }

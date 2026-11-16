@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="./app.css?v=16">
+<link rel="stylesheet" href="./app.css?v=17">
 <link rel="stylesheet" href="./qc.css?v=3">
 <link rel="stylesheet" href="./buildsheet.css?v=3">
 <link rel="stylesheet" href="./order.css?v=2">
@@ -55,6 +55,7 @@
       <button data-for="sales" data-nav="orders" onclick="go('orders')">Orders</button>
       <button data-for="sales" data-nav="performance" onclick="go('performance')">Performance</button>
       <button data-for="sales" data-nav="stock" onclick="go('stock')">Restock</button>
+      <button data-for="sales" data-nav="start" class="nav-new" onclick="S.saleLead=null;go('start')">New sale</button>
       <button data-for="qc" data-nav="qc" onclick="go('qc')">Buildings</button>
       <button data-for="qc" data-nav="qc-rework" onclick="go('qc-rework')">Rework</button>
       <button data-for="qc" data-nav="qc-signoff" onclick="go('qc-signoff')">Sign-off</button>
@@ -138,7 +139,7 @@
 <script src="./core.js?v=16"></script>
 <script src="./lot.js?v=3"></script>
 <script src="./changes.js?v=1"></script>
-<script src="./views.js?v=24"></script>
+<script src="./views.js?v=25"></script>
 <!-- Retail prices from Turbo Assist's price list (bennett-buddy b42d324). -->
 <script src="./prices.js?v=5"></script>
 <!-- Plant QC side. qc-config.js is the one file to edit for checklists, defect types and rules. -->
@@ -175,6 +176,8 @@
 <script src="./drive.js?v=2"></script>
 <!-- The invoice the customer signs: priced lines and totals that add up. -->
 <script src="./invoice-totals.js?v=3"></script>
+<!-- Eight small Sales desk fixes: entry checks, RTO warning, restock, lookup, quote record. -->
+<script src="./sales-polish.js?v=1"></script>
 <!-- An unfinished sale is kept; Home offers to pick it up. -->
 <script src="./sale-draft.js?v=1"></script>
 <!-- Firefly, the guide: attention, the next step, Ask and tours. -->

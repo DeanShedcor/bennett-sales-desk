@@ -73,11 +73,10 @@ function saleTrack(s) {
 const sampleBuilds = [
   { title: 'Taylor Reed', tag: 'Sample order', sub: '10x16 Classic Utility · ShedCor', stage: 3 },
   {
-    title: 'THIS IS A TEST',
-    tag: 'Source test unit',
-    sub: 'pre-build:9cebedca · ShedCor · Orangeburg',
-    stage: 0,
-    note: 'Read-only source record verified in the earlier app review. No customer identity copied.'
+    title: 'Riley Parker',
+    tag: 'Sample order',
+    sub: '12x20 Basic Lofted · ShedCor · Orangeburg',
+    stage: 0
   }
 ];
 function sampleBuildRows(count = sampleBuilds.length) {
