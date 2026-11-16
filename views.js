@@ -846,7 +846,7 @@ function summary() {
         <div class="terms">${termButtons('term', true)}</div>
         <p class="source">Divisors inferred from public payments. Estimates, not approved terms.</p>
         <h3>Their budget</h3>
-        <div class="fields budgetfields"><label>Budget type<select id="budget-mode" onchange="S.budgetMode=this.value;S.budget=this.value==='monthly'?300:7000;refreshSummary()"><option value="monthly" ${S.budgetMode === 'monthly' ? 'selected' : ''}>Monthly limit</option><option value="total" ${S.budgetMode === 'total' ? 'selected' : ''}>Total budget</option></select></label><label>Limit ($)<input id="budget-limit" type="number" min="0" inputmode="numeric" value="${S.budget}" onchange="S.budget=Math.max(0,+this.value);refreshSummary()"></label></div>
+        <div class="fields budgetfields"><label>Budget type<select id="budget-mode" onchange="S.budgetMode=this.value;refreshSummary()"><option value="monthly" ${S.budgetMode === 'monthly' ? 'selected' : ''}>Monthly limit</option><option value="total" ${S.budgetMode === 'total' ? 'selected' : ''}>Total budget</option></select></label><label>Limit ($)<input id="budget-limit" type="number" min="0" inputmode="numeric" placeholder="Set a budget" value="${S.budget || ''}" onchange="S.budget=Math.max(0,+this.value);refreshSummary()"></label></div>
         ${budgetStatus(n, true)}
       </section>
       <section>
@@ -858,13 +858,13 @@ function summary() {
     </div></div>
     <div class="deal-main">
       <button type="button" class="deal-toggle" aria-label="${S.expanded ? 'Hide' : 'Show'} price details" aria-expanded="${Boolean(S.expanded)}" onclick="S.expanded=!S.expanded;refreshSummary()">
-        <span class="deal-name"><strong>${label(S.c)}</strong><small>${esc(S.c.color)} · ${esc(S.c.package || 'Standard Storage')} · ${S.c.electrical} electrical</small></span>
+        <span class="deal-name"><strong>${label(S.c)}</strong><small>${esc(S.c.color)} · ${esc(S.c.package || 'Standard Storage')} · ${S.c.electrical === 'None' ? 'no electrical' : S.c.electrical + ' electrical'}</small></span>
         <span class="deal-more"><span>${S.expanded ? 'Hide' : 'Price'} details</span> ${icon('chevron', 16)}</span>
       </button>
       <div class="deal-terms" role="group" aria-label="Rent-to-own term in months"><small>Months</small><div>${termButtons('', false)}</div></div>
       <div class="deal-monthly"><small>${S.term}-mo rent-to-own</small><strong>${money(payment(n, S.term))}<span>/mo</span></strong></div>
       <div class="deal-total"><small>${totalLabel}</small><strong>${money(n)}</strong></div>
-      <div class="deal-flags">${budgetStatus(n)}${review.length ? `<button type="button" class="budget warn" onclick="S.expanded=true;refreshSummary()">${icon('alert', 14)} ${review.length} to confirm</button>` : ''}</div>
+      <div class="deal-flags">${S.budget ? budgetStatus(n) : `<button type="button" class="budget unset" onclick="S.expanded=true;refreshSummary();document.getElementById('budget-limit')?.focus()">Set a budget</button>`}${review.length ? `<button type="button" class="budget warn" onclick="S.expanded=true;refreshSummary()">${icon('alert', 14)} ${review.length} to confirm</button>` : ''}</div>
       <div class="summaryactions">${
         /* Before the last step the bar's one button is Continue, so nobody presses a finish button
            thinking it moves them on. The finish buttons appear on the last step only. */

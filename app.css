@@ -638,3 +638,10 @@ th { background: var(--surface-2); font-weight: 700; }
   .quote-paper .reference-model, .signature { break-inside: avoid; }
   h1 { font-size: 26px; }
 }
+
+.budget.unset { background: transparent; color: var(--on-dark-muted); border: 1px dashed var(--on-dark-muted); cursor: pointer; }
+.sd-card { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 16px 0 0; border-left: 5px solid var(--amber); }
+.sd-card .grow { display: grid; gap: 3px; min-width: 220px; flex: 1; }
+.sd-card strong { font-family: var(--display); font-size: 20px; }
+.sd-card span { color: var(--muted); font-size: 14px; }
+.sd-card .actions { margin: 0; }

@@ -31,7 +31,7 @@ let S = {
   path: "custom",
   lot: null,
   term: 60,
-  budget: 300,
+  budget: 0,
   budgetMode: "monthly",
   customer: "Alex Morgan",
   quotes: [],
@@ -371,11 +371,14 @@ function begin(which = "custom") {
   if (which !== "lot") {
     S.c.catalogOptions = true;
     S.c.buildOnSite = which === "site";
-    S.c.sampleWindow = true;
-    S.c.windows = 1;
-    S.c.windowItems = [{ option: "2x3 Standard", type: "Standard", shutters: false }];
+    /* A new sale starts blank: no paid extras until they are chosen, no budget until one is typed,
+       and no customer unless a lead was picked. */
+    S.c.electrical = "None";
+    S.c.windows = 0;
+    S.c.windowItems = [];
   }
-  S.customer = (S.page === "start" ? leadData[S.saleLead]?.name : null) || "Alex Morgan";
+  S.budget = 0;
+  S.customer = (S.page === "start" ? leadData[S.saleLead]?.name : null) || "";
   S.step = 0;
   S.completed = 0;
   S.lot = null;
@@ -1108,7 +1111,7 @@ function quoteForm() {
   }
   modal(
     "Issue a customer quote",
-    `<p>Save this configuration and its reference estimate. Revisions create a new version.</p>${reviewItemsMarkup(S.c)}<div class="fields"><label>Fictional customer<input id="qcustomer" value="${esc(S.customer)}"></label><label>Valid for (days)<input id="qdays" type="number" min="1" max="90" value="14"></label><label>Manager signature<input id="qsign" placeholder="Type demo manager name" value="Morgan Bennett"></label><label>Payment preference<select id="qterm"><option value="cash">Cash purchase</option>${[24, 36, 48, 60].map((t) => `<option value="${t}" ${t === S.term ? "selected" : ""}>${t}-month RTO estimate</option>`).join("")}</select></label></div><p class="notice">Typed signature is a preview mark only, not an executed agreement.</p>${button("Sign & issue quote", "issueQuote()")}`,
+    `<p>Save this configuration and its reference estimate. Revisions create a new version.</p>${reviewItemsMarkup(S.c)}<div class="fields"><label>Customer<input id="qcustomer" placeholder="Customer’s name" value="${esc(S.customer)}"></label><label>Valid for (days)<input id="qdays" type="number" min="1" max="90" value="14"></label><label>Manager signature<input id="qsign" placeholder="Type your name" value=""></label><label>Payment preference<select id="qterm"><option value="cash">Cash purchase</option>${[24, 36, 48, 60].map((t) => `<option value="${t}" ${t === S.term ? "selected" : ""}>${t}-month RTO estimate</option>`).join("")}</select></label></div><p class="notice">Typed signature is a preview mark only, not an executed agreement.</p>${button("Sign & issue quote", "issueQuote()")}`,
   );
 }
 function issueQuote() {

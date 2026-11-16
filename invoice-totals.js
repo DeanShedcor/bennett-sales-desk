@@ -21,7 +21,8 @@
     try { rows = breakdown(s.c); } catch (e) { return null; }
     if (!rows.length || Math.abs(cents(rows.reduce((t, r) => t + r.amount, 0)) - s.total) > 0.005) return null; /* prices moved since the sale: keep the old lines */
     const priced = rows.slice(1).filter((r) => r.amount);
-    const free = inv.lines.slice(1).filter(([d, , t]) => t == null && !priced.some((r) => same(r.name, d)));
+    /* "No shutters" and "None electrical" are not things the customer is buying, so they are left off. */
+    const free = inv.lines.slice(1).filter(([d, , t]) => t == null && !/^(No|None) /.test(d) && !priced.some((r) => same(r.name, d)));
     const office = inv.lines.slice(1).filter(([, , t]) => t != null);
     return [[inv.lines[0][0], 1, rows[0].amount], ...priced.map((r) => [r.name, 1, r.amount]), ...free, ...office];
   }
