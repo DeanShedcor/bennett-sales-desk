@@ -163,12 +163,12 @@ function openCompare() {
         ${row('60-month payment', (u) => `<strong class="price">${money(payment(u.price, 60))}</strong>/mo`)}
         ${row('36-month payment', (u) => money(payment(u.price, 36)) + '/mo')}
         ${row('Cash price', (u) => lotCash(u))}
-        ${row('Down payment', (u) => money(u.down))}
+        ${row('Due at signing, 60 months', (u) => money(typeof spDueAtSigning === 'function' ? spDueAtSigning(u, 60).amount : u.down))}
         ${row('Size', (u) => `${lotSize(u)} · ${u.c.size.split('x').reduce((a, b) => a * b, 1)} sq ft`)}
         ${row('Style', (u) => esc(label(u.c)))}
         ${row('Condition', (u) => (u.condition === 'used' ? 'Pre-owned' : 'New'))}
         ${row('Colors', (u) => esc(`${u.colors.siding} siding, ${u.colors.trim} trim, ${u.colors.roof} roof`))}
-        ${row('Built', (u) => (lotDays(u) === null ? 'Not on serial' : lotDays(u) + ' days ago'))}
+        ${S.lotStaff ? row('Built', (u) => (lotDays(u) === null ? 'Not on serial' : lotDays(u) + ' days ago')) : ''}
         ${row('Features', (u) => `<ul>${u.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>`)}
         ${row('', (u, i) => button('View building', `closeModal();openUnit(${i})`, 'secondary'))}
       </tbody></table></div>`

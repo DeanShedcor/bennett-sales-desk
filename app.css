@@ -658,3 +658,26 @@ th { background: var(--surface-2); font-weight: 700; }
 .sp-next .actions { margin: 0; }
 .sp-builds[hidden], .sp-builds [hidden], .changesummary[hidden], .changesummary [hidden], .sectionhead[hidden] { display: none !important; }
 .ta-leadfacts a { color: var(--steel); font-weight: 600; }
+
+/* Sales polish, second batch: short lot list, plain Performance list, delivery-first */
+.sp-lottools { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 12px; }
+.sp-lottools .chipbtn.on { background: var(--ink); color: var(--on-dark); border-color: var(--ink); }
+.sp-lotlist { display: grid; gap: 8px; grid-column: 1 / -1; }
+.sp-lotrow { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px 8px 8px; min-height: 76px; cursor: pointer; font: inherit; color: inherit; }
+.sp-lotrow img { width: 76px; height: 60px; object-fit: cover; border-radius: 8px; background: var(--surface-2); flex: none; }
+.sp-lotrow .grow { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.sp-lotrow strong { font-size: 15.5px; }
+.sp-lotrow small { color: var(--muted); font-size: 14px; }
+.sp-lotpay { display: grid; justify-items: end; gap: 0; flex: none; }
+.sp-lotpay strong { font: 800 18px var(--display); }
+.sp-perf h2 { margin-top: 18px; }
+.sp-perflist { display: grid; gap: 8px; margin-top: 12px; }
+.sp-perfrow { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--surface-2); border: 0; border-radius: 12px; padding: 12px 14px; cursor: pointer; font: inherit; color: inherit; }
+.sp-perfrow .grow { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.sp-perfrow small { color: var(--muted); font-size: 14px; }
+.sp-perfwhen { display: grid; justify-items: end; gap: 3px; flex: none; max-width: 46%; text-align: right; }
+.sp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.sp-delivery { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface-2); border-radius: 10px; padding: 10px 14px; margin: 0 0 14px; font-size: 14.5px; }
+.sp-sitefee { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 14px; font-size: 15px; }
+.sp-withdelivery { font-size: 15px; }
+@media (max-width: 680px) { .sp-perfrow { flex-direction: column; align-items: stretch; } .sp-perfwhen { justify-items: start; max-width: none; text-align: left; grid-auto-flow: column; justify-content: start; gap: 8px; align-items: center; } }
