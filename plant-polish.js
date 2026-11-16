@@ -65,7 +65,7 @@ const PP_WORDS = [
   [/(\d × \d ft (?:Standard|Insulated))(?! window)/g, '$1 window'],
   [/Bill of materials/g, 'Materials list'], [/Issue material/g, 'Use other material'],
 ];
-const PP_EXACT = { Initial: 'First step', INITIAL: 'FIRST STEP', initial: 'first step', STRUCTURAL: '', Structural: '', 'Sign-off': 'Final sign-off', 'All sign-offs': 'All final sign-offs', 'build complete · pay': 'last step · pay step', Framing: 'Framing' };
+const PP_EXACT = { Issue: 'Use', Initial: 'First step', INITIAL: 'FIRST STEP', initial: 'first step', STRUCTURAL: '', Structural: '', 'Sign-off': 'Final sign-off', 'All sign-offs': 'All final sign-offs', 'build complete · pay': 'last step · pay step', Framing: 'Framing' };
 const PP_SKIP = 'script, style, textarea, code, .ops-notes, .sf-hook, .sf-only, [data-pp-raw]';
 function ppWord(text) {
   const trimmed = text.trim();
