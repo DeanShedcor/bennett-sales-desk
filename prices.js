@@ -19,8 +19,9 @@
    Two-tone siding is $1.50 per sq ft of building, width × length (a 10 × 16 is 160 sq ft).
    The fuel surcharge changes sale to sale: it stays out of the total and shows a red STILL NEEDED
    until Turbo Assist supplies it for the sale.
-   Not in Jordan's list, left as before: the 36 in full-lite door, the extra side door, the Workshop
-   electrical package and a 6 × 7 garage package.
+   Not in Jordan's list, left as before: the 36 in full-lite door, the extra side door, and the Workshop
+   electrical package. A 6 × 7 garage package is the $1,280 package less the 8 × 7 roll-up ($850) plus
+   the 6 × 7 roll-up ($730), as the owner set on Nov 16, 2026.
    Loaded right after views.js; wraps the Sales desk's price functions. */
 
 const PRICE_LIST_SOURCE = 'Turbo Assist price list';
@@ -45,7 +46,9 @@ shinglePrice = function (c) {
 {
   const salesPackageReference = packageReference;
   packageReference = function (c, name = c.package) {
-    if (name === 'Garage Package') return { 8: 1280, 9: 1370 }[c.garageDoorWidth || 6] ?? null;
+    /* $1,280 with the standard 8 × 7 roll-up, $1,370 with the 9 × 7. A 6 × 7 is the $1,280 package with the
+       8 × 7 credited and the 6 × 7 added, as two lines in the breakdown. */
+    if (name === 'Garage Package') return garageDoor(c) === 9 ? 1370 : 1280;
     return salesPackageReference(c, name);
   };
 }
@@ -66,11 +69,16 @@ packageAmount = function (c, name = c.package) {
       if (r.name === '12-inch-on-center floor joists') Object.assign(r, { amount: Math.round(floorArea(c) * 0.75 * 100) / 100, source: PRICE_LIST_SOURCE + ' · $0.75 per sq ft of floor' });
       if (r.name === 'Architectural shingles') r.source = PRICE_LIST_SOURCE;
       if (r.name === c.package && packageAmount(c) != null) r.source = PRICE_LIST_SOURCE;
+      if (r.name === 'Garage Package') r.name = `${garageDoor(c) === 9 ? 9 : 8} × 7 Garage Package`;
       if (c.style === 'Greenhouse' && /electrical package$/.test(r.name)) Object.assign(r, { name: 'Greenhouse electrical package', amount: 660, source: PRICE_LIST_SOURCE });
       if (/IdeaRoom/.test(r.source) && r.name !== 'Fuel surcharge') r.source = PRICE_LIST_SOURCE;
       /* The fuel surcharge changes sale to sale, so no fixed number goes in the total. Turbo Assist has
          to supply it for each sale; until then the line is flagged STILL NEEDED. */
       if (r.name === 'Fuel surcharge') Object.assign(r, { amount: 0, needed: true, source: 'Changes sale to sale · still needed from Turbo Assist' });
+    }
+    if (c.package === 'Garage Package' && garageDoor(c) === 6) {
+      const at = rows.findIndex((r) => / × 7 Garage Package$/.test(r.name)) + 1;
+      rows.splice(at || rows.length, 0, { name: '6 × 7 Rollup Door', amount: 730, source: PRICE_LIST_SOURCE }, { name: '8 × 7 Rollup Door (Credit)', amount: -850, source: PRICE_LIST_SOURCE });
     }
     if (typeof usesWoodOptions === 'function' && usesWoodOptions(c)) {
       if (c.accentColor && c.accentArea !== 'lower') rows.push({ name: 'Accent gable · ' + c.accentColor, amount: 100, source: PRICE_LIST_SOURCE });

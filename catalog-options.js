@@ -7,6 +7,9 @@ const packageDetails = {
   'Dormer Package': { minWidth: 8, minLength: 12 }
 };
 const garageDoorWidths = [6, 8, 9];
+/* The Garage Package comes with an 8 × 7 roll-up. A 10-wide building cannot fit one, so it takes the 6 × 7. */
+const garageTooNarrow = (c) => Number(String(c.size).split('x')[0]) <= 10;
+const garageDoor = (c) => (garageTooNarrow(c) ? 6 : c.garageDoorWidth || 8);
 
 function usesWoodOptions(c) {
   return c.style !== 'Silver Bullet' && c.style !== 'Greenhouse';
@@ -32,7 +35,7 @@ function packageOpenings(c) {
   const details = activePackage(c);
   if (!details) return [];
   if (c.package === 'Garage Package') {
-    return [`${c.garageDoorWidth || 6} × 7 ft roll-up door`, 'Solid fiberglass entry door', details.windows];
+    return [`${garageDoor(c)} × 7 ft roll-up door`, 'Solid fiberglass entry door', details.windows];
   }
   if (c.package === 'Dormer Package') {
     if (c.dormerGable)
@@ -117,9 +120,10 @@ function packageVariantMarkup(c) {
       '</div><p class="source">Left and right are as you face the front of the building.</p>';
   }
   if (c.package === 'Garage Package') {
-    return '<div class="fields"><label>Included roll-up door size<select onchange="change(\'garageDoorWidth\',+this.value)">'+
-      garageDoorWidths.map(width=>`<option value="${width}" ${width===(c.garageDoorWidth||6)?'selected':''}>${width} × 7 ft</option>`).join('')+
-      '</select></label></div><p class="source">Confirm door fit and clearance for this building before quoting.</p>';
+    if (garageTooNarrow(c)) return '<p class="checkrow static"><strong>6 × 7 ft roll-up door</strong> · A 10-wide building cannot fit the package’s 8 × 7 door, so the 8 × 7 is credited and a 6 × 7 is added.</p>';
+    return '<div class="fields"><label>Roll-up door size<select onchange="change(\'garageDoorWidth\',+this.value)">'+
+      garageDoorWidths.map(width=>`<option value="${width}" ${width===garageDoor(c)?'selected':''}>${width} × 7 ft${width===8?' · standard':''}</option>`).join('')+
+      '</select></label></div><p class="source">The package comes with the 8 × 7 door. Choosing the 6 × 7 credits the 8 × 7 and adds the 6 × 7.</p>';
   }
   if (c.package === 'Dormer Package') {
     const current = dormerOption(c);
