@@ -62,7 +62,7 @@ function firstPassStats(days) {
 }
 /* Every failure, old and new, in one shape for the report. */
 function allDefects() {
-  return Q.defects.concat(Q.rework.map((r) => ({ serial: r.serial, style: build(r.serial).style, section: ITEM[r.itemId]?.area || "Other", item: r.item, defect: r.defect, openedAt: r.openedAt, closedAt: r.closedAt })));
+  return Q.defects.concat(Q.rework.map((r) => ({ serial: r.serial, style: build(r.serial)?.style || "", /* a building sent back to the crew is no longer here */ section: ITEM[r.itemId]?.area || "Other", item: r.item, defect: r.defect, openedAt: r.openedAt, closedAt: r.closedAt })));
 }
 const hours = (ms) => { const h = ms / HOUR; return h < 48 ? plural(Math.round(h), "hour") : `${(h / 24).toFixed(1)} days`; };
 

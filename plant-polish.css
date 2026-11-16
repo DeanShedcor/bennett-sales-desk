@@ -1,0 +1,69 @@
+/* plant-polish.css: Plant batch 2. Bigger targets and text on the plant sides, the phone board, the step bar. */
+
+/* Counts on the board are buttons that filter it. */
+.pp-tile { cursor: pointer; font: inherit; }
+.pp-tile.on { border-color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+
+/* "Step 4 of 9 · Walls" with a bar: shown on a phone in place of the nine-box strip. */
+.pp-step { display: none; margin: 10px 0 4px; }
+.pp-step strong { display: block; font-size: 16px; margin-bottom: 8px; }
+.pp-step i { display: block; height: 12px; border-radius: 8px; background: var(--line); overflow: hidden; }
+.pp-step b { display: block; height: 100%; border-radius: 8px; background: var(--navy-2); }
+.pp-step.bad b { background: var(--bad); }
+.pp-morebtn { display: none; }
+
+/* A building's page: build details before the move buttons and history. */
+.pp-detailsfirst > .od-col:nth-child(2) { order: -1; }
+.pp-nothing .of-mark { visibility: hidden; }
+
+/* Materials list: Use and Take back beside each line. */
+.tp-lines li { align-items: center; gap: 10px; flex-wrap: wrap; }
+.pp-used { display: inline-flex; align-items: center; gap: 4px; color: var(--good); font-weight: 700; font-size: 14px; }
+.pp-used svg { width: 15px; height: 15px; }
+.pp-how { font-size: 14px; color: var(--muted); margin: 10px 0 0; }
+
+/* Failing an item, and the fix photo. */
+.pp-quick h4 { margin: 14px 0 8px; }
+.pp-fixphoto { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0; position: relative; }
+.pp-fixphoto input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.pp-fixphoto label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+#pp-fixshot { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--good); }
+#pp-fixshot img, .pp-fixed img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
+.pp-fixed { display: flex; align-items: center; gap: 10px; font-size: 14px; margin: 10px 0 0; }
+.pp-need { font-size: 15px; margin: 0 0 12px; }
+.pp-rules { margin-top: 18px; }
+.pp-rules summary { cursor: pointer; }
+.pp-rules summary h2 { display: inline; }
+.pp-moved { color: var(--muted); font-size: 14.5px; margin: 0 0 14px; }
+.pp-steps { margin: 0 0 14px; }
+
+@media (max-width: 680px) {
+  .pp-board { display: flex; flex-direction: column; }
+  .pp-board > .pagehead { order: 0; }
+  .pp-board > .qc-filter { order: 1; }
+  .pp-board > .pp-morebtn { order: 2; display: block; margin: 0 0 14px; }
+  .pp-board > #pr-cols { order: 3; }
+  .pp-board > .pp-extra { order: 4; }
+  .pp-board > details.ops-notes { order: 5; }
+  .pp-board:not(.more) > .pp-extra { display: none; }
+  body[data-side="prod"] .of-top .chev, body[data-side="qc"] .qc-card .chev { display: none; }
+  .pp-step { display: block; }
+}
+
+/* Gloves: on a phone or tablet every button and chip on the plant sides is at least 48 px tall. */
+@media (max-width: 1200px) {
+  body[data-side="prod"] #app button, body[data-side="qc"] #app button,
+  body[data-side="prod"] .modal button, body[data-side="qc"] .modal button,
+  body[data-side="prod"] #app select, body[data-side="qc"] #app select,
+  body[data-side="prod"] .modal select, body[data-side="qc"] .modal select,
+  body[data-side="prod"] #app input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), body[data-side="qc"] #app input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  body[data-side="prod"] .modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), body[data-side="qc"] .modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  body[data-side="prod"] #app label.secondary, body[data-side="qc"] #app label.secondary,
+  body[data-side="prod"] .modal label.secondary, body[data-side="qc"] .modal label.secondary,
+  body[data-side="prod"] #app summary, body[data-side="qc"] #app summary { min-height: 48px; }
+  body[data-side="prod"] #app button.link, body[data-side="qc"] #app button.link,
+  body[data-side="prod"] .modal button.link, body[data-side="qc"] .modal button.link { display: inline-flex; align-items: center; }
+  body[data-side="prod"] #app summary, body[data-side="qc"] #app summary { display: flex; align-items: center; }
+  body[data-side="prod"] .checkrow, body[data-side="qc"] .checkrow { min-height: 48px; display: flex; align-items: center; gap: 10px; }
+  body[data-side="prod"] .checkrow input, body[data-side="qc"] .checkrow input { width: 24px; height: 24px; }
+}

@@ -157,21 +157,21 @@ const FF_TOURS = [
       { sel: () => (ffEl('.lg-check') || document.querySelector('#app select[onchange*="window"]'))?.closest('.panel') || null, title: 'Trailer, day and checks', text: 'Pick the trailer and the day here. Anything in the way shows as a warning: trailer length, a wide-load permit, lot hours, a customer not told yet. No warnings means it is clear.' },
       { sel: '.ops-bar', hands: false, title: 'Schedule and start', text: 'These tell the lot, the salesperson and the customer. I leave them to the dispatcher.' },
     ] },
-  { id: 'prod-board', name: 'Read the production board', section: 'prod', about: 'Nine phases, oldest first, and one building’s page.', keys: ['production', 'the board', 'phase', 'kanban', 'build specs'],
-    answer: 'The board has a column for each of the nine phases. Open a card to move it to the next phase, see its build specs and materials, or put it on a production load.',
+  { id: 'prod-board', name: 'Read the production board', section: 'prod', about: 'Nine steps, oldest first, and one building’s page.', keys: ['production', 'the board', 'phase', 'kanban', 'build specs'],
+    answer: 'The board has a column for each of the nine steps. Open a building to move it to the next step, see its build details and materials, or put it on a load.',
     start: () => go('prod'), steps: [
-      { sel: '.pr-board', title: 'Nine phases, left to right', text: 'Order received to Build complete. In each column the oldest building is on top.' },
+      { sel: '.pr-board', title: 'Nine steps, left to right', text: 'Order received to Build complete. In each column the oldest building is on top.' },
       { sel: '.pr-card', title: 'Open a building', text: 'Any card.', until: () => S.page === 'pr-unit' },
-      { sel: () => [...document.querySelectorAll('#app .panel h2')].find((h) => /Move phase/.test(h.textContent))?.closest('.panel') || null, hands: false, title: 'Move it on', text: 'The plant manager moves a building to the next phase here, with a note if one is needed.' },
+      { sel: () => [...document.querySelectorAll('#app .panel h2')].find((h) => /Move phase|Move to the next step/.test(h.textContent))?.closest('.panel') || null, hands: false, title: 'Move it on', text: 'Move a building to the next step here, with a note if one is needed.' },
       { sel: '.tp-specs', title: 'Build specs', text: 'Joists, studs, plates and loft, figured from the size by the framing rules.' },
     ] },
   { id: 'qc-inspect', name: 'How Plant QC works', section: 'qc', about: 'What is waiting, how an inspection goes, and the dashboard.', keys: ['qc', 'inspect', 'quality', 'sign-off', 'sign off', 'rework'],
-    answer: 'Plant QC lists the buildings waiting. Open one and answer each question Yes, No or N/A; a No needs a photo and goes to Rework. When nothing is left to fix, final QC signs it off with initials.',
+    answer: 'Plant QC lists the buildings waiting. Open one and answer each question Yes, No or N/A; a No needs a photo and goes to Rework. When nothing is left to fix, the final sign-off is done with initials.',
     start: () => go('qc'), steps: [
-      { sel: '.today', title: 'What is waiting', text: 'Buildings to inspect, in rework, and ready for sign-off.' },
+      { sel: '.today', title: 'What is waiting', text: 'Buildings to check, in rework, and ready for final sign-off.' },
       { sel: '.qc-floor', title: 'Buildings on the floor', text: 'Open one to inspect it. Each question is answered Yes, No or N/A, and a No needs a photo.' },
       { sel: ffNav('qc-report'), title: 'Open “Report”', text: 'The numbers behind the floor.', until: () => S.page === 'qc-report' },
-      { sel: '#app .panel', title: 'The QC dashboard', text: 'Waiting for QC, waiting for final QC, and which failures come up most.' },
+      { sel: '#app .panel', title: 'The numbers', text: 'How many passed the first time, and which problems come up most.' },
     ] },
 ];
 const ffTour = (id) => FF_TOURS.find((t) => t.id === id);
