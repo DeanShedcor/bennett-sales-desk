@@ -1,0 +1,9 @@
+/* app-help.css: styles for app-help.js (the shared answer card, news buttons, Firefly's drag tip). */
+.ah-unknown { border-style: dashed; background: var(--surface-2); }
+#ah-answer .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ah-nbtns { display: flex; gap: 6px; flex: none; align-items: center; }
+.ah-fftop { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+.ah-dragtip { position: fixed; z-index: 83; max-width: 230px; padding: 10px 12px; border-radius: 12px; background: var(--ink); color: var(--on-dark); font: 600 14px/1.35 var(--body); box-shadow: 0 10px 30px rgb(12 26 40 / 0.3); }
+.ah-tipx { display: inline-block; margin-left: 6px; padding: 4px 10px; border: 1px solid var(--on-dark-muted); border-radius: 999px; background: none; color: var(--on-dark); font: 700 13px var(--body); cursor: pointer; }
+@media (max-width: 680px) { .ta-notice { flex-wrap: wrap; } .ah-nbtns { width: 100%; justify-content: flex-end; } }
+@media print { .ah-dragtip, .skip-link { display: none !important; } }
