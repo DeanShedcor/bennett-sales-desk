@@ -32,3 +32,5 @@
 button.primary, a.primary, button.primary.small { min-height: 44px; }
 .ops-row button.primary, .ops-row button.secondary, .od-doc button.primary, .od-doc button.secondary { min-height: 44px; }
 @media print { #aw-search { display: none !important; } }
+/* Four buttons beside the logo on a narrow phone: tighten the bar so nothing runs off the side. */
+@media (max-width: 400px) { .topbar-in { gap: 6px; padding-left: 10px; padding-right: 8px; } .topbar-right { gap: 0; } .brand-logo { height: 26px; } }
