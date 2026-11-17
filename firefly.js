@@ -116,7 +116,7 @@ const FF_TOURS = [
     start: () => go('home'), steps: [
       { sel: '.home-actions .primary', title: 'Press “Start a sale”', text: 'Same door as a lot sale.', until: () => S.page === 'start' },
       { sel: `.startcard .primary[onclick="begin()"]`, title: 'Press “Start configuring”', text: 'One choice at a time. Nothing is ordered until the very end.', until: () => S.page === 'configure' },
-      { sel: '.steps', title: 'Eight steps', text: 'Style, size, package, openings, colors, exterior, electrical, finish. Jump back to any of them.' },
+      { sel: '.steps', title: 'Eight steps', text: 'Style, size, package, openings, exterior, colors, electrical, finish. Jump back to any of them.' },
       { sel: '.choicegrid', title: 'Choose, and watch the building', text: 'The model on the left redraws with every choice. Drag it to turn it.' },
       { sel: '.deal-main', title: 'The price keeps up', text: 'Total and monthly payment follow each choice. “Price details” shows every line.' },
       { sel: '.summaryactions', hands: false, title: 'Quote it or sell it', text: 'Continue moves to the next step. On the last step, “Create quote” saves a quote the customer can open and “Complete the sale” starts the order. I leave both to you.' },

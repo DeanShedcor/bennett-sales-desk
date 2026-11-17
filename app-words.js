@@ -279,3 +279,63 @@ if (typeof changeOrders === 'function' && typeof QC_SCREENS === 'object') {
     try { return changeOrders(); } finally { S.changes = all; }
   };
 }
+
+/* ---------- 7. Door options live with the doors ----------
+   The owner asked (Nov 2026) for the sectional garage door, the taller wood door and the custom wood
+   door to move from the add-ons list on the last step to the door part of the Openings step.
+   Where: inside the Doors box, under the list of doors and above the door colors, as "More door
+   options". Prices, the price lines and the rules (no sectional door on a barn; wood doors only on
+   wood buildings) are unchanged: they are still TA_ADDONS and c.extras, priced by taAddonRows(). */
+const AW_DOORS = [
+  ['Sectional Garage Door', 'Sectional garage door', 'A garage door that rolls up in panels.'],
+  ['84" Wood Door (upcharge from std door)', 'Taller wood door, 84 in.', 'Adds to the standard door price.'],
+  ['Custom Wood Doors', 'Custom wood door', 'A wood door built to the size the customer wants.'],
+];
+if (typeof TA_ADDONS !== 'undefined') {
+  for (const [name, label] of AW_DOORS) { const a = taAddon(name); if (a) a[1] = label; }
+  const isDoor = (name) => AW_DOORS.some((d) => d[0] === name);
+  /* Off the last step's list... */
+  const baseAddons = taAddonsMarkup;
+  taAddonsMarkup = function (c) {
+    const held = TA_ADDONS.filter((a) => isDoor(a[0]) || a[0] === 'Vinyl Wrap').map((a) => [a, a[3]]); /* vinyl wrap lives on the Exterior step (part 8) */
+    for (const [a] of held) a[3] = () => false;
+    try { return baseAddons(c); } finally { for (const [a, test] of held) a[3] = test; }
+  };
+  /* ...and into the Doors box on the Openings step. */
+  const hasRollUp = (c) => c.package === 'Garage Package' || [c.door, ...(c.extraDoors || [])].some((d) => /roll/i.test(typeof doorName === 'function' ? doorName(d) : String(d)));
+  function awDoorOptions(c) {
+    const list = AW_DOORS.filter(([name]) => taAddon(name)?.[3](c));
+    if (!list.length) return '';
+    return `<div class="aw-doors" id="aw-doors"><h4>More door options</h4>${list.map(([name, label, about]) => {
+      const q = Number(c.extras?.[name]) || 0, price = taListPrice(name), arg = esc(JSON.stringify(name));
+      const note = name === 'Sectional Garage Door' && hasRollUp(c) ? '<small class="aw-doornote">This building already has a roll-up door. Add this only if the customer wants both.</small>' : '';
+      return `<div class="doorrow aw-doorrow${q ? ' on' : ''}"><span class="grow"><strong>${esc(label)}</strong><small>${about} ${price == null ? 'Ask the office for the price.' : money(price) + ' each'}</small>${note}</span>${q ? `<strong class="ta-sum">+${money(price * q)}</strong>` : ''}<span class="stepper" role="group" aria-label="${esc(label)}: how many"><span class="stepper-label">How many</span><button type="button" ${q <= 0 ? 'disabled' : ''} aria-label="One fewer ${esc(label)}" onclick="taAddonSet(${arg},${q - 1})">${icon('minus', 16)}</button><output>${q}</output><button type="button" ${q >= 10 ? 'disabled' : ''} aria-label="One more ${esc(label)}" onclick="taAddonSet(${arg},${q + 1})">${icon('plus', 16)}</button></span></div>`;
+    }).join('')}</div>`;
+  }
+  const baseOpenings = openingsMarkup;
+  openingsMarkup = function () {
+    const html = baseOpenings(), block = S.path === 'lot' ? '' : awDoorOptions(S.c);
+    if (!block) return html;
+    const at = html.indexOf('<div class="door-color-choices">');
+    return at < 0 ? html + `<section class="panel openings">${block}</section>` : html.slice(0, at) + block + html.slice(at);
+  };
+}
+
+/* ---------- 8. Vinyl wrap lives with the siding ----------
+   The owner asked (Nov 2026) for Exterior to come before Colors (the `steps` list in core.js) and
+   for vinyl wrap to leave the last step's list and sit under the lap siding choice on the Exterior
+   step, as a tick box with its fee. Neither the price list nor the knowledge base ties vinyl wrap
+   to one kind of siding, so it can be ticked with either siding on a wood building (the same rule
+   it had before). The price and the price line are unchanged (c.extras, taAddonRows). */
+if (typeof TA_ADDONS !== 'undefined') {
+  const baseStep = stepBody;
+  stepBody = function () {
+    const out = baseStep(), c = S.c, a = taAddon('Vinyl Wrap');
+    if (!Array.isArray(out) || steps[S.step] !== 'Exterior' || S.path === 'lot' || !a || !a[3](c) || !out[1].includes('smartside-lap-siding.png')) return out;
+    const on = !!c.extras?.['Vinyl Wrap'], price = taListPrice('Vinyl Wrap');
+    const box = `<label class="techshield-addon aw-vinyl${on ? ' on' : ''}"><input id="aw-vinyl" type="checkbox" ${on ? 'checked' : ''} onchange="taAddonSet('Vinyl Wrap',this.checked)"> <span>Add vinyl wrap</span> <strong>${price == null ? 'Ask the office for the price' : '+' + money(price)}</strong></label>`;
+    /* Straight after the lap siding choice, which is the last choice card on this step. */
+    const at = out[1].indexOf('</button>', out[1].indexOf('smartside-lap-siding.png'));
+    return [out[0], at < 0 ? out[1] + box : out[1].slice(0, at + 9) + box + out[1].slice(at + 9)];
+  };
+}

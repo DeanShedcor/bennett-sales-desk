@@ -25,6 +25,8 @@
     ['Additional Loft (PER SQ FT)', 'xl', 'Loft', 'loft', 0],
     ['U Loft (per SQ FT)', 'xu', 'U-shaped loft', 'uloft', 0],
     ['Custom Frame Out', 'xf', 'Framed opening', 'frame', 0],
+    /* A sectional garage door is an opening in a wall too. The price list gives no width, so it is drawn 8 ft wide. */
+    ['Sectional Garage Door', 'xg', 'Sectional garage door', 'frame', 0, 8],
   ];
   const sizeOf = (c) => [c.size, c.style, c.package || ''].join('|');
   const qtyOf = (c, name) => (typeof taAddonQty === 'function' && typeof taAddon === 'function' && taAddon(name)?.[3](c) ? taAddonQty(c, name) : 0);
@@ -33,14 +35,14 @@
   function fpPieces(c) {
     const out = [];
     if (!c || !c.extras) return out;
-    for (const [name, key, label, kind, depth] of FP_OPTS) {
+    for (const [name, key, label, kind, depth, wide] of FP_OPTS) {
       const q = qtyOf(c, name);
       if (!q) continue;
       const many = kind === 'frame' ? q : 1;
       for (let i = 0; i < many; i++) {
         const k = kind === 'frame' ? key + i : key, p = c.sheet?.pos?.[k];
         const text = kind === 'frame' ? label + (many > 1 ? ` ${i + 1}` : '') : `${label} · ${q} ${kind === 'loft' || kind === 'uloft' ? 'sq ft' : 'ft'}`;
-        out.push({ key: k, label, kind, depth, q, name: text, placed: !!p && p.q === q && p.sz === sizeOf(c) });
+        out.push({ key: k, label, kind, depth, wide, q, name: text, placed: !!p && p.q === q && p.sz === sizeOf(c) });
       }
     }
     return out;
@@ -61,7 +63,7 @@
     const g = bsWallGeo(sh, w), far = reach(sh, g, w.len / 2);
     if (pc.kind === 'run') return [Math.min(pc.q, w.len), pc.depth];
     if (pc.kind === 'wall') return [1 / 3, Math.min(pc.q, far)];
-    if (pc.kind === 'frame') return [Math.min(3, w.len), 0];
+    if (pc.kind === 'frame') return [Math.min(pc.wide || 3, w.len), 0];
     if (pc.kind === 'loft') return [w.len, Math.min(pc.q / w.len, far)];
     /* U shape: a band across the wall, about 4 ft deep, and an arm down each side. */
     const band = Math.min(4, pc.q / w.len, far), arm = Math.max(0, Math.min((pc.q - band * w.len) / 4, far - band));

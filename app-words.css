@@ -34,3 +34,12 @@ button.primary, a.primary, button.primary.small { min-height: 44px; }
 @media print { #aw-search { display: none !important; } }
 /* Four buttons beside the logo on a narrow phone: tighten the bar so nothing runs off the side. */
 @media (max-width: 400px) { .topbar-in { gap: 6px; padding-left: 10px; padding-right: 8px; } .topbar-right { gap: 0; } .brand-logo { height: 26px; } }
+
+/* More door options, inside the Doors box on the Openings step. */
+.aw-doors { margin: 14px 0; padding-top: 14px; border-top: 1px solid var(--line); }
+.aw-doors h4 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--steel); margin: 0 0 8px; }
+.aw-doorrow { flex-wrap: wrap; gap: 10px; }
+.aw-doorrow.on { border-color: var(--good); }
+.aw-doorrow .grow { min-width: 200px; display: grid; gap: 2px; }
+.aw-doornote { color: var(--warn); font-weight: 600; }
+.aw-doorrow .stepper button { min-width: 44px; min-height: 44px; }

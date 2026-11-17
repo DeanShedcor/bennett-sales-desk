@@ -12,13 +12,15 @@
   const write = (d) => { try { d ? localStorage.setItem(KEY, JSON.stringify(d)) : localStorage.removeItem(KEY); } catch (e) {} };
   let made = null; /* how many quotes and orders existed at the last draw */
 
+  /* The step is kept by name; an older draft that only has a number keeps the number. */
+  const stepOf = (d) => { const i = d.stepName ? steps.indexOf(d.stepName) : -1; return i >= 0 ? i : Math.min(d.step || 0, steps.length - 1); };
   const designing = () => S.page === 'configure' && S.path !== 'lot' && !S.activeQuote;
   const touched = () => S.step > 0 || S.completed > 0;
 
   function saleDraftResume() {
     const d = read();
     if (!d) return;
-    Object.assign(S, { c: d.c, step: d.step, completed: d.completed, path: d.path, customer: d.customer || '', saleLead: d.saleLead ?? null, term: d.term || 60, budget: d.budget || 0, budgetMode: d.budgetMode || S.budgetMode, lot: null, activeSale: null, activeQuote: null });
+    Object.assign(S, { c: d.c, step: stepOf(d), completed: d.completed, path: d.path, customer: d.customer || '', saleLead: d.saleLead ?? null, term: d.term || 60, budget: d.budget || 0, budgetMode: d.budgetMode || S.budgetMode, lot: null, activeSale: null, activeQuote: null });
     go('configure');
     toast('Picked up where you left off.');
   }
@@ -39,7 +41,7 @@
     return `<section class="panel sd-card" id="sale-draft" aria-label="Unfinished sale">
       <div class="grow"><small class="eyebrow">Pick up where you left off</small>
         <strong>${esc(name)}${d.customer ? ' for ' + esc(d.customer) : ''}</strong>
-        <span>Step ${d.step + 1} of ${steps.length} · ${esc(steps[d.step] || '')} · saved ${date}</span></div>
+        <span>Step ${stepOf(d) + 1} of ${steps.length} · ${esc(steps[stepOf(d)] || '')} · saved ${date}</span></div>
       <div class="actions">${button('Start over', 'saleDraftDrop()', 'secondary')}${button('Resume ' + icon('arrow', 18), 'saleDraftResume()', 'primary')}</div>
     </section>`;
   }
@@ -52,7 +54,7 @@
       if (made != null && count > made) write(null); /* it became a quote or an order */
       made = count;
       if (designing() && touched())
-        write({ c: S.c, step: S.step, completed: S.completed, path: S.path, customer: S.customer, saleLead: S.saleLead, term: S.term, budget: S.budget, budgetMode: S.budgetMode, at: Date.now() });
+        write({ c: S.c, step: S.step, stepName: steps[S.step], completed: S.completed, path: S.path, customer: S.customer, saleLead: S.saleLead, term: S.term, budget: S.budget, budgetMode: S.budgetMode, at: Date.now() });
       const d = read();
       if (d && S.page === 'home' && document.body.dataset.side === 'sales' && !document.getElementById('sale-draft'))
         document.querySelector('#app .hero')?.insertAdjacentHTML('afterend', card(d));

@@ -200,7 +200,8 @@ const descriptions = {
   "Low-Wall Barn": "A gambrel roof with shorter sidewalls and a lower profile.",
   "Silver Bullet": "Ribbed metal siding and a silver finish for a simple, durable appearance.",
 };
-const steps = ["Style", "Size", "Package", "Openings", "Colors", "Exterior", "Electrical", "Finish"];
+/* The owner moved Exterior ahead of Colors (Nov 2026): pick the siding, then its colors. */
+const steps = ["Style", "Size", "Package", "Openings", "Exterior", "Colors", "Electrical", "Finish"];
 function series(c = S.c) {
   return ["Greenhouse", "Low-Wall Barn", "Silver Bullet"].includes(c.style)
     ? c.style
