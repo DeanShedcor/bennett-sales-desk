@@ -271,6 +271,16 @@ if (typeof bsStrip === 'function') {
     return baseStrip({ ...lay, items: [...lay.items, ...drawn] }, w, scale);
   };
 }
+/* An option that is drawn on the floor plan is no longer listed as "not drawn on this sheet". */
+if (typeof bsLayout === 'function' && typeof taAddonRows === 'function') {
+  const AW_DRAWN = new Set(['Workbench (per LF)', 'Three Tier Shelving (per LF)', 'Partition Wall (per linear foot)', 'Additional Loft (PER SQ FT)', 'U Loft (per SQ FT)', 'Custom Frame Out', 'Sectional Garage Door']);
+  const baseLayout = bsLayout;
+  bsLayout = function (c) {
+    const lay = baseLayout(c), drawn = new Set(taAddonRows(c).filter((r) => AW_DRAWN.has(r.addon)).map((r) => `${r.name}: on the order, not drawn on this sheet.`));
+    if (drawn.size) lay.notes = lay.notes.filter((n) => !drawn.has(n));
+    return lay;
+  };
+}
 /* The QC side's change-order page follows the person's lots. */
 if (typeof changeOrders === 'function' && typeof QC_SCREENS === 'object') {
   QC_SCREENS['qc-changes'] = function () {

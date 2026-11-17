@@ -635,7 +635,8 @@ function bsConfirmBox(lay) {
 
 function bsPages(o) {
   const lay = bsLayout(o.c), walls = lay.sh.walls;
-  const used = walls.filter((w) => lay.items.some((x) => x.wi === w.i)), bare = walls.filter((w) => !used.includes(w));
+  /* A wall is used when an opening or a box is on it, or a placed option (workbench, shelving, loft…) is against it. */
+  const used = walls.filter((w) => lay.items.some((x) => x.wi === w.i || (x.kind === 'fix' && x.placed && x.fw === w.i))), bare = walls.filter((w) => !used.includes(w));
   const scale = Math.min(23, 900 / Math.max(...walls.map((w) => w.len)));
   const foot = (a, b) => `<div class="bs-foot"><span>${a}</span><span>${b}</span></div>`;
   return `<section class="bs-page"><div class="bs-fit">${bsBand(o, lay, 1)}${bsSpec(o.c, lay)}
