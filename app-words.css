@@ -43,3 +43,7 @@ button.primary, a.primary, button.primary.small { min-height: 44px; }
 .aw-doorrow .grow { min-width: 200px; display: grid; gap: 2px; }
 .aw-doornote { color: var(--warn); font-weight: 600; }
 .aw-doorrow .stepper button { min-width: 44px; min-height: 44px; }
+/* Vinyl wrap, under the lap siding choice on the Exterior step. */
+.aw-vinyl { border: 1px solid var(--line); border-radius: var(--r-sm); margin-top: 8px; min-height: 52px; font-size: 16px; }
+.aw-vinyl.on { border-color: var(--good); background: var(--good-bg); }
+.aw-vinyl input { width: 22px; height: 22px; }

@@ -227,7 +227,7 @@
     sheet.ok = null;
     return true;
   }
-  const isFix = (key) => /^x[bswluf]\d*$/.test(key || '');
+  const isFix = (key) => /^x[bswlufg]\d*$/.test(key || '');
   const basePlace = bsEdPlace;
   bsEdPlace = function (key, wi, want) {
     return isFix(key) ? fpPlace(key, wi, want) : basePlace(key, wi, want);
