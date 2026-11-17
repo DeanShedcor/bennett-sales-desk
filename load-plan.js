@@ -51,10 +51,10 @@ function lpFit(units, rig, kind) {
   if (units.some((u) => u.leg && u.leg !== 'plant-lot') && rig.home === false) tight.push('This trailer is not set up for home deliveries.');
   const wide = units.filter((u) => u.wid >= LG.set.wideFt).sort((a, b) => b.wid - a.wid)[0];
   if (wide) tight.push(`${wide.wid} ft wide: needs a permit.`);
-  return no.length ? { level: 'no', why: [...no, ...tight] } : tight.length ? { level: 'tight', why: tight } : { level: 'yes', why: [`${feet} of ${rig.feet} ft used.`] };
+  return no.length ? { level: 'no', why: [...no, ...tight], main: no } : tight.length ? { level: 'tight', why: tight } : { level: 'yes', why: [`${feet} of ${rig.feet} ft used.`] };
 }
 const lpChip = (f) => `<span class="ops-flag ${LP_CLASS[f.level]} lp-fit" data-fit="${f.level}">${LP_LABEL[f.level]}</span>`;
-const lpWhy = (f) => (f.level === 'yes' || f.level === 'unknown' ? '' : `<span class="lp-why">${esc(f.why.join(' '))}</span>`);
+const lpWhy = (f) => (f.level === 'yes' || f.level === 'unknown' ? '' : `<span class="lp-why">${esc((f.main || f.why).join(' '))}</span>`);
 const lpFilters = (again) => `<div class="chiprow lp-filters" role="group" aria-label="What to show">${LP_FILTERS.map(([k, t]) => `<button type="button" class="chipbtn${LP.filter === k ? ' on' : ''}" aria-pressed="${LP.filter === k}" onclick="lpSetFilter('${k}',${again ? `'${again}'` : 'null'})">${t}</button>`).join('')}</div>`;
 function lpSetFilter(k, again) {
   LP.filter = k;
