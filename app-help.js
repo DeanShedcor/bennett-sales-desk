@@ -368,6 +368,9 @@ function ahDragTip(force) {
   const later = () => { clearTimeout(wait); wait = setTimeout(ahRest, 160); };
   window.addEventListener('scroll', later, { passive: true });
   window.addEventListener('resize', later);
+  /* A picture that loads late can push a button under Firefly, so it also looks again now and then. */
+  document.addEventListener('load', later, true);
+  setInterval(() => { if (!document.hidden) ahRest(); }, 700);
   /* A person meeting the app for the first time sees the tip a little after the welcome. */
   if (typeof FF_AUTO !== 'undefined' && FF_AUTO) setTimeout(() => ahDragTip(), 9000);
 }
