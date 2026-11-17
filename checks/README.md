@@ -72,7 +72,7 @@ check may still expect the old one. Change the check to match, in the same chang
 | `drive-time.js` | Drive time and the stored road miles |
 | `firefly.js` | Firefly, the guide |
 | `phone.js` | The five sides on a phone (a walk-through) |
-| `fixes/01-…` to `fixes/19-…` | One file for each batch of fixes from the November 2026 review |
+| `fixes/01-…` to `fixes/20-…` | One file for each batch of fixes from the November 2026 review |
 | `helpers/`, `fixes/phone-parts/`, `fixes/ink.py` | Small pieces the checks share |
 
 Pictures and other files a check writes go in `checks/out/`, which is not saved with the project.

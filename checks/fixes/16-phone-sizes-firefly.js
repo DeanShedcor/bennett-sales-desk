@@ -185,10 +185,10 @@ const errs = [];
     const during = await nums();
     await p.evaluate(() => ffClose()); await p.waitForTimeout(300);
     const a2 = await nums();
-    ok('Reading "Today" in Firefly clears the bell too', b2.bell > 0 && during.bell === b2.bell && a2.bell === 0 && a2.ff === 0, JSON.stringify([b2, during, a2]));
+    ok('Closing "Today" in Firefly leaves the news unread, on the bell too', b2.bell > 0 && during.bell === b2.bell && a2.bell === b2.bell && a2.ff === b2.ff, JSON.stringify([b2, during, a2]));
     await p.evaluate(() => { taNotify({ to: 'logi', title: 'Test news', body: 'One new thing' }); }); await p.waitForTimeout(300);
     const a3 = await nums();
-    ok('A new piece of news shows on both at once', a3.bell === 1 && a3.ff === 1, JSON.stringify(a3));
+    ok('A new piece of news shows on both at once', a3.bell === a2.bell + 1 && a3.ff === a2.ff + 1, JSON.stringify(a3));
     await p.close();
   }
 
