@@ -1,0 +1,51 @@
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+  const p = await b.newPage({ viewport: { width: 1360, height: 950 } });
+  const errs = []; let pass = 0, fail = 0;
+  p.on('pageerror', (e) => errs.push(e.message));
+  const ok = (n, c, x = '') => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + n + (x ? ' :: ' + x : '')); };
+  const ev = (f, a) => p.evaluate(f, a), w = (ms = 300) => p.waitForTimeout(ms);
+  await p.goto(process.argv[2] || 'http://localhost:8765/'); await w(1500);
+  ok('table holds every plant and lot pair', await ev(() => Object.keys(DT.table).length) === 23 * 22 / 2, String(await ev(() => Object.keys(DT.table).length)));
+  await ev(() => lgOpen('AC')); await w();
+  const plan = await ev(() => { const l = lgLoad('AC'), pl = dtPlan(l), m = lgMiles(l); return { legs: pl.stops.map((s) => [Math.round(s.leg.miles), Math.round(s.leg.min)]), miles: m.legs.map(Math.round), start: pl.start, arrive: pl.stops.map((s) => Math.round(s.arrive)), drive: Math.round(pl.drive), end: Math.round(pl.end), wide: pl.wide, mph: pl.mph }; });
+  ok('leg miles match the load’s miles', plan.legs.every((l, i) => l[0] === plan.miles[i]), JSON.stringify(plan));
+  ok('every pair has real road data', await ev(() => Object.values(DT.table).every((r) => r.car != null && r.real)));
+  ok('plant to Lexington: 194 road miles, 3 h 45 by car, plus 15% for the truck', await ev(() => { const r = DT.table[dtKey('plant:orangeburg', 'lot:lexington')]; return Math.round(r.miles) === 194 && r.car === 225; }) && plan.legs[0][1] === Math.round(225 * 1.15), JSON.stringify(plan.legs[0]));
+  ok('first arrival = leave + drive', plan.arrive[0] === plan.start + plan.legs[0][1]);
+  ok('panel on the load page with a timeline', await p.locator('.dt-panel .dt-line li').count() >= 5 && /Road times/.test(await p.$eval('.dt-panel', (e) => e.innerText)));
+  ok('stop cards show the arrival', /Arrives about/.test(await p.$eval('#app', (e) => e.innerText)));
+  await p.screenshot({ path: 'shots/dt-load.png', fullPage: true });
+  const before = await p.$eval('.dt-sum', (e) => e.innerText);
+  await p.fill('.dt-top input[type=time]', '03:00'); await p.keyboard.press('Tab'); await w();
+  ok('changing the leave time moves every time', await ev(() => dtPlan(lgLoad('AC')).start) === 180 && (await p.$eval('.dt-sum', (e) => e.innerText)) !== before);
+  ok('too early: flagged as before the lot opens', await ev(() => dtPlan(lgLoad('AC')).stops.some((s) => s.flag)) , JSON.stringify(await ev(() => dtPlan(lgLoad('AC')).stops.map((s) => s.flag?.text))));
+  await ev(() => dtLeave('AC', '15:00')); await w();
+  ok('too late: a check warns the lot will be closed', await ev(() => lgChecks(lgLoad('AC')).some((c) => c.dt && /closes/.test(c.text))), (await ev(() => lgChecks(lgLoad('AC')).filter((c) => c.dt).map((c) => c.text))).join(' | '));
+  await ev(() => dtLeave('AC', '07:00'));
+  // real road time
+  const est = await ev(() => Math.round(dtPlan(lgLoad('AC')).stops[0].leg.min));
+  await ev(() => dtReal('plant:orangeburg', 'lot:lexington', String(300))); await w();
+  ok('a typed road time is used, and marked', await ev(() => { const s = dtPlan(lgLoad('AC')).stops[0]; return Math.round(s.leg.min) === 300 && s.leg.real; }) && est !== 300, `${est} -> 300`);
+  ok('table modal shows it as a typed time', /your time/.test(await p.$eval('.dt-pair.typed', (e) => e.innerText)));
+  await p.screenshot({ path: 'shots/dt-table.png' });
+  await ev(() => { dtReal('plant:orangeburg', 'lot:lexington', ''); closeModal(); }); await w();
+  ok('emptying it goes back to the stored road time', await ev(() => Math.round(dtPlan(lgLoad('AC')).stops[0].leg.min)) === est);
+  // hours limit
+  await ev(() => { DT.set.truckPct = 60; dtLeave('AC', '03:00'); DT.table[dtKey('plant:orangeburg', 'lot:lexington')].min = 500; render(); }); await w();
+  ok('over 11 hours of driving is flagged', await ev(() => lgChecks(lgLoad('AC')).some((c) => c.dt && /11 hours/.test(c.text))) && /over the 11 hours/.test(await p.$eval('.dt-panel', (e) => e.innerText)));
+  await ev(() => { DT.set.truckPct = 15; DT.table[dtKey('plant:orangeburg', 'lot:lexington')].min = null; dtLeave('AC', '07:00'); render(); });
+  // home delivery uses site miles
+  await ev(() => lgOpen('H12')); await w();
+  ok('a home delivery has a drive time too', await ev(() => { const s = dtPlan(lgLoad('H12')); return s.stops.length === 1 && s.stops[0].leg.min > 0 && s.stops[0].unload === DT.set.homeMin; }));
+  await ev(() => go('lg-loads')); await w();
+  ok('load rows show driving time', /About .* driving/.test(await p.$eval('#app', (e) => e.innerText)));
+  await ev(() => go('lg-fleet')); await w();
+  ok('settings on the Trailers screen', await p.locator('.dt-settings input').count() === 9);
+  await p.setViewportSize({ width: 390, height: 800 }); await ev(() => lgOpen('AC')); await w();
+  const o = await ev(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+  ok('phone fits', o[0] <= o[1], o.join('/'));
+  console.log(`\n${pass} passed, ${fail} failed, errors ${errs.length}`, errs.slice(0, 4));
+  await b.close();
+})();

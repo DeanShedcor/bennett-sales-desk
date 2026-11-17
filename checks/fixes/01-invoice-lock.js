@@ -1,0 +1,46 @@
+// Fix 1: delivery answers lock once the invoice is signed. node fix01.js <url> [pic]
+const { chromium } = require('playwright');
+const mk = require('../helpers/make-sale');
+const L = process.argv[2] || 'http://localhost:8765/', PIC = process.argv[3];
+let pass = 0, fail = 0;
+const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL ') + n + (c ? '' : ' :: ' + (d || ''))); };
+(async () => {
+  const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+  const p = await (await b.newContext({ viewport: { width: 1360, height: 1000 }, deviceScaleFactor: 2 })).newPage();
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+  await p.goto(L); await p.waitForTimeout(2200);
+  await p.evaluate(() => { try { ffSetOn(false); } catch (e) {} }); await p.waitForTimeout(600);
+  await mk(p, 'Cash purchase');
+  const row = () => p.locator('.sf-step:has-text("Delivery site questions")').first();
+  const total = () => p.evaluate(() => orderInvoice(sfSale()).total ?? JSON.stringify(orderInvoice(sfSale())).match(/"total":([\d.]+)/)?.[1]);
+  await row().locator('button').click(); await p.waitForTimeout(200);
+  await p.fill('#of-site-miles', '20'); await p.selectOption('#of-site-access', 'Clear access'); await p.check('#of-site-nogate'); await p.selectOption('#of-site-ground', 'Level');
+  await p.click('.modal button:has-text("Save")'); await p.waitForTimeout(300);
+  ok('Before signing the row offers Change', /Change/.test(await row().innerText()));
+  const t0 = await total();
+  await p.click(`.sf-step button[onclick="sfSignDoc('invoice')"]`); await p.waitForSelector('#sf-pad');
+  const box = await p.locator('#sf-pad').boundingBox(); await p.mouse.move(box.x + 40, box.y + 100); await p.mouse.down(); await p.mouse.move(box.x + 300, box.y + 60, { steps: 12 }); await p.mouse.up();
+  await p.check('#sf-agree'); await p.click('#sf-sign'); await p.waitForTimeout(400);
+  const txt = await row().innerText();
+  ok('After signing the row says it is locked', /Locked: the invoice is signed/.test(txt), txt);
+  ok('After signing there is no plain Change button', !(await row().locator('button', { hasText: /^Change$/ }).count()));
+  ok('After signing the button is Unsign and change', await row().locator('button:has-text("Unsign and change")').count() === 1);
+  if (PIC) { await p.waitForTimeout(4200); await p.click('text=Hide product notes').catch(() => {}); await p.waitForTimeout(300);
+    const y = await p.evaluate(() => document.querySelector('.sf-step').getBoundingClientRect().top + scrollY - 300); await p.evaluate((y) => window.scrollTo(0, Math.max(0, y)), y); await p.waitForTimeout(300);
+    await p.screenshot({ path: PIC + '-a.png', clip: { x: 20, y: 110, width: 1100, height: 620 } }); }
+  await row().locator('button:has-text("Unsign and change")').click(); await p.waitForTimeout(300);
+  ok('Pressing it asks first', /Unsign the invoice to change the delivery answers/.test(await p.locator('.modal').innerText()));
+  if (PIC) await p.screenshot({ path: PIC + '-b.png', clip: { x: 130, y: 150, width: 1100, height: 620 } });
+  await p.click('.modal button:has-text("Keep it signed")'); await p.waitForTimeout(200);
+  ok('Keep it signed leaves the signature', /Signed/.test(await p.locator('.sf-step:has-text("Customer signs the invoice")').first().innerText()) && /Locked/.test(await row().innerText()));
+  await row().locator('button:has-text("Unsign and change")').click(); await p.waitForTimeout(200);
+  await p.click('.modal button:has-text("Unsign and change")'); await p.waitForTimeout(400);
+  ok('Unsigning opens the delivery questions', await p.locator('#of-site-miles').count() === 1);
+  await p.fill('#of-site-miles', '95'); await p.click('.modal button:has-text("Save")'); await p.waitForTimeout(400);
+  const inv = await p.locator('.sf-step:has-text("Customer signs the invoice")').first().innerText();
+  ok('The invoice needs signing again', /Sign/.test(inv) && !/Signed \d/.test(inv) && await p.locator(`.sf-step button[onclick="sfSignDoc('invoice')"]`).count() === 1, inv);
+  ok('History records the unsigning', await p.evaluate(() => JSON.stringify(sfSale()).includes('Invoice signature removed')));
+  ok('Row is back to Change', /Change/.test(await row().innerText()) && !/Locked/.test(await row().innerText()));
+  console.log(`${pass} passed, ${fail} failed, errors ${errs.length}`, errs.slice(0, 3));
+  await b.close();
+})();
