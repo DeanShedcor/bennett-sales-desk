@@ -151,7 +151,7 @@
   };
 
   /* ---------- Drawing ---------- */
-  function art(lay, P, edit) {
+  function art(lay, P, edit, small) {
     const f = (v) => v.toFixed(1), pts = (l) => l.map((q) => P(q).map(f).join(',')).join(' ');
     const o = [`<defs><pattern id="fp-hatch${edit ? 'e' : 'p'}" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V8" stroke="${edit ? '#345f80' : '#111'}" stroke-width="${edit ? 2 : 1}"/></pattern></defs>`];
     for (const it of lay.items) {
@@ -180,7 +180,8 @@
       const badge = `<circle cx="${f(mx)}" cy="${f(my)}" r="${r}" fill="${todo ? '#b3362e' : sel ? '#ffb703' : '#111'}"/><text x="${f(mx)}" y="${f(my + (edit ? 4.5 : 3.2))}" text-anchor="middle" font-size="${edit ? 12 : it.n > 9 ? 8 : 9}" font-weight="700" fill="${sel && !todo ? '#0c1a28' : '#fff'}">${todo && edit ? '?' : it.n}</text>`;
       const tag = `<text x="${f(mx)}" y="${f(my + r + (edit ? 15 : 10))}" text-anchor="middle" font-size="${edit ? 13 : 8.6}" font-weight="700" fill="${todo ? '#b3362e' : '#111'}" stroke="#fff" stroke-width="${edit ? 4 : 2.5}" paint-order="stroke">${esc(it.name)}${todo ? ' · not placed' : ''}</text>`;
       /* On the printed plan the number is enough: the name and the spot are in the list beside it. */
-      o.push(edit ? `<g data-key="${it.key}" class="bs-edit-item fp-piece">${glow}${body}${badge}${tag}</g>` : `<g class="fp-piece">${body}${badge}</g>`);
+      /* On a narrow screen the names would pile up, so only the picked piece shows its name. */
+      o.push(edit ? `<g data-key="${it.key}" class="bs-edit-item fp-piece">${glow}${body}${badge}${small && !sel ? '' : tag}</g>` : `<g class="fp-piece">${body}${badge}</g>`);
     }
     return o.join('');
   }
@@ -200,7 +201,7 @@
     const svg = baseEdDraw(lay);
     if (!lay.items.some((x) => x.kind === 'fix')) return svg;
     const g = bsEdGeom(lay.sh);
-    return under(svg, art(lay, ([x, y]) => [g.X0 + x * g.Sc, g.Y0 + y * g.Sc], true));
+    return under(svg, art(lay, ([x, y]) => [g.X0 + x * g.Sc, g.Y0 + y * g.Sc], true, g.VW < 600));
   };
 
   /* ---------- The editor ---------- */
