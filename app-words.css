@@ -47,3 +47,5 @@ button.primary, a.primary, button.primary.small { min-height: 44px; }
 .aw-vinyl { border: 1px solid var(--line); border-radius: var(--r-sm); margin-top: 8px; min-height: 52px; font-size: 16px; }
 .aw-vinyl.on { border-color: var(--good); background: var(--good-bg); }
 .aw-vinyl input { width: 22px; height: 22px; }
+.aw-vinyl.off { opacity: 0.65; cursor: not-allowed; }
+.aw-vinyl small { display: block; color: var(--muted); font-size: 14px; }

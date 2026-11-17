@@ -324,18 +324,31 @@ if (typeof TA_ADDONS !== 'undefined') {
 /* ---------- 8. Vinyl wrap lives with the siding ----------
    The owner asked (Nov 2026) for Exterior to come before Colors (the `steps` list in core.js) and
    for vinyl wrap to leave the last step's list and sit under the lap siding choice on the Exterior
-   step, as a tick box with its fee. Neither the price list nor the knowledge base ties vinyl wrap
-   to one kind of siding, so it can be ticked with either siding on a wood building (the same rule
-   it had before). The price and the price line are unchanged (c.extras, taAddonRows). */
+   step, as a tick box with its fee. The owner's rule: "Vinyl is only a lap siding add on." So the
+   box can be ticked only when lap siding is chosen; with other siding it is greyed with "Only with
+   lap siding", and changing away from lap siding unticks it and takes its price off.
+   The price and the price line are otherwise unchanged (c.extras, taAddonRows). */
 if (typeof TA_ADDONS !== 'undefined') {
+  const vinyl = taAddon('Vinyl Wrap'), lap = (c) => c.siding === 'Lap';
+  if (vinyl) { const was = vinyl[3]; vinyl[3] = (c) => was(c) && lap(c); }
   const baseStep = stepBody;
   stepBody = function () {
-    const out = baseStep(), c = S.c, a = taAddon('Vinyl Wrap');
-    if (!Array.isArray(out) || steps[S.step] !== 'Exterior' || S.path === 'lot' || !a || !a[3](c) || !out[1].includes('smartside-lap-siding.png')) return out;
-    const on = !!c.extras?.['Vinyl Wrap'], price = taListPrice('Vinyl Wrap');
-    const box = `<label class="techshield-addon aw-vinyl${on ? ' on' : ''}"><input id="aw-vinyl" type="checkbox" ${on ? 'checked' : ''} onchange="taAddonSet('Vinyl Wrap',this.checked)"> <span>Add vinyl wrap</span> <strong>${price == null ? 'Ask the office for the price' : '+' + money(price)}</strong></label>`;
+    const out = baseStep(), c = S.c;
+    if (!Array.isArray(out) || steps[S.step] !== 'Exterior' || S.path === 'lot' || !vinyl || !out[1].includes('smartside-lap-siding.png')) return out;
+    const can = lap(c), on = can && !!c.extras?.['Vinyl Wrap'], price = taListPrice('Vinyl Wrap');
+    const box = `<label class="techshield-addon aw-vinyl${on ? ' on' : ''}${can ? '' : ' off'}"><input id="aw-vinyl" type="checkbox" ${on ? 'checked' : ''} ${can ? '' : 'disabled'} onchange="taAddonSet('Vinyl Wrap',this.checked)"> <span>Add vinyl wrap${can ? '' : ' <small>Only with lap siding</small>'}</span> <strong>${price == null ? 'Ask the office for the price' : '+' + money(price)}</strong></label>`;
     /* Straight after the lap siding choice, which is the last choice card on this step. */
     const at = out[1].indexOf('</button>', out[1].indexOf('smartside-lap-siding.png'));
     return [out[0], at < 0 ? out[1] + box : out[1].slice(0, at + 9) + box + out[1].slice(at + 9)];
+  };
+  /* Changing away from lap siding takes vinyl wrap off, and says so. */
+  const baseChange = change;
+  change = function (key, value, resolve) {
+    baseChange(key, value, resolve);
+    if (S.c.extras?.['Vinyl Wrap'] && !lap(S.c)) {
+      delete S.c.extras['Vinyl Wrap'];
+      render();
+      toast('Vinyl wrap was taken off. It only goes with lap siding.');
+    }
   };
 }
