@@ -42,7 +42,7 @@ body.bs-open { overflow: hidden; }
 .bs-cell.bs-warn { background: #111; color: #fff; }
 .bs-cell.bs-warn small { color: #ddd; }
 .bs-page h2 { font: 700 10px/1.3 Inter, Arial, sans-serif; letter-spacing: 1.3px; text-transform: uppercase; margin: 0 0 4px; padding-bottom: 2px; border-bottom: 2px solid #111; color: #111; }
-.bs-spec { display: grid; grid-template-columns: repeat(7, 1fr); border: 1.5px solid #111; margin-top: 8px; }
+.bs-spec { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border: 1.5px solid #111; margin-top: 8px; }
 .bs-spec > div { padding: 5px 7px 6px; border-left: 1px solid #111; min-width: 0; }
 .bs-spec > div:first-child { border-left: 0; }
 .bs-spec h3 { margin: 0 0 3px; font: 700 9px/1.3 Inter, Arial, sans-serif; letter-spacing: 1.2px; text-transform: uppercase; background: #111; color: #fff; padding: 2px 5px; display: inline-block; }

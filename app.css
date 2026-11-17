@@ -681,3 +681,43 @@ th { background: var(--surface-2); font-weight: 700; }
 .sp-sitefee { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 14px; font-size: 15px; }
 .sp-withdelivery { font-size: 15px; }
 @media (max-width: 680px) { .sp-perfrow { flex-direction: column; align-items: stretch; } .sp-perfwhen { justify-items: start; max-width: none; text-align: left; grid-auto-flow: column; justify-content: start; gap: 8px; align-items: center; } }
+
+/* Electrical placement question */
+.ep-card { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 16px 0 0; padding: 18px 20px; border-radius: var(--r); border: 2px solid var(--line-strong); background: var(--surface); }
+.ep-card.ask { border-color: var(--amber-deep); background: var(--warn-bg); }
+.ep-card.done { border-color: var(--good); background: var(--good-bg); }
+.ep-card.done > svg { color: var(--good); flex: none; }
+.ep-card .grow { display: grid; gap: 4px; flex: 1; min-width: 240px; }
+.ep-card strong { font-size: 17px; }
+.ep-card small { font-size: 14px; color: var(--ink); }
+.ep-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.ep-card button { min-height: 48px; padding: 0 22px; font-size: 16px; }
+.ep-card.nudge { animation: ep-nudge 0.5s ease; }
+@keyframes ep-nudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+/* Options on the floor plan (floorplan-options.js) */
+.fp-ask { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 16px 0 0; padding: 18px 20px; border-radius: var(--r); border: 2px solid var(--line-strong); background: var(--surface); }
+.fp-ask.ask { border-color: var(--amber-deep); background: var(--warn-bg); }
+.fp-ask.done { border-color: var(--good); background: var(--good-bg); }
+.fp-ask.done > svg { color: var(--good); flex: none; }
+.fp-ask .grow { display: grid; gap: 4px; flex: 1; min-width: 240px; }
+.fp-ask strong { font-size: 17px; }
+.fp-ask small { font-size: 14px; color: var(--ink); }
+.fp-ask ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; font-size: 15px; font-weight: 600; }
+.fp-ask li { display: flex; align-items: center; gap: 8px; }
+.fp-ask li.ok svg { color: var(--good); }
+.fp-ask li.todo { color: var(--bad); }
+.fp-q { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--bad); color: #fff; font-size: 12px; font-weight: 800; }
+.fp-ask button { min-height: 48px; padding: 0 22px; font-size: 16px; }
+.fp-ask.nudge { animation: ep-nudge 0.5s ease; }
+.fp-tray { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--amber-deep); background: var(--warn-bg); font-size: 15px; }
+.fp-tray.done { border-color: var(--good); background: var(--good-bg); }
+.fp-tray.done svg { color: var(--good); }
+.fp-tray span { color: var(--ink); }
+.fp-chips { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+.fp-chip { min-height: 48px; padding: 0 16px; border-radius: 999px; border: 2px solid var(--bad); background: #fff; color: var(--bad); font-weight: 700; font-size: 15px; cursor: pointer; }
+.fp-card .fp-warn { margin: 6px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-weight: 600; font-size: 14px; }
+.fp-card .fp-todo { margin: 8px 0; font-size: 14.5px; }
+.fp-card .fp-here { min-height: 48px; padding: 0 20px; font-size: 16px; }
+.fp-card .fp-ok { display: inline-flex; align-items: center; gap: 6px; color: var(--good); font-weight: 700; margin-right: 12px; }
+.fp-piece text { pointer-events: none; }

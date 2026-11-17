@@ -356,7 +356,7 @@ function bsBand(o, lay, page) {
 function bsSpec(c, lay) {
   const pkg = activePackage(c), wood = usesWoodOptions(c);
   const count = (list) => Object.entries(list.reduce((m, x) => ((m[x] = (m[x] || 0) + 1), m), {})).map(([k, n]) => `${n} × ${k}`);
-  const openings = count(lay.items.filter((x) => x.w).map((x) => x.name.toLowerCase() + (x.note ? `, ${x.note}` : '')));
+  const openings = count(lay.items.filter((x) => x.w && x.kind !== 'fix').map((x) => x.name.toLowerCase() + (x.note ? `, ${x.note}` : '')));
   const elec = { 'Lights Only': ['1 light', '1 switch', '1 drop-cord adapter'], Minimal: ['1 light', '1 switch', '1 drop-cord adapter'], Basic: ['1 light', '1 switch', '1 outlet', '1 drop-cord adapter'], Expanded: ['1 light', '1 switch', '3 outlets', '1 drop-cord adapter'], Utility: ['1 light', '1 switch', '3 outlets', 'Six-space breaker box'] }[c.electrical] || [];
   const groups = [
     ['Floor', [`Floor joists ${c.floor || pkg?.floor ? '12" on center (upgrade)' : '16" on center'}`, `${lay.sh.W} × ${lay.sh.L} ft footprint`]],
@@ -367,6 +367,8 @@ function bsSpec(c, lay) {
       `Walls ${lay.sh.walls[0].id} to ${lay.sh.walls[lay.sh.walls.length - 1].id}: sheet 2`,
     ]],
     ['Doors &amp; windows', openings.length ? openings.map(esc) : ['None on the order']],
+    /* Options placed on the plan by floorplan-options.js: workbench, shelving, walls, lofts. */
+    ...(lay.items.some((x) => x.kind === 'fix') ? [['Inside options', lay.items.filter((x) => x.kind === 'fix').map((x) => esc(x.name) + (x.placed ? '' : ' (not placed yet)'))]] : []),
     ['Roof', [
       c.roof === 'Metal' ? `Metal roof, ${bsSw(metalRoofColors[c.roofColor])}${esc(c.roofColor || 'color not chosen')}` : 'Architectural shingles',
       c.style === 'Lofted' ? 'Gambrel roof, front and rear lofts' : c.style === 'Low-Wall Barn' ? 'Gambrel roof' : c.style === 'Studio' ? 'Single-slope roof' : 'Gable roof',
@@ -566,7 +568,7 @@ function bsSchedule(lay) {
   const tbl = (list) =>
     list.length
       ? `<table><thead><tr><th>#</th><th>Item</th><th>Wall</th><th>Position on the wall</th></tr></thead><tbody>${list
-          .map((it) => `<tr><td>${bsBal(it.n)}</td><td><b>${esc(it.name)}</b>${it.note ? ' · ' + esc(it.note) : ''}</td><td>${it.wi < 0 ? 'Ceiling' : `${bsTag(lay.sh.walls[it.wi].id)} ${esc(lay.sh.walls[it.wi].name)}`}</td><td>${bsWhere(it, lay.sh)}${it.moved ? ' · moved' : ''}</td></tr>`)
+          .map((it) => `<tr><td>${bsBal(it.n)}</td><td><b>${esc(it.name)}</b>${it.note ? ' · ' + esc(it.note) : ''}</td><td>${it.kind === 'fix' ? it.wallText : it.wi < 0 ? 'Ceiling' : `${bsTag(lay.sh.walls[it.wi].id)} ${esc(lay.sh.walls[it.wi].name)}`}</td><td>${it.kind === 'fix' ? it.whereText /* an option placed by floorplan-options.js */ : bsWhere(it, lay.sh) + (it.moved ? ' · moved' : '')}</td></tr>`)
           .join('')}</tbody></table>`
       : '<div></div>';
   return `<h2>What goes where · every position is drawn wall by wall on sheet 2 · open questions are listed on sheet 2</h2><div class="bs-two">${tbl(lay.items.slice(0, half))}${tbl(lay.items.slice(half))}</div>`;
