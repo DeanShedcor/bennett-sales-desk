@@ -74,6 +74,7 @@ PP_WORDS.push(
   [/price divided by ([\d.]+)/g, 'the price split into $1 parts'],
   [/Synced from Turbo Assist/g, 'From Turbo Assist'], [/\bPOS\b/g, 'sales desk'],
   [/Published ranges are a guide; confirm the exact size and package price before quoting\./g, 'These sizes are a guide. Ask the office about the exact size and price before you quote.'],
+  [/Door add-on prices are from IdeaRoom on a 12.{1,3}16 Basic Utility\. Main-door changes use the difference from the included double shed door\. Confirm fit and any unpriced option\. The 3D model shows reference openings\./g, 'A different main door costs the difference from the double shed door that comes with the building. Ask the office about any door with no price.'],
   [/Admin, owner or trainer/g, 'Office lead, owner or trainer'], [/Admin or owner only/g, 'Office lead or owner only']
 );
 Object.assign(PP_EXACT, { Admin: 'Office', Stats: 'Performance', Places: 'Locations', Changes: 'Change orders', Units: 'All buildings', '/mo': ' a month', '/mo + tax': ' a month + tax', '/month': ' a month' });
