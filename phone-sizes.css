@@ -13,7 +13,8 @@
   input[type='file'] { font-size: 16px !important; min-height: 44px; }
   input[type='checkbox'], input[type='radio'] { min-width: 22px; min-height: 22px; }
 
-  button, summary, [role='button'], .chipbtn { min-height: 44px; min-width: 44px; }
+  /* :where() keeps this rule the weakest, so a bigger size set elsewhere (48 px at the plant) still wins. */
+  :where(button, summary, [role='button'], .chipbtn) { min-height: 44px; min-width: 44px; }
   button.link { display: inline-flex; align-items: center; text-align: left; }
   summary { display: flex; align-items: center; }
   details > summary { list-style-position: inside; }

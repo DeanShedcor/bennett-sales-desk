@@ -134,7 +134,7 @@ const AH_FAQ = [
     text: 'On Production, open the building. Type a note if you need one, then press the button for the next step. “Undo” shows for 10 seconds if you pressed it by mistake.', go: "go('prod')", label: 'Open the board', tour: 'prod-board' },
   { id: 'price', test: /\b(change|raise|lower|set|update|edit|fix)\b.*\b(price|prices|pricing)\b|price (increase|change)/, title: 'Change a price', need: 'pricing',
     text: 'Press the gear and open “Model pricing”. Type the new price on any size or option. Changes wait in “Draft and publish”. Pick the day, press Publish, and check the list before you say yes. “Undo this publish” puts the old prices back.', go: "AD.tab='grid';go('of-prices')", label: 'Open Model pricing', tour: 'office-prices' },
-  { id: 'sale', test: /\b(start|begin|make|open|ring up|do)\b.*\b(new )?sale\b|\bsell (a|my|the) (shed|building)\b|new sale/, title: 'Start a sale', need: 'sales',
+  { id: 'sale', test: /\b(start|begin|make|open|ring up|do)\b.*\b(new )?sale\b|new sale/, title: 'Start a sale', need: 'sales',
     text: 'Press “Start a sale” on Home, or “New sale” in the menu. Then pick a building from your lot, or build a new one step by step.', go: "S.saleLead=null;go('start')", label: 'Start a sale', tour: 'sales-lot' },
   { id: 'pay', test: /\b(take|record|enter|add|log|collect)\b.*\b(payment|deposit|money)\b|\bhow do i get paid by\b/, title: 'Take a payment', need: 'sales',
     text: 'At the desk, type the money taken today on the last step of the sale. At the office, open the order’s Money box and press “Record a payment”, then “Confirm received” when the money is in.', go: "go('orders')", label: 'Open Orders' },
@@ -301,6 +301,8 @@ function ahClearAll() {
   taOpenNotices();
 }
 taOpenNotices = function () {
+  /* When Firefly lives in the bell, the bell opens Firefly (which lists the news under “Today”). */
+  if (FF.on && FF.home === 'bell') return ffToggle();
   const side = taSide(), list = taNoticesFor(side);
   modal(
     'What is new',
