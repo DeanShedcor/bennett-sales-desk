@@ -295,6 +295,15 @@ function ahClearNotice(id) {
   if (i >= 0) TA.notices.splice(i, 1);
   taOpenNotices();
 }
+function ahReadNotice(id) {
+  const n = TA.notices.find((x) => x.id === id);
+  if (n) n.read = true;
+  taChrome();
+}
+function ahReadAll() {
+  taNoticesFor(taSide()).forEach((n) => (n.read = true));
+  taOpenNotices();
+}
 function ahClearAll() {
   const side = taSide();
   for (const n of taNoticesFor(side)) TA.notices.splice(TA.notices.indexOf(n), 1);
@@ -312,12 +321,12 @@ taOpenNotices = function () {
       list.length
         ? list.map((n) => {
             const go = ahNoticeGo(n);
-            return `<div class="ta-notice${n.read ? '' : ' new'}" data-notice="${n.id}"><div class="grow"><strong>${esc(n.title)}</strong><p>${esc(n.body)}</p><small>${taAgo(n.at)}</small></div><span class="ah-nbtns">${go ? `<button type="button" class="secondary small" onclick="closeModal();${esc(go)}">Open</button>` : ''}<button type="button" class="secondary small" onclick="ahClearNotice('${n.id}')" aria-label="Clear: ${esc(n.title)}">Clear</button></span></div>`;
+            return `<div class="ta-notice${n.read ? '' : ' new'}" data-notice="${n.id}"><div class="grow"><strong>${esc(n.title)}</strong><p>${esc(n.body)}</p><small>${taAgo(n.at)}</small></div><span class="ah-nbtns">${go ? `<button type="button" class="secondary small" onclick="ahReadNotice('${n.id}');closeModal();${esc(go)}">Open</button>` : ''}${n.read ? '' : `<button type="button" class="secondary small" onclick="ahReadNotice('${n.id}');taOpenNotices()" aria-label="Mark as read: ${esc(n.title)}">Mark read</button>`}<button type="button" class="secondary small" onclick="ahClearNotice('${n.id}')" aria-label="Clear: ${esc(n.title)}">Clear</button></span></div>`;
           }).join('')
         : '<p class="muted">Nothing new for this side.</p>'
-    }</div>${list.length > 1 ? `<div class="actions">${button('Clear all', 'ahClearAll()', 'secondary')}</div>` : ''}`
+    }</div>${list.length ? `<div class="actions">${list.some((n) => !n.read) ? button('Mark all read', 'ahReadAll()', 'secondary') : ''}${list.length > 1 ? button('Clear all', 'ahClearAll()', 'secondary') : ''}</div>` : ''}`
   );
-  list.forEach((n) => (n.read = true));
+  /* Opening the list does not mark the news read. Open, Mark read or Mark all read does. */
   taChrome();
 };
 

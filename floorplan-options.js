@@ -157,7 +157,16 @@
     for (const it of lay.items) {
       if (it.kind !== 'fix') continue;
       const { main, arms } = corners(lay.sh, it), sel = edit && BS.sel === it.key, todo = !it.placed;
-      const cx = main.reduce((s, p) => s + p[0], 0) / 4, cy = main.reduce((s, p) => s + p[1], 0) / 4, [mx, my] = P([cx, cy]);
+      const cx = main.reduce((s, p) => s + p[0], 0) / 4, cy = main.reduce((s, p) => s + p[1], 0) / 4;
+      let [mx, my] = P([cx, cy]);
+      /* On the printed plan a piece's number never sits under a wall letter: it steps toward the middle of the building. */
+      if (!edit) {
+        const mid = P([lay.sh.poly.reduce((s, p) => s + p[0], 0) / lay.sh.poly.length, lay.sh.poly.reduce((s, p) => s + p[1], 0) / lay.sh.poly.length]);
+        for (let tries = 0; tries < 4 && lay.sh.walls.some((w) => w.tagAt && Math.hypot(w.tagAt[0] - mx, w.tagAt[1] - my) < 20); tries++) {
+          const d = Math.hypot(mid[0] - mx, mid[1] - my) || 1;
+          mx += ((mid[0] - mx) / d) * 22; my += ((mid[1] - my) / d) * 22;
+        }
+      }
       const line = todo ? '#b3362e' : edit ? '#0c1a28' : '#111', dash = todo ? 'stroke-dasharray="7 5"' : '';
       let body = '';
       if (it.fix === 'frame') {
