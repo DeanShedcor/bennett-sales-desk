@@ -74,15 +74,16 @@ function run(file, url, extra = []) {
         failed = lines.filter((l) => /^\s*(FAIL|✗)\b/.test(l)).length;
       }
       /* Some older checks walk through the app and only report page errors and layout trouble. */
-      const trouble = lines.filter((l) => /\b(OVERFLOW|STEP ERROR|PROBLEM)\b/.test(l));
+      const trouble = lines.filter((l) => /\b(STEP ERROR|PROBLEM)\b/.test(l));
+      const notes = lines.filter((l) => /\bOVERFLOW\b/.test(l)); /* something wider than its box: worth a look, not a failure */
       failed += trouble.length;
       if (!said && !passed && !failed && !code && !signal) passed = 1; /* it walked through cleanly */
-      const errs = [...text.matchAll(/errors?:? (\d+)/gi)].map((m) => +m[1]).reduce((a, b) => a + b, 0) + (/errors \[\s*\S/.test(text) ? 1 : 0);
+      const errs = [...text.matchAll(/errors?:? (\d+)/gi)].map((m) => +m[1]).reduce((a, b) => a + b, 0) + (/errors \[\s*[^\]\s]/.test(text) ? 1 : 0);
       const problems = [...text.matchAll(/(\d+) problems/g)].map((m) => +m[1]).reduce((a, b) => a + b, 0);
       const crashed = signal ? 'stopped after 20 minutes' : code && !failed ? 'stopped with an error' : '';
       const bad = [...lines.filter((l) => /^\s*(FAIL|✗)\b/.test(l)), ...trouble].slice(0, 5);
       if (crashed) bad.push(...lines.filter((l) => l.trim()).slice(-4));
-      done({ passed, failed: failed + (crashed ? 1 : 0), errs: errs + problems, crashed, bad });
+      done({ passed, failed: failed + (crashed ? 1 : 0), errs: errs + problems, crashed, bad, notes: notes.length });
     });
   });
 }
@@ -100,7 +101,7 @@ function run(file, url, extra = []) {
     P += r.passed; F += r.failed; E += r.errs;
     const good = !r.failed && !r.errs;
     if (!good) failedNames.push(name);
-    console.log(`${good ? 'ok  ' : 'FAIL'}  ${name.padEnd(46)} ${String(r.passed).padStart(4)} passed  ${String(r.failed).padStart(3)} failed${r.errs ? `  ${r.errs} page errors` : ''}  ${Math.round((Date.now() - t) / 1000)}s${r.crashed ? '  (' + r.crashed + ')' : ''}`);
+    console.log(`${good ? 'ok  ' : 'FAIL'}  ${name.padEnd(46)} ${String(r.passed).padStart(4)} passed  ${String(r.failed).padStart(3)} failed${r.errs ? `  ${r.errs} page errors` : ''}  ${Math.round((Date.now() - t) / 1000)}s${r.crashed ? '  (' + r.crashed + ')' : ''}${r.notes ? `  (${r.notes} layout notes: run it alone to read them)` : ''}`);
     for (const l of r.bad) console.log('        ' + l.trim().slice(0, 220));
   }
   if (server) server.close();

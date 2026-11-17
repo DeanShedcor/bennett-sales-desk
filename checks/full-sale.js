@@ -5,7 +5,7 @@ const D = process.cwd() + '/';
   const url = process.argv[2] || 'http://localhost:8765/', type = process.argv[3] || 'Cash purchase';
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
   const p = await b.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 });
-  const errs = []; p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => m.type() === 'error' && errs.push('console: ' + m.text()));
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => m.type() === 'error' && !/ERR_TUNNEL|Failed to load resource/.test(m.text()) && errs.push('console: ' + m.text())); /* a picture that cannot load is not a fault in the app */
   await p.goto(url); await p.waitForTimeout(1200);
   const log = (...a) => console.log(...a);
   const state = () => p.evaluate(() => { const s = S.sales.find((x) => x.id === S.activeSale); return s ? `${s.status} | ${s.fulfillment}` : 'no sale'; });

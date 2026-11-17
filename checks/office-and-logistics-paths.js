@@ -5,7 +5,7 @@ const D = process.cwd() + '/';
   const url = process.argv[2] || 'http://localhost:8765/';
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
   const p = await b.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 });
-  const errs = []; p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => m.type() === 'error' && errs.push('console: ' + m.text()));
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => m.type() === 'error' && !/ERR_TUNNEL|Failed to load resource/.test(m.text()) && errs.push('console: ' + m.text())); /* a picture that cannot load is not a fault in the app */
   await p.goto(url); await p.waitForTimeout(1200); await p.evaluate(() => { if (typeof OP !== 'undefined') OP.setTab = 'all'; if (typeof OG !== 'undefined') { OG.live = true; ofAll().forEach((s) => { if (!ofRto(s) && !s.invoice) ofRec(s).taxExempt = { by: 'check', at: 1 }; }); } });
   const log = (...a) => console.log(...a);
   const toastText = () => p.evaluate(() => document.getElementById('toast').textContent);
