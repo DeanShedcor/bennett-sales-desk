@@ -228,18 +228,19 @@ const URL = process.argv[2] || 'http://localhost:8765/';
   // ---------- J. Company bills ----------
   await ev(() => go('office')); await wait(250);
   await p.click('.to-sum:has-text("due soon")'); await wait(300);
-  ok('J1 the bills page opens from the Office home and lights its menu item', (await ev(() => S.page)) === 'of-bills' && (await p.$$eval('.ops-list .ops-row', (e) => e.length)) === 5 && (await p.locator('[data-nav="of-bills"].active').count()) >= 1);
-  const billText = (await p.textContent('.ops-list')).replace(/\s+/g, ' ');
+  ok('J1 the bills page opens from the Office home and lights its menu item', (await ev(() => S.page)) === 'of-bills' && (await p.$$eval('.ops-list .ops-row', (e) => e.length)) === (await ev(() => TO.bills.length)) && (await p.locator('[data-nav="of-bills"].active').count()) >= 1);
+  const billText = (await p.textContent('#app')).replace(/\s+/g, ' ');
   ok('J2 a readable due rule gets a reminder; text-only and ended bills do not', /Due soon/.test(billText) && /Office manager is reminded/.test(billText) && /No reminder: the due rule is only text/.test(billText) && /No reminders while ended/.test(billText));
   await p.click('button:has-text("Add a bill")'); await wait(200);
-  await p.fill('#to-b-provider', 'Sample Gas Works'); await p.selectOption('#to-b-sub', 'gas'); await p.fill('#to-b-lead', '91'); await p.click('button:has-text("Save the bill")'); await wait(200);
+  const billsBefore = await ev(() => TO.bills.length);
+  await p.fill('#to-b-provider', 'Sample Gas Works'); await p.selectOption('#to-b-where', 'corp'); await p.selectOption('#to-b-sub', 'gas'); await p.fill('#to-b-lead', '91'); await p.click('button:has-text("Save the bill")'); await wait(200);
   ok('J3 days ahead past 90 is refused', /whole number from 0 to 90/.test(await toast()), await toast());
   const dueRule = await ev(() => { const d = new Date(Date.now() + 2 * 864e5); return toOrdinal(Math.min(d.getDate(), 28)) + ' of each month'; });
   await p.fill('#to-b-lead', '6'); await p.fill('#to-b-due', dueRule); await p.fill('#to-b-amount', '88.40');
   const nBefore = await ev(() => TA.notices.filter((x) => x.to === 'office').length);
   await p.click('button:has-text("Save the bill")'); await wait(300);
   const bill = await ev(() => ({ n: TO.bills.length, last: TO.bills[TO.bills.length - 1], notice: TA.notices.filter((x) => x.to === 'office').slice(-1)[0], count: TA.notices.filter((x) => x.to === 'office').length }));
-  ok('J4 a new bill due inside its reminder window sends “… due soon”', bill.n === 6 && bill.last.sub === 'gas' && bill.count === nBefore + 1 && bill.notice.title === 'Sample Gas Works due soon' && bill.notice.body === `${dueRule}. 6 day(s) ahead.`, bill.notice.title + ' :: ' + bill.notice.body);
+  ok('J4 a new bill due inside its reminder window sends “… due soon”', bill.n === billsBefore + 1 && bill.last.place === 'corp' && bill.last.sub === 'gas' && bill.count === nBefore + 1 && bill.notice.title === 'Sample Gas Works due soon' && bill.notice.body === `${dueRule}. 6 day(s) ahead.`, bill.notice.title + ' :: ' + bill.notice.body);
   await p.click('.ops-row:has-text("Sample Gas Works") button:has-text("Mark ended")'); await wait(250);
   ok('J5 an ended bill stops reminding', (await ev(() => TO.bills[TO.bills.length - 1].status)) === 'ended' && /No reminders while ended/.test(await p.textContent('.ops-row:has-text("Sample Gas Works")')));
 
