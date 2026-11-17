@@ -72,9 +72,11 @@ PP_WORDS.push(
   [/Order intake approved/g, 'The office approved this order'], [/Order intake cancelled/g, 'The office cancelled this order'], [/Order intake/g, 'New order'],
   [/Ready for QC today/g, 'Ready for its QC check today'], [/Ready for QC (\d+ days?)/g, 'Waiting $1 for its QC check'],
   [/price divided by ([\d.]+)/g, 'the price split into $1 parts'],
-  [/Synced from Turbo Assist/g, 'From Turbo Assist'], [/\bPOS\b/g, 'sales desk']
+  [/Synced from Turbo Assist/g, 'From Turbo Assist'], [/\bPOS\b/g, 'sales desk'],
+  [/Published ranges are a guide; confirm the exact size and package price before quoting\./g, 'These sizes are a guide. Ask the office about the exact size and price before you quote.'],
+  [/Admin, owner or trainer/g, 'Office lead, owner or trainer'], [/Admin or owner only/g, 'Office lead or owner only']
 );
-Object.assign(PP_EXACT, { Stats: 'Performance', Places: 'Locations', Changes: 'Change orders', Units: 'All buildings', '/mo': ' a month', '/mo + tax': ' a month + tax', '/month': ' a month' });
+Object.assign(PP_EXACT, { Admin: 'Office', Stats: 'Performance', Places: 'Locations', Changes: 'Change orders', Units: 'All buildings', '/mo': ' a month', '/mo + tax': ' a month + tax', '/month': ' a month' });
 
 /* Titles on the QC side read like the other sides' titles. */
 const AW_QC_TITLES = { Buildings: 'Buildings to check.', Rework: 'What needs fixing.', 'Final sign-off': 'Ready for final sign-off.', Report: 'How the QC checks are going.', 'Change orders': 'Changes to orders.', 'What is real and what is not': 'What is real and what is not.' };
