@@ -266,7 +266,8 @@ if (typeof bsStrip === 'function') {
       const across = it.fix === 'loft' || it.fix === 'uloft';
       const at = across ? 0 : it.fix === 'wall' ? Math.max(0, it.at - 0.17) : it.at, len = across ? w.len : it.fix === 'wall' ? 0.34 : it.len || it.w || 1;
       const where = across ? `overhead, ${bsFeet(it.depth)} deep` : it.fix === 'wall' ? `starts at ${bsFeet(it.at)}, runs ${bsFeet(it.depth)} into the building` : `${bsFeet(at)} to ${bsFeet(at + len)}`;
-      return { ...it, kind: 'fixstrip', wi: w.i, at, w: len, high: across, name: `${it.name} (${where})` };
+      /* A piece along the wall: the strip already prints "start to end" after the name, so it is not said twice. */
+      return { ...it, kind: 'fixstrip', wi: w.i, at, w: len, high: across, name: across ? `${it.name} (${where})` : it.name, stripWhere: it.fix === 'wall' ? where : '' };
     });
     return baseStrip({ ...lay, items: [...lay.items, ...drawn] }, w, scale);
   };

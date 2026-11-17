@@ -561,7 +561,7 @@ function bsPlan(lay) {
 }
 
 const bsSideWall = (t) => t.toLowerCase() + (/wall|side|end/i.test(t) ? '' : ' wall');
-const bsWhere = (it, sh) => (it.kind === 'light' ? `${bsFeet(it.x - (sh?.minX || 0))} from the ${sh ? bsSideWall(sh.sides.left) : 'front'}, ${bsFeet(it.y)} from the ${sh ? bsSideWall(sh.sides.top) : 'left side'}` : it.w ? `${bsFeet(it.at)} to ${bsFeet(it.at + it.w)}` : `${bsFeet(it.at)} to center`);
+const bsWhere = (it, sh) => it.stripWhere || (it.kind === 'light' ? `${bsFeet(it.x - (sh?.minX || 0))} from the ${sh ? bsSideWall(sh.sides.left) : 'front'}, ${bsFeet(it.y)} from the ${sh ? bsSideWall(sh.sides.top) : 'left side'}` : it.w ? `${bsFeet(it.at)} to ${bsFeet(it.at + it.w)}` : `${bsFeet(it.at)} to center`);
 
 function bsSchedule(lay) {
   const half = Math.ceil(lay.items.length / 2);

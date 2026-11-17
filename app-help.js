@@ -268,16 +268,7 @@ const ahNews = (side = taSide()) => taNoticesFor(side).filter((n) => !n.read).le
     busy = true;
     try { ffDraw(); } finally { busy = false; }
   };
-  /* Looking at "Today" in Firefly reads the news, the same as opening the bell. */
-  const baseClose = ffClose;
-  ffClose = function () {
-    const read = FF.open && FF.view === 'main' && !FF.tour;
-    baseClose();
-    if (read && ahNews()) {
-      taNoticesFor().forEach((n) => (n.read = true));
-      taChrome();
-    }
-  };
+  /* Closing Firefly does not mark the news read. Opening one piece of news does (small-fixes.js). */
 }
 
 /* ---------- 3. News: open or clear one at a time; Firefly's switch on top ---------- */

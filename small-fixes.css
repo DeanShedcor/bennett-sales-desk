@@ -1,0 +1,17 @@
+/* small-fixes.css: goes with small-fixes.js. */
+
+/* Logistics has seven screens in the top bar. On a tablet turned sideways (about 980 to 1100 wide)
+   they ran past the edge of the screen. They sit a little closer together there. */
+@media (min-width: 981px) and (max-width: 1100px) {
+  [data-side="logi"] .topnav { gap: 0; }
+  [data-side="logi"] .topnav button { padding: 8px 6px; font-size: 13px; }
+  [data-side="logi"] .topbar-in { gap: 8px; }
+}
+
+/* The "More" list on a phone. */
+.sx-morelist { display: grid; gap: 10px; }
+.sx-morerow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 12px 14px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; color: var(--ink); font: inherit; }
+.sx-morerow.on { border-color: var(--amber-deep); }
+.sx-morerow span { display: grid; gap: 2px; min-width: 0; }
+.sx-morerow strong { font-size: 16px; }
+.sx-morerow small { color: var(--muted); font-size: 13px; }
