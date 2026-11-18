@@ -1,0 +1,35 @@
+/* price-bar.css: the designer's bottom bar. See price-bar.js. */
+.deal-more { background: #1f9d55; color: #fff; border-radius: 10px; padding: 8px 10px; font-weight: 700; box-shadow: 0 2px 0 #14713c; gap: 4px; line-height: 1.1; }
+.deal-more .icon { color: #fff; stroke-width: 3.2; width: 18px; height: 18px; }
+.deal-details { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; border-radius: 10px; }
+.deal-details:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+@media (min-width: 981px) {
+  .deal-main { align-items: flex-end; gap: 16px; }
+  .deal-toggle { align-items: flex-end; padding: 0; }
+  .deal-name { padding-bottom: 4px; }
+  .deal-more { height: 48px; box-sizing: border-box; }
+  .deal-more > span { display: block; width: min-content; white-space: normal; text-align: center; text-transform: uppercase; letter-spacing: 0.02em; font-size: 12.5px; }
+  .deal-terms small { font-size: 12px; }
+  .deal-terms > div { height: 48px; box-sizing: border-box; padding: 0; gap: 3px; background: none; margin-top: 4px; }
+  .deal-terms > div button { width: 48px; height: 48px; padding: 0; border-radius: 10px; background: #16293f; font-size: 16px; }
+  .deal-terms > div button.active { background: var(--amber, #f5a300); color: var(--ink, #0d1b2a); }
+  .deal-monthly strong { line-height: 48px; display: block; }
+  .deal-total strong { line-height: 48px; display: block; font-size: 21px; }
+  .deal-flags .budget.unset { height: 48px; box-sizing: border-box; border-radius: 10px; padding: 0 10px; font-size: 13px; }
+  .summaryactions button { height: 48px; box-sizing: border-box; padding-top: 0; padding-bottom: 0; border-radius: 10px; }
+}
+
+/* Laptops and tablets: on the last step two finish buttons need the room, so the building's name
+   stays readable and "Set a budget" moves into Price details, where the budget box already is. */
+@media (min-width: 981px) and (max-width: 1420px) {
+  .deal-main { gap: 14px; }
+  .deal-main:has(.summaryactions button + button) .deal-flags .budget.unset { display: none; }
+  .deal-main:has(.summaryactions button + button) .deal-flags:not(:has(.budget:not(.unset))) { display: none; }
+}
+
+/* Phone: the button says what it is, not only an arrow. */
+@media (max-width: 980px) {
+  .deal-more { border: 0; border-radius: 10px; padding: 0 12px; min-height: 44px; }
+  .deal-more > span { display: inline; text-transform: uppercase; letter-spacing: 0.02em; font-size: 12.5px; }
+}
