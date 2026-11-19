@@ -182,7 +182,7 @@ const READ = () => {
       const got = await e.evaluate((st) => { go('start'); begin('custom'); if (!bennettModels[st]) return 'skip'; change('style', st); return S.c.electrical; }, st);
       ok(`A new ${st} keeps Basic electrical picked`, got === 'Basic' || got === 'skip', String(got));
     }
-    await e.evaluate(() => { go('start'); begin('custom'); go('configure'); }); await e.waitForTimeout(600);
+    await e.evaluate(() => { try { closeModal(); } catch (x) {} go('start'); begin('custom'); go('configure'); }); await e.waitForTimeout(600);
     const E = await e.evaluate(() => steps.indexOf('Electrical'));
     await e.evaluate((E) => { for (let i = 1; i <= E; i++) goStep(i); }, E); await e.waitForTimeout(500);
     ok('The Electrical step shows Basic picked and asks where it goes', await e.evaluate((E) => S.step === E && !!document.querySelector('#ep-card.ask') && /Do you want the default electrical package placement installed\?/.test(document.querySelector('#ep-card').textContent), E));
