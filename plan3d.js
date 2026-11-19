@@ -537,7 +537,38 @@ function p3Mesh(c, inside = false, yaw = 0) {
       if (!inside) strip(0, w.len, eave - 0.36, eave - 0.02);
     }
   }
-  /* The porches are built without a railing. */
+  /* Porch railing, where one was picked (porch-rails.js works out where it goes): a top and a bottom rail
+     with pickets between, in the railing color. A rail end that stops short of a post or a wall gets its
+     own short post. No railing picked, no railing drawn. */
+  if (sh.rails && sh.rails.length) {
+    const hex = sh.railHex || '#f3f2ee', cl = ([x, y]) => [Math.min(Math.max(x, 0.2), L - 0.2), Math.min(Math.max(y, 0.2), W - 0.2)];
+    const bar = (x0, y0, x1, y1, lo, hi) => {
+      const q = [[Math.min(x0, x1), Math.min(y0, y1)], [Math.max(x0, x1), Math.min(y0, y1)], [Math.max(x0, x1), Math.max(y0, y1)], [Math.min(x0, x1), Math.max(y0, y1)]];
+      band(q, lo, hi, hex);
+      face(q.map(([x, y]) => V(x, y, hi)), hex, false);
+      face(q.map(([x, y]) => V(x, y, lo)).reverse(), hex, false);
+    };
+    const nearWall = (q) => sh.walls.some((w) => {
+      const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], t = Math.max(0, Math.min(1, ((q[0] - w.a[0]) * dx + (q[1] - w.a[1]) * dy) / (dx * dx + dy * dy)));
+      return Math.hypot(q[0] - w.a[0] - t * dx, q[1] - w.a[1] - t * dy) < 0.15;
+    });
+    for (const [a0, b0] of sh.rails) {
+      const a = cl(a0), b = cl(b0), len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (len < 0.3) continue;
+      const d = [(b[0] - a[0]) / len, (b[1] - a[1]) / len], n = [-d[1], d[0]], t = 0.07;
+      bar(a[0] - n[0] * t, a[1] - n[1] * t, b[0] + n[0] * t, b[1] + n[1] * t, F + 2.86, F + 3.02);
+      bar(a[0] - n[0] * t, a[1] - n[1] * t, b[0] + n[0] * t, b[1] + n[1] * t, F + 0.27, F + 0.4);
+      const count = Math.max(2, Math.round(len / 0.38));
+      for (let i = 1; i < count; i++) {
+        const x = a[0] + (d[0] * len * i) / count, y = a[1] + (d[1] * len * i) / count;
+        bar(x - 0.035, y - 0.035, x + 0.035, y + 0.035, F + 0.4, F + 2.86);
+      }
+      [[a, a0], [b, b0]].forEach(([q, raw]) => {
+        if (posts.some((p) => Math.hypot(p[0] - q[0], p[1] - q[1]) < 0.45) || nearWall(raw)) return;
+        box(q[0] - 0.15, q[1] - 0.15, q[0] + 0.15, q[1] + 0.15, F, F + 3.14, hex);
+      });
+    }
+  }
   /* Decking, as built: grey composite boards running the length of the building, wrapped on every open
      side by a border board ("picture frame") so no board ends show. The border is mitered where two open
      sides meet, and its edge covers the end grain of the deck down to the painted floor frame. */

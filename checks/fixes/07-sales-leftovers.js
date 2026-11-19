@@ -68,7 +68,7 @@ const num = (s) => Number(String(s).replace(/[^0-9.]/g, ''));
       await p.evaluate(() => { S.expanded = true; refreshSummary(); }); await p.waitForTimeout(150);
       all += '\n' + await p.locator('#app').innerText();
       if (i === 2 && PIC) { await p.evaluate(() => { S.expanded = false; refreshSummary(); }); await quiet(p); await p.screenshot({ path: PIC + '-designer-words.png' }); }
-      if (i < 7) { await p.evaluate(() => { S.expanded = false; refreshSummary(); }); await p.locator('.summaryactions button:has-text("Continue")').click(); await p.waitForTimeout(300); }
+      if (i < 7) { await p.evaluate(() => { S.expanded = false; refreshSummary(); }); await p.evaluate(() => { const y = [...document.querySelectorAll('#ep-card.ask button')].find((b) => /^Yes/.test(b.textContent.trim())); if (y) y.click(); }); await p.locator('.summaryactions button:has-text("Continue")').click(); await p.waitForTimeout(300); }
     }
     const bad = all.match(/.{0,40}(reference · confirm|supported by catalog rule|demo package|free upgrade|Reference estimate|Price to confirm|Reference base|sample options|Preview only\. No live order).{0,40}/i);
     ok('Designer: no builder wording on any of the 8 steps', !bad, bad && bad[0]);

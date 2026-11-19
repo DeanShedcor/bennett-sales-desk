@@ -14,10 +14,10 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
   await p.click('button:has-text("Start a sale"):visible'); await p.waitForTimeout(300);
   await p.click('button:has-text("Start configuring")'); await p.waitForTimeout(1800);
   const rows = await p.evaluate(() => breakdown(S.c).map((r) => [r.name, r.amount]));
-  ok('Blank start: only the base price and fuel are charged', rows.length === 2 && rows[0][1] === 5158 && /Fuel/.test(rows[1][0]), JSON.stringify(rows));
+  ok('New sale: the base price, Basic electrical and fuel are charged, nothing else', rows.length === 3 && rows[0][1] === 5158 && /Basic electrical/.test(rows[1][0]) && /Fuel/.test(rows[2][0]), JSON.stringify(rows));
   const bar = await p.locator('.quoteaside').innerText();
   ok('Blank start: the bar says "Set a budget", not under/over budget', /Set a budget/.test(bar) && !/under budget|over budget/.test(bar), bar.slice(0, 300));
-  ok('Blank start: the bar says no electrical', /no electrical/.test(bar) && !/None electrical/.test(bar));
+  ok('New sale: the bar says Basic electrical', /Basic electrical/.test(bar) && !/None electrical/.test(bar));
   ok('Blank start: no customer name is filled in', (await p.evaluate(() => S.customer)) === '');
   if (PIC) { await p.waitForTimeout(4200); await p.evaluate(() => { S.expanded = true; refreshSummary(); }); await p.waitForTimeout(500); await p.screenshot({ path: PIC + '-blank.png' }); await p.evaluate(() => { S.expanded = false; refreshSummary(); }); }
   // go three steps in, change the size, then leave
@@ -41,7 +41,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
   // a quote clears the draft, and the quote form starts unsigned
   await p.click('button:has-text("Start a sale"):visible'); await p.waitForTimeout(300);
   await p.click('button:has-text("Start configuring")'); await p.waitForTimeout(1500);
-  for (let i = 0; i < 7; i++) { await p.locator('.summaryactions button:has-text("Continue")').click(); await p.waitForTimeout(300); }
+  for (let i = 0; i < 7; i++) { await p.evaluate(() => { const y = [...document.querySelectorAll('#ep-card.ask button')].find((b) => /^Yes/.test(b.textContent.trim())); if (y) y.click(); }); await p.locator('.summaryactions button:has-text("Continue")').click(); await p.waitForTimeout(300); }
   await p.locator('.summaryactions button:has-text("Create quote")').click(); await p.waitForTimeout(500);
   ok('Quote form: customer and signature start empty', (await p.inputValue('#qcustomer')) === '' && (await p.inputValue('#qsign')) === '');
   await p.locator('.modal button:has-text("Sign")').first().click(); await p.waitForTimeout(300);

@@ -19,7 +19,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
     ok(`${tag}: step 1 bar shows Continue and no finish buttons`, /Continue/.test(t) && !/Complete the sale|Create quote/.test(t), t);
     if (PIC && phone) { await p.waitForTimeout(4200); await p.screenshot({ path: PIC + '-bar-phone.png' }); }
     if (PIC && !phone) { await p.waitForTimeout(4200); await p.screenshot({ path: PIC + '-bar.png', clip: { x: 0, y: 560, width: 1360, height: 440 } }); }
-    for (let i = 0; i < 7; i++) { await p.locator('.summaryactions button:has-text("Continue")').click(); await p.waitForTimeout(350); }
+    for (let i = 0; i < 7; i++) { await p.evaluate(() => { const y = [...document.querySelectorAll('#ep-card.ask button')].find((b) => /^Yes/.test(b.textContent.trim())); if (y) y.click(); }); await p.locator('.summaryactions button:has-text("Continue")').click(); await p.waitForTimeout(350); }
     t = await bar();
     ok(`${tag}: the bar's Continue walks to the last step`, await p.evaluate(() => S.step === steps.length - 1));
     ok(`${tag}: last step bar shows Create quote and Complete the sale`, /Complete the sale/.test(t) && /Create quote/.test(t) && !/Continue/.test(t), t);
@@ -46,7 +46,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
   const q = await open(false);
   await q.click('button:has-text("Start a sale"):visible'); await q.waitForTimeout(300);
   await q.click('button:has-text("Start configuring")'); await q.waitForTimeout(1800);
-  for (let i = 0; i < 7; i++) { await q.locator('.summaryactions button:has-text("Continue")').click(); await q.waitForTimeout(350); }
+  for (let i = 0; i < 7; i++) { await q.evaluate(() => { const y = [...document.querySelectorAll('#ep-card.ask button')].find((b) => /^Yes/.test(b.textContent.trim())); if (y) y.click(); }); await q.locator('.summaryactions button:has-text("Continue")').click(); await q.waitForTimeout(350); }
   await q.locator('.summaryactions button:has-text("Create quote")').click(); await q.waitForTimeout(500);
   await q.fill('#qcustomer', 'Jamie Sample'); await q.fill('#qsign', 'Riley Desk');
   await q.locator('.modal button:has-text("Sign")').first().click(); await q.waitForTimeout(600);

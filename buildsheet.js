@@ -487,6 +487,7 @@ function bsPlan(lay) {
     const [x, y] = P(q);
     o.push(`<rect x="${f(x - 4)}" y="${f(y - 4)}" width="8" height="8" fill="#111"/>`);
   }
+  if (typeof porchRailsSvg === 'function') o.push(porchRailsSvg(sh, P, 1, '#111'));
   const pole = sh.deck && bsPole(sh);
   if (pole) {
     const [x, y] = P(pole);
@@ -570,6 +571,7 @@ function bsPlan(lay) {
   if (sh.deck) o.push(`<rect x="614" y="${ky + 5}" width="8" height="8" fill="#111"/><text x="627" y="${ky + 12.5}" font-size="9">porch post</text>`);
   o.push(`<rect x="${sh.deck ? 700 : 614}" y="${ky + 4}" width="10" height="10" fill="#fff" stroke="#b9c2ca" stroke-width="0.8"/><text x="${sh.deck ? 715 : 629}" y="${ky + 12.5}" font-size="9">grid square = 1 ft</text>`);
   if (items.some((x) => x.kind === 'light')) o.push(`<circle cx="${sh.deck ? 826 : 740}" cy="${ky + 9}" r="7" fill="#fff" stroke="#111" stroke-width="1.5"/>${bsBulb(sh.deck ? 826 : 740, ky + 7.7, 0.55, '#111')}<text x="${sh.deck ? 838 : 752}" y="${ky + 12.5}" font-size="9">light</text>`);
+  if (sh.rails?.length) o.push(`<path d="M900 ${ky + 6}H926" stroke="#111" stroke-width="3.2"/><path d="M904 ${ky + 6}v5M911 ${ky + 6}v5M918 ${ky + 6}v5M925 ${ky + 6}v5" stroke="#111" stroke-width="1.1"/><text x="932" y="${ky + 12.5}" font-size="9">porch railing</text>`);
   o.push('</svg>');
   return o.join('');
 }
@@ -722,6 +724,7 @@ function bsEdDraw(lay) {
     const [x, y] = P(q);
     o.push(`<rect x="${f(x - 6)}" y="${f(y - 6)}" width="12" height="12" fill="#0c1a28"/>`);
   }
+  if (typeof porchRailsSvg === 'function') o.push(porchRailsSvg(sh, P, 1.5, '#0c1a28'));
   const pole = sh.deck && bsPole(sh);
   if (pole) {
     const [x, y] = P(pole);

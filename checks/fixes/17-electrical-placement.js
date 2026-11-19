@@ -14,6 +14,8 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
     await p.evaluate(() => { try { ffSetOn(false); } catch (e) {} localStorage.removeItem('sales:draft'); }); await p.waitForTimeout(300);
     await p.evaluate(() => { S.saleLead = null; go('start'); }); await p.waitForTimeout(300);
     await p.click('button:has-text("Start configuring")'); await p.waitForTimeout(1500);
+    ok(`${tag}: a new building starts with Basic electrical picked, placement not answered`, await p.evaluate(() => S.c.electrical === 'Basic' && !S.c.elecPlace));
+    await p.evaluate(() => change('electrical', 'None')); await p.waitForTimeout(300);
     const E = await p.evaluate(() => steps.indexOf('Electrical'));
     const cont = () => p.locator('.summaryactions button:has-text("Continue")').click();
     for (let i = 0; i < E; i++) { await cont(); await p.waitForTimeout(300); }

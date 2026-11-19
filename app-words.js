@@ -121,7 +121,7 @@ const AW_REAL = {
   ],
   sales: [
     'Prices come from Turbo Assist’s price list. The fuel surcharge is $0.30 for each square foot of floor.',
-    'A new sale starts blank. A sale left half way can be picked up again from Home.',
+    'A new sale starts with the Basic electrical package picked and nothing else added. A sale left half way can be picked up again from Home.',
     'With electrical, the salesperson says where it goes: the default spots, or on the floor plan.',
     'A workbench, shelving, a loft or a partition wall must be placed on the floor plan, so the builder knows where it goes.',
     'Once the invoice is signed, the delivery answers are locked. Changing them takes the signature off, and the customer signs again.',

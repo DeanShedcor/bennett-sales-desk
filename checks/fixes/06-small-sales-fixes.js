@@ -11,7 +11,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
   const toCustomer = async (p) => {
     await p.click('button:has-text("Start a sale"):visible'); await p.waitForTimeout(300);
     await p.click('button:has-text("Start configuring")'); await p.waitForTimeout(1600);
-    for (let i = 0; i < 7; i++) { await p.locator('.summaryactions button:has-text("Continue")').click(); await p.waitForTimeout(300); }
+    for (let i = 0; i < 7; i++) { await p.evaluate(() => { const y = [...document.querySelectorAll('#ep-card.ask button')].find((b) => /^Yes/.test(b.textContent.trim())); if (y) y.click(); }); await p.locator('.summaryactions button:has-text("Continue")').click(); await p.waitForTimeout(300); }
     await p.locator('.summaryactions button:has-text("Complete the sale")').click(); await p.waitForTimeout(600);
     if (await p.locator('#sp-site-miles').count()) { await p.fill('#sp-site-miles', '20'); await p.check('#sp-site-nogate'); await p.selectOption('#sp-site-access', 'Clear access'); await p.selectOption('#sp-site-ground', 'Level'); await p.click('.modal button:has-text("Continue")'); await p.waitForTimeout(400); } /* delivery questions come first on a custom sale */
   };
@@ -122,7 +122,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
   p = await open(false);
   await p.click('button:has-text("Start a sale"):visible'); await p.waitForTimeout(300);
   await p.click('button:has-text("Start configuring")'); await p.waitForTimeout(1600);
-  for (let i = 0; i < 7; i++) { await p.locator('.summaryactions button:has-text("Continue")').click(); await p.waitForTimeout(300); }
+  for (let i = 0; i < 7; i++) { await p.evaluate(() => { const y = [...document.querySelectorAll('#ep-card.ask button')].find((b) => /^Yes/.test(b.textContent.trim())); if (y) y.click(); }); await p.locator('.summaryactions button:has-text("Continue")').click(); await p.waitForTimeout(300); }
   await p.locator('.summaryactions button:has-text("Create quote")').click(); await p.waitForTimeout(500);
   await p.fill('#qcustomer', 'Jamie Sample'); await p.fill('#qsign', 'Riley Desk');
   await p.locator('.modal button:has-text("Sign")').first().click(); await p.waitForTimeout(600);

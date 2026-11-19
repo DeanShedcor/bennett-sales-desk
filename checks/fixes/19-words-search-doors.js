@@ -218,7 +218,7 @@ const readScreen = () => {
     await page.evaluate(() => { try { closeModal(); closeBuildSheet(); } catch (e) {} adView('u1'); localStorage.removeItem('sales:draft'); S.saleLead = null; go('start'); }); await page.waitForTimeout(300);
     await page.click('button:has-text("Start configuring")'); await page.waitForTimeout(1500);
     const seen = [];
-    for (let i = 0; i < 7; i++) { seen.push(await page.evaluate(() => steps[S.step])); await page.locator('.summaryactions button:has-text("Continue")').click(); await page.waitForTimeout(300); }
+    for (let i = 0; i < 7; i++) { seen.push(await page.evaluate(() => steps[S.step])); await page.evaluate(() => { const y = [...document.querySelectorAll('#ep-card.ask button')].find((b) => /^Yes/.test(b.textContent.trim())); if (y) y.click(); }); await page.locator('.summaryactions button:has-text("Continue")').click(); await page.waitForTimeout(300); }
     seen.push(await page.evaluate(() => steps[S.step]));
     ok(`${tag}: Continue walks the steps in the new order`, seen.join(',') === 'Style,Size,Package,Openings,Exterior,Colors,Electrical,Finish', seen.join(','));
     let x = await page.locator('#app').innerText();

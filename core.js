@@ -372,9 +372,11 @@ function begin(which = "custom") {
   if (which !== "lot") {
     S.c.catalogOptions = true;
     S.c.buildOnSite = which === "site";
-    /* A new sale starts blank: no paid extras until they are chosen, no budget until one is typed,
-       and no customer unless a lead was picked. */
-    S.c.electrical = "None";
+    /* A new sale starts with the Basic electrical package picked (the owner's rule, Nov 19, 2026), no
+       windows, no budget until one is typed, and no customer unless a lead was picked. The salesperson
+       can change the package or pick "No electrical package" on the Electrical step. Where the
+       electrical goes is still asked there (electrical-placement.js); it is not answered for them. */
+    S.c.electrical = "Basic";
     S.c.windows = 0;
     S.c.windowItems = [];
   }
