@@ -128,7 +128,7 @@ const START = { 'End Porch': 'No railing', 'Middle Porch': 'No railing', 'Side P
     await p.locator('#po-rail .po-opt:has(strong:text-is("Door on the left"))').click(); await p.waitForTimeout(300);
     await p.click('#po-depth .po-opt:has-text("8 ft porch")'); await p.waitForTimeout(300);
     const total = await p.evaluate(() => amount());
-    await p.evaluate(() => goStep(steps.length - 1)); await p.waitForTimeout(500);
+    await p.evaluate(() => { S.c.elecPlace = 'default'; goStep(steps.length - 1); }); await p.waitForTimeout(500);
     await p.locator('#app button:has-text("Complete the sale"):visible').first().click(); await p.waitForTimeout(700);
     if (await p.locator('#sp-site-miles').count()) { await p.fill('#sp-site-miles', '20'); await p.check('#sp-site-nogate'); await p.selectOption('#sp-site-access', 'Clear access'); await p.selectOption('#sp-site-ground', 'Level'); await p.click('.modal button:has-text("Continue")'); await p.waitForTimeout(500); }
     for (const [n, v] of Object.entries({ firstName: 'Jamie', lastName: 'Sample', email: 'jamie@example.com', phone: '(843) 555-0199', billingStreet: '12 Test Rd', billingCity: 'Moncks Corner', billingState: 'SC', billingZip: '29461' })) await p.fill(`#customerInfo [name=${n}]`, v);

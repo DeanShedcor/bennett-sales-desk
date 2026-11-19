@@ -17,7 +17,7 @@ const BENCH = 'Workbench (per LF)', SHELF = 'Three Tier Shelving (per LF)', WALL
     await load();
     await p.evaluate(() => { localStorage.removeItem('sales:draft'); S.saleLead = null; go('start'); }); await p.waitForTimeout(300);
     await p.click('button:has-text("Start configuring")'); await p.waitForTimeout(1500);
-    await p.evaluate(() => { change('size', '12x20'); for (let i = 1; i < steps.length; i++) goStep(i); }); await p.waitForTimeout(500);
+    await p.evaluate(() => { change('size', '12x20'); S.c.elecPlace = 'default'; /* a new building starts with Basic electrical; its placement is answered here */ for (let i = 1; i < steps.length; i++) goStep(i); }); await p.waitForTimeout(500);
     const F = await p.evaluate(() => steps.indexOf('Finish'));
     ok(`${tag}: on the Finish step with no options there is no card`, await p.evaluate((F) => S.step === F, F) && !(await p.locator('#fp-ask').count()));
     await p.evaluate(() => whenBuildReady(quoteForm)); await p.waitForTimeout(300);
@@ -156,7 +156,7 @@ const BENCH = 'Workbench (per LF)', SHELF = 'Three Tier Shelving (per LF)', WALL
       // a fresh sale through to the order
       await p.evaluate(() => { S.saleLead = null; go('start'); }); await p.waitForTimeout(300);
       await p.click('button:has-text("Start configuring")'); await p.waitForTimeout(1500);
-      await p.evaluate(([b, s]) => { change('size', '12x20'); for (let i = 1; i < steps.length; i++) goStep(i); taAddonSet(b, 6); taAddonSet(s, 8); }, [BENCH, SHELF]); await p.waitForTimeout(500);
+      await p.evaluate(([b, s]) => { change('size', '12x20'); S.c.elecPlace = 'default'; /* a new building starts with Basic electrical; its placement is answered here */ for (let i = 1; i < steps.length; i++) goStep(i); taAddonSet(b, 6); taAddonSet(s, 8); }, [BENCH, SHELF]); await p.waitForTimeout(500);
       await p.evaluate(() => { fpOpen(); fpHere('xb'); fpHere('xs'); closeBuildSheet(); }); await p.waitForTimeout(500);
       await p.locator('#app button:has-text("Complete the sale"):visible').first().click(); await p.waitForTimeout(700);
       if (await p.locator('#sp-site-miles').count()) { await p.fill('#sp-site-miles', '20'); await p.check('#sp-site-nogate'); await p.selectOption('#sp-site-access', 'Clear access'); await p.selectOption('#sp-site-ground', 'Level'); await p.click('.modal button:has-text("Continue")'); await p.waitForTimeout(500); }
