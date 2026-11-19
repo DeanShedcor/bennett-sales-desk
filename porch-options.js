@@ -14,9 +14,10 @@
    "8' End Porch Package" and "End Porch Package" ($170.00).
    Lofted end porch. High ceiling with no loft over the porch, or low ceiling with a loft over it
    (c.porchLoft). Turbo Assist has no record of this; a feature the product still has to accept.
-   Full Side Porch. A new package. The price list has no line for it, so its price is "to confirm".
-   Rules. No Deluxe Porch on a building 10 ft wide or narrower. A lofted barn can have an End, Side
-   or Full Side porch only. Only the Deluxe Porch comes with railing.
+   Full Side Porch. A new package. Its price is set in idearoom-match.js.
+   Rules. No Deluxe Porch on a building 10 ft wide or narrower. A lofted barn can have every porch
+   a utility can (the owner, Nov 19, 2026; an earlier block came from reading one small size).
+   Only the Deluxe Porch comes with railing.
    Loaded last; wraps change(), packageVariantMarkup(), taAddonRows(), breakdown(), included(). */
 {
   const RAIL_LINE = 'Porch Railing (Per Linear Ft)';
@@ -43,13 +44,12 @@
   const hasRail = (c) => { const r = railOf(c); return !!r && r[0] !== 'No railing'; };
   const deepOk = (c) => lengthOf(c) >= 12;
   const depthOf = (c) => (c.package === 'End Porch' && Number(c.porchDepth) === 8 && deepOk(c) ? 8 : 4);
-  const loftAsked = (c) => c.package === 'End Porch' && c.style === 'Lofted';
+  const loftAsked = (c) => (c.package === 'End Porch' || c.package === 'Deluxe Porch') && c.style === 'Lofted';
   const loftOf = (c) => (loftAsked(c) ? LOFTS.find((l) => l[0] === c.porchLoft) || LOFTS[0] : null);
 
   /* Why this building cannot have this porch, in plain words. Empty when it can. */
   function porchBlocked(name, c) {
     if (name === 'Deluxe Porch' && widthOf(c) <= 10) return 'Not on a building 10 ft wide or narrower. Pick 12 ft wide or more on the Size step.';
-    if (c.style === 'Lofted' && (name === 'Middle Porch' || name === 'Deluxe Porch')) return 'Not on a lofted barn. A lofted barn can have an End Porch, a Side Porch or a Full Side Porch.';
     return '';
   }
   window.porchBlocked = porchBlocked;
@@ -75,8 +75,11 @@
     else delete c.extras[RAIL_LINE];
     if (hasRail(c)) c.railColor = railColorOf(c);
     else delete c.railColor;
-    if (c.package !== 'End Porch') { delete c.porchDepth; delete c.porchLoft; }
-    else {
+    if (c.package !== 'End Porch') {
+      delete c.porchDepth;
+      if (loftAsked(c)) c.porchLoft = loftOf(c)[0];
+      else delete c.porchLoft;
+    } else {
       if (Number(c.porchDepth) === 8 && !deepOk(c)) said.push('The porch was set back to 4 ft deep. An 8 ft porch needs a building 12 ft long or longer.');
       c.porchDepth = depthOf(c);
       if (loftAsked(c)) c.porchLoft = loftOf(c)[0];
@@ -167,9 +170,9 @@
           ? opt(depthOf(c) === 8, "porchSet('porchDepth',8)", '8 ft porch', '', '+' + money(depthPrice()))
           : `<button type="button" class="po-opt" disabled><span class="po-dot" aria-hidden="true"></span><span class="grow"><strong>8 ft porch</strong><small>Needs a building 12 ft long or longer.</small></span></button>`)
       }</div>`;
-      if (loftAsked(c))
-        html += `<h3>Porch ceiling</h3><div class="po-list" id="po-loft">${LOFTS.map((l) => opt(loftOf(c)[0] === l[0], `porchSet('porchLoft','${l[0]}')`, l[1], l[2], '')).join('')}</div>`;
     }
+    if (loftAsked(c))
+      html += `<h3>Porch ceiling</h3><div class="po-list" id="po-loft">${LOFTS.map((l) => opt(loftOf(c)[0] === l[0], `porchSet('porchLoft','${l[0]}')`, l[1], l[2], '')).join('')}</div>`;
     html += `<h3>Porch railing</h3><div class="po-list" id="po-rail">${RAILS[c.package]
       .map((x) => opt(x[0] === r[0], `porchSet('railing',${esc(JSON.stringify(x[0]))})`, x[0], x[2] || (x[1] ? `${x[1]} ft of railing` : ''), x[1] ? '+' + money(x[1] * per) : x[2] === 'In the package' ? 'Included' : money(0)))
       .join('')}</div>`;
@@ -227,7 +230,6 @@
     AW_OPEN.push(['Porch railing rate', 'Every railing choice is a set number of feet at $40.00 a foot (Turbo Assist’s “Porch Railing (Per Linear Ft)”). Is $40.00 still the rate?']);
     AW_OPEN.push(['Deluxe Porch with no railing', 'Taking the railing off a Deluxe Porch gives no money back, the same as IdeaRoom. Is that right?']);
     AW_OPEN.push(['Railing with the door in the center', 'It costs $80.00 more than door on the left or right (16 ft against 14 ft). Confirm.']);
-    AW_OPEN.push(['Full Side Porch price', 'The price list has no line for a Full Side Porch package, so its price says “to confirm” and is left out of the total. Its railing is 24 ft ($960.00).']);
     AW_OPEN.push(['Lofted end porch ceiling', 'High ceiling (no loft over the porch) or low ceiling (loft over it) is asked on a lofted barn. Turbo Assist has no place for the answer yet.']);
   } catch (e) {}
 }

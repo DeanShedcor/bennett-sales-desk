@@ -136,7 +136,7 @@ function taHandoffCard() {
   const deskStart = start;
   start = function () {
     return deskStart()
-      .replace('save it for a site review.</p>', `save it for a site review. Any size can be built on site; 16 ft wide and buildings past 14 × 40 have to be. The price list adds ${money(taListPrice('Build On Site'))} per sq ft of floor.</p><p class="ta-from">${taTip('build-on-site', 'When to build on site')}</p>`)
+      .replace('save it for a site review.</p>', `save it for a site review. Any size can be built on site; 16 ft wide and buildings past 14 × 40 have to be. Build on site adds 40% to the price. The customer is responsible for permits.</p><p class="ta-from">${taTip('build-on-site', 'When to build on site')}</p>`)
       .replace('It opens in a new tab.</p>', `It opens in a new tab.</p><p class="ta-from">${taTip('steel-overview', 'Steel basics')} ${taTip('steel-sizes', 'Sizes')} ${taTip('steel-permits', 'Permits')}</p>`);
   };
 }
