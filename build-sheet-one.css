@@ -1,0 +1,42 @@
+/* build-sheet-one.css: the one-page build sheet and the electrical sheet (build-sheet-one.js).
+   Black and white, bigger type than the old sheets, so it reads at arm's length in the shop. */
+.b1-page { font-size: 11.5px; line-height: 1.32; }
+.b1-page .bs-fit { width: 994px; margin: 0 auto; }
+.b1-band .bs-cell small { font-size: 8.6px; }
+.b1-band .bs-cell strong { font-size: 12px; }
+.b1-band .bs-big span { font-size: 11px; font-weight: 800; }
+.b1-grid { display: grid; grid-template-columns: 213px 771px; gap: 10px; margin-top: 8px; align-items: start; }
+.b1-side { border: 1.5px solid #111; }
+.b1-side .b1-notes { border: 0; border-top: 1px solid #111; padding: 6px 8px 7px; }
+.b1-side .b1-notes.b1-ask { border-top: 3px solid #111; }
+.b1-group { padding: 6px 8px 7px; border-top: 1px solid #111; }
+.b1-group:first-child { border-top: 0; }
+.b1-group h3 { margin: 0 0 3px; font: 800 9.6px/1.3 Inter, Arial, sans-serif; letter-spacing: 1.1px; text-transform: uppercase; background: #111; color: #fff; padding: 2px 6px; display: inline-block; }
+.b1-group ul { margin: 0; padding: 0; list-style: none; }
+.b1-group li { margin: 0; padding: 1.5px 0; font-size: 11.5px; }
+.b1-plan { margin-top: 0; }
+.b1-list { margin-top: 8px; }
+.b1-walls { columns: 2; column-gap: 12px; }
+.b1-page table.b1-wall { break-inside: avoid; margin: 0 0 7px; font-size: 10.8px; border: 1px solid #111; }
+.b1-page .b1-wall th { background: #111; color: #fff; font-size: 10.5px; font-weight: 600; letter-spacing: 0; text-transform: none; padding: 3px 6px; border: 0; white-space: normal; }
+.b1-page .b1-wall th b { font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
+.b1-page .b1-wall .b1-cols td { font-size: 8.6px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #444; padding: 2px 6px 1px; border-bottom: 1px solid #111; }
+.b1-page .b1-wall td { white-space: normal; padding: 2.5px 5px; border-bottom: 1px solid #c4c4c4; }
+.b1-page .b1-wall tbody tr:last-child td { border-bottom: 0; }
+.b1-page .b1-wall td.b1-num { font-weight: 800; white-space: nowrap; }
+.b1-page .b1-wall i { font-style: normal; font-weight: 500; color: #333; }
+.b1-page table.b1-elec { font-size: 11.5px; }
+.b1-bare { margin: 0 0 6px; font-size: 11px; }
+.b1-noterow { display: flex; gap: 10px; align-items: stretch; margin-top: 2px; }
+.b1-notes.b1-ask { flex: 1.6 1 0; }
+.b1-notes { flex: 1 1 0; border: 1.5px solid #111; padding: 5px 8px 6px; min-width: 0; }
+.b1-notes.b1-ask { border-width: 2.5px; }
+.b1-page .b1-notes h2 { border: 0; background: #111; color: #fff; display: inline-block; padding: 2px 6px; margin: 0 0 3px; font-size: 9.6px; }
+.b1-notes ul { margin: 0; padding-left: 15px; }
+.b1-noterow .b1-notes ul { columns: 2; column-gap: 26px; }
+.b1-notes li { break-inside: avoid; }
+.b1-notes li { margin: 1.5px 0; font-size: 11px; }
+.b1-sign { display: flex; align-items: flex-end; gap: 8px; margin-top: 12px; font-size: 11px; font-weight: 700; }
+.b1-sign i { flex: 2 1 0; border-bottom: 1.5px solid #111; height: 16px; }
+.b1-sign i.short { flex: 1 1 0; }
+.b1-page .bs-foot { font-size: 8.6px; }
