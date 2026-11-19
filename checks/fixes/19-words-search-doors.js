@@ -207,7 +207,7 @@ const readScreen = () => {
       ok('With a Garage Package, a note warns about doubling up (it does not block)', /already has a roll-up door/.test(await page.locator('#aw-doors').innerText()) && await page.locator('#aw-doors button[aria-label="One more Sectional garage door"]').isEnabled());
       await page.evaluate(() => { change('package', ''); change('style', 'Lofted'); goStep(steps.indexOf('Openings')); }); await page.waitForTimeout(400);
       const barn = await page.locator('#aw-doors').innerText().catch(() => '');
-      ok('On a barn the sectional garage door is not offered', !/Sectional garage door/.test(barn) && /Custom wood door/.test(barn), barn);
+      ok('On a barn the sectional garage door is offered too (the owner\'s rule)', /Sectional garage door/i.test(barn) && /Custom wood door/i.test(barn), barn);
       ok('The sale draft keeps the door options', await page.evaluate(() => { go('home'); const d = JSON.parse(localStorage.getItem('sales:draft') || 'null'); return !!d && d.c.extras['Custom Wood Doors'] === 1; }));
     }
   }

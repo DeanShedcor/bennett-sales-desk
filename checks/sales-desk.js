@@ -50,9 +50,9 @@ const URL = process.argv[2] || 'http://localhost:8765/';
   // size changes: trusses follow floor area
   await p.evaluate(() => { change('size', '12x20'); }); await p.waitForTimeout(200);
   ok('trusses follow the floor (240 sq ft = $300)', await p.evaluate(() => breakdown().find((r) => /Trusses/.test(r.name))?.amount) === 300);
-  // garage door not on a barn
+  // the owner's rule: a barn can have a garage door
   await p.evaluate(() => { S.c.extras['Sectional Garage Door'] = 1; change('style', 'Lofted'); }); await p.waitForTimeout(200);
-  ok('sectional garage door dropped from a barn price', await p.evaluate(() => !breakdown().some((r) => /Sectional/.test(r.name))));
+  ok('sectional garage door stays in a barn price', await p.evaluate(() => breakdown().some((r) => /Sectional/.test(r.name))));
   await p.evaluate(() => goStep(steps.indexOf('Size'))); await p.waitForTimeout(200);
   ok('barn rule shown on Size', /Barns come with lofts/.test(await p.$eval('#app', (e) => e.innerText)));
   await p.evaluate(() => { change('style', 'Utility'); change('size', '16x40'); }); await p.waitForTimeout(250);
