@@ -166,7 +166,7 @@ function tpSpecs(u) {
 /* What the knowledge base says this building cannot be, or needs. */
 function tpRuleFlags(u) {
   const s = tpSpecs(u), c = u.c || {}, barn = s.lofted || s.lowWall, doors = [c.door, ...(c.extraDoors || [])].join(' '), out = [];
-  if (barn && (/roll/i.test(doors) || c.package === 'Garage Package')) out.push(['bad', 'A barn takes no roll-up or garage door', 'roof-rules']);
+  /* The owner's rule: a barn can have a roll-up or garage door, so there is no warning for one. */
   if (barn && c.package === 'Dormer Package') out.push(['bad', 'Dormers are not built on a barn', 'roof-rules']);
   if (s.w >= 16) out.push(['todo', '16 wide: built on site, not delivered', 'size-limits']);
   else if (s.w === 14) out.push(['wait', '14 wide: custom order, needs a transport permit', 'size-limits']);

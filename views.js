@@ -701,14 +701,15 @@ function stepBody() {
     case 'Exterior':
       return [
         'The look comes first. Series follows.',
-        c.style === 'Silver Bullet'
+        (c.style === 'Silver Bullet'
           ? '<p class="notice">Silver Bullet uses ribbed metal siding in this demo. Wood siding choices are omitted.</p>'
           : ['Greenhouse', 'Low-Wall Barn'].includes(c.style)
             ? '<p class="notice">Dedicated style package. Series rules and exact material options need confirmation.</p>'
             : '<div class="smart-side-tile">' +
               choice('siding', 'Basic groove', 'LP Smart Side', 'LP 3/8-inch groove · Basic or Classic with TechShield<img class="siding-thumb" src="./smartside-grooved-panel.png" alt="Vertical grooves on LP Smart Side" loading="lazy">', 'Included') +
               `<label class="techshield-addon"><input id="techshield" type="checkbox" ${c.shield ? 'checked' : ''} onchange="change('shield',this.checked)"> <span>Add TechShield (free upgrade to 7/16" thickness)</span> <strong>+$325 sample</strong></label></div>` +
-              choice('siding', 'Lap', 'LP Smart Side Lap Siding', 'Elite series · supported by catalog rule<img class="siding-thumb" src="./smartside-lap-siding.png" alt="Horizontal courses on LP Smart Side Lap Siding" loading="lazy">', '+$1,050 sample')
+              choice('siding', 'Lap', 'LP Smart Side Lap Siding', 'Elite series · supported by catalog rule<img class="siding-thumb" src="./smartside-lap-siding.png" alt="Horizontal courses on LP Smart Side Lap Siding" loading="lazy">', '+$1,050 sample')) +
+          roofChoiceMarkup(c)
       ];
     case 'Openings':
       return ['Light, access and finishing touches.', openingsMarkup()];
@@ -727,18 +728,26 @@ function stepBody() {
     default: {
       if (c.catalogOptions && c.style === 'Silver Bullet')
         return ['Make it theirs.', '<p class="notice">Galvanized steel roof and standard floor included.</p>'];
-      const greenhouse = c.style === 'Greenhouse';
-      const roofArt = (name) => `<img class="roof-art" src="./${name}.svg" alt="" width="104" height="62">`;
-      return [
-        'Make it theirs.',
-        '<h3>Roof</h3>' +
-          choice('roof', 'Metal', greenhouse ? 'Clear greenhouse roof' : 'Metal roof', 'Continue without a paid roof upgrade.' + (greenhouse ? '' : roofArt('metal')), 'Included') +
-          (greenhouse
-            ? ''
-            : choice('roof', 'Shingles', 'Architectural shingles', 'IdeaRoom Basic Utility pricing reference' + roofArt('shingles'), shinglePrice(c) === null ? 'Price to confirm' : '+' + money(shinglePrice(c))))
-      ];
+      /* The roof is picked on the Exterior step, before Colors, so the roof color fits the roof. */
+      return ['Make it theirs.', ''];
     }
   }
+}
+
+/* Metal or shingles. It sits on the Exterior step (a salesperson asked: it used to be on the last
+   step, after the roof color was already picked). Silver Bullet has one roof, so it has no choice. */
+function roofChoiceMarkup(c) {
+  if (c.style === 'Silver Bullet') return '';
+  const greenhouse = c.style === 'Greenhouse';
+  const roofArt = (name) => `<img class="roof-art" src="./${name}.svg" alt="" width="104" height="62">`;
+  return (
+    '<div class="roof-pick" id="roof-pick"><h3>Roof</h3>' +
+    choice('roof', 'Metal', greenhouse ? 'Clear greenhouse roof' : 'Metal roof', (greenhouse ? 'Comes with the greenhouse.' : 'Pick its color on the next step.' + roofArt('metal')), 'Included') +
+    (greenhouse
+      ? ''
+      : choice('roof', 'Shingles', 'Architectural shingles', 'IdeaRoom Basic Utility pricing reference' + roofArt('shingles'), shinglePrice(c) === null ? 'Price to confirm' : '+' + money(shinglePrice(c)))) +
+    '</div>'
+  );
 }
 
 /* Move to a configurator step and return to the top of the page. Called through window so an

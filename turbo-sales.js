@@ -191,8 +191,8 @@ const TA_ADDONS = [
   ['Porch Railing (Per Linear Ft)', 'Porch railing', 'ft', (c) => /Porch/.test(c.package || '')],
   ['Additional Side Porch Per Linear Ft', 'Additional side porch', 'ft', (c) => /Side Porch|Deluxe Porch/.test(c.package || '')],
   ['Dormer Accent Wall', 'Dormer accent wall', 'each', (c) => c.package === 'Dormer Package'],
-  /* The knowledge base: no roll-up or garage door on a barn. */
-  ['Sectional Garage Door', 'Sectional garage door', 'count', (c) => usesWoodOptions(c) && !taBarn(c)],
+  /* The owner's rule: a barn can have a roll-up or garage door. Turbo Assist's knowledge base still says no. */
+  ['Sectional Garage Door', 'Sectional garage door', 'count', (c) => usesWoodOptions(c)],
   ['84" Wood Door (upcharge from std door)', '84 in. wood door (upcharge)', 'count', (c) => usesWoodOptions(c)],
   ['Custom Wood Doors', 'Custom wood door', 'count', (c) => usesWoodOptions(c)],
   ['Greenhouse Irrigation', 'Greenhouse irrigation', 'each', (c) => c.style === 'Greenhouse'],
@@ -251,7 +251,7 @@ function taSizeRules(c) {
   if (w >= 16) out.push(`16 ft wide is build on site only. It cannot be delivered. ${S.path === 'site' ? '' : 'Start it as “Build on site” instead. '}${taTip('size-limits', 'Size and delivery limits')}`);
   else if (w === 14) out.push(`14 ft wide is delivered, as a custom order and a wide load with a permit. Lots do not usually stock it. ${taTip('size-limits', 'Size and delivery limits')}`);
   if (w < 16 && l > 40) out.push(`Longer than 40 ft is past the largest building we deliver (14 × 40). Plan it as build on site. ${taTip('build-on-site', 'Build on site')}`);
-  if (taBarn(c)) out.push(`Barns come with lofts: 4 ft on buildings 12 ft and shorter, 8 ft on 16 ft and longer. No roll-up door or dormer on a barn. ${taTip('roof-rules', 'Roof and door rules')}`);
+  if (taBarn(c)) out.push(`Barns come with lofts: 4 ft on buildings 12 ft and shorter, 8 ft on 16 ft and longer. No dormer on a barn. A barn can have a roll-up door. ${taTip('roof-rules', 'Roof and door rules')}`);
   return out.map((t) => `<p class="ta-rule">${icon('help', 16)}<span>${t}</span></p>`).join('');
 }
 {

@@ -1046,7 +1046,9 @@ function colorsMarkup() {
   const roof =
     S.c.style === "Greenhouse"
       ? "<p>Clear greenhouse roof.</p>"
-      : "<h3>Metal roof color</h3>" + finishSwatches("roofColor", metalRoofColors, "ribbed");
+      : S.c.roof === "Shingles"
+        ? '<h3>Roof color</h3><p class="checkrow static" id="roof-shingle-note"><strong>Architectural shingles</strong> · The shingle color is written on the order with the customer. Metal roof colors do not apply. To change the roof, go back to Exterior.</p>'
+        : "<h3>Metal roof color</h3>" + finishSwatches("roofColor", metalRoofColors, "ribbed");
   const trim = wood
     ? "<details><summary>Building trim and door trim</summary>" +
       [

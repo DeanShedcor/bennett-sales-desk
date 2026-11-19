@@ -34,6 +34,23 @@ function lotCash(u) {
   return (u.listPrice ? `<s>${money(u.listPrice)}</s> ` : '') + `<strong>${money(u.price)}</strong>`;
 }
 
+/* Building details in three groups: colors, package, options. A line that only repeats a color
+   already listed ("Gallery Blue - Standard Siding Color") is left out. */
+function lotDetails(u) {
+  const repeat = (f) => /standard (siding|trim|roof) color$/i.test(f) && Object.values(u.colors).some((c) => f.toLowerCase().startsWith(String(c).toLowerCase()));
+  const rest = u.features.filter((f) => !repeat(f));
+  return {
+    colors: ['Siding: ' + u.colors.siding, 'Trim: ' + u.colors.trim, 'Roof: ' + u.colors.roof],
+    pack: rest.filter((f) => /package/i.test(f)),
+    options: rest.filter((f) => !/package/i.test(f))
+  };
+}
+function lotDetailsMarkup(u) {
+  const d = lotDetails(u);
+  const group = (title, items, none) => `<div class="lot-group"><h3>${title}</h3><ul class="included">${(items.length ? items : [none]).map((item) => `<li>${icon('check', 16)}${esc(item)}</li>`).join('')}</ul></div>`;
+  return group('Colors', d.colors) + group('Package', d.pack, 'No package') + group('Options', d.options, 'No added options');
+}
+
 /* ---------- Building detail page ---------- */
 
 function openUnit(i) {
@@ -75,9 +92,7 @@ function unitPage() {
           : ''
       }
       <p class="source">${u.photos.length} photo${u.photos.length === 1 ? '' : 's'} from the buybennett.com listing, copied ${LOT_LISTING_DATE}.</p>
-      <section class="panel"><h2>On this building</h2><ul class="included">${[u.colors.siding + ' siding', u.colors.trim + ' trim', u.colors.roof + ' roof', ...u.features]
-        .map((item) => `<li>${icon('check', 16)}${esc(item)}</li>`)
-        .join('')}</ul></section>
+      <section class="panel lot-details"><h2>Building details</h2>${lotDetailsMarkup(u)}</section>
     </section>
     <section class="unitinfo">
       <span class="pillrow">${lotPills(u)}</span>
@@ -285,9 +300,7 @@ function lotSaleMarkup() {
     <label class="field">Delivery notes<input maxlength="160" placeholder="Trees, wires, soft ground, where it goes" value="${esc(d.notes)}" oninput="setDelivery('notes',this.value)"></label>
     ${deliveryStatusMarkup()}
   </section>
-  <section class="panel"><h2>On this building</h2><p class="lockline">${icon('lock', 14)} This building is already built. Its size, colors and options cannot be changed. Only delivery is set here.</p><ul class="included">${[u.colors.siding + ' siding', u.colors.trim + ' trim', u.colors.roof + ' roof', ...u.features]
-    .map((item) => `<li>${icon('check', 16)}${esc(item)}</li>`)
-    .join('')}</ul><p class="notice">Copied from the buybennett.com listing on ${LOT_LISTING_DATE}. The photo shows the actual building, and the 3D model is a reference for its style and colors. Confirm it is still on the lot before quoting.</p><button type="button" class="link" onclick="buildLike(${S.lot})">Not quite right? Build one like it ${icon('arrow', 16)}</button></section>`;
+  <section class="panel lot-details"><h2>Building details</h2><p class="lockline">${icon('lock', 14)} This building is already built. Its size, colors and options cannot be changed. Only delivery is set here.</p>${lotDetailsMarkup(u)}<p class="notice">Copied from the buybennett.com listing on ${LOT_LISTING_DATE}. The photo shows the actual building, and the 3D model is a reference for its style and colors. Confirm it is still on the lot before quoting.</p><button type="button" class="link" onclick="buildLike(${S.lot})">Not quite right? Build one like it ${icon('arrow', 16)}</button></section>`;
 }
 
 /* ---------- Share with the customer, and the follow-up list ---------- */
