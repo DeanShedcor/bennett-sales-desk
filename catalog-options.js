@@ -1,8 +1,9 @@
 const packageDetails = {
-  'Middle Porch': { minWidth: 8, minLength: 12, windows: '3 × 2×3 windows', porch: '4-ft composite porch, painted posts and railing' },
-  'Side Porch': { minWidth: 8, minLength: 12, windows: '3 × 2×3 windows', porch: '4-ft composite porch, painted posts and railing' },
-  'End Porch': { minWidth: 8, minLength: 8, windows: '3 × 2×3 windows', porch: '4-ft composite porch, painted posts and railing' },
-  'Deluxe Porch': { minWidth: 10, minLength: 20, windows: '5 × 2×3 windows', porch: 'Wraparound composite porch, painted posts and railing' },
+  'Middle Porch': { minWidth: 8, minLength: 12, windows: '3 × 2×3 windows', porch: '4-ft composite porch, painted posts' },
+  'Side Porch': { minWidth: 8, minLength: 12, windows: '3 × 2×3 windows', porch: '4-ft composite porch, painted posts' },
+  'Full Side Porch': { minWidth: 8, minLength: 12, windows: '3 × 2×3 windows', porch: '4-ft composite porch down the whole front side, painted posts' },
+  'End Porch': { minWidth: 8, minLength: 8, windows: '3 × 2×3 windows', porch: '4-ft composite porch, painted posts' },
+  'Deluxe Porch': { minWidth: 12, minLength: 20, windows: '5 × 2×3 windows', porch: 'Wraparound composite porch, painted posts and standard railing' },
   'Garage Package': { minWidth: 10, minLength: 12, windows: '1 × 2×3 window', floor: '12-inch-on-center floor joists' },
   'Dormer Package': { minWidth: 8, minLength: 12 }
 };

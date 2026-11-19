@@ -44,7 +44,7 @@ function bsShape(c) {
   let sh = { sides: gable, walls: rect, poly: [[0, 0], [L, 0], [L, W], [0, W]], deck: null, posts: [], flags: [], roles: { entry: 3, barn: 1, windows: [0, 2], outlets: [0, 2, 1] } };
   let mirror = null;
   if (pkg === 'End Porch') {
-    const p = 4;
+    const p = Number(c.porchDepth) === 8 && L >= 12 ? 8 : 4; /* porch-options.js: 4 ft or 8 ft deep */
     sh.walls = [
       ['Left side wall', [p, 0], [L, 0], 'FRONT END', 'BACK END'],
       rect[1],
@@ -90,6 +90,20 @@ function bsShape(c) {
     sh.roles = { entry: 2, entryOpt: { at: 4 }, barn: 5, windows: [2, 4, 0], winOpt: [{ at: 1 }], outlets: [0, 4, 5] };
     sh.flags.push(BS_SCALED);
     if ((c.porchSide || 'Left') === 'Left') mirror = 'x';
+  } else if (pkg === 'Full Side Porch') {
+    /* A porch down the whole front side: the front wall sits 4 ft back, end to end. */
+    sh.sides = longFront;
+    sh.walls = [
+      ['Back wall', [0, 0], [L, 0], 'LEFT END', 'RIGHT END'],
+      ['Right end wall', [L, 0], [L, W - 4], 'BACK', 'PORCH'],
+      ['Front wall, at the porch', [0, W - 4], [L, W - 4], 'LEFT END', 'RIGHT END'],
+      ['Left end wall', [0, 0], [0, W - 4], 'BACK', 'PORCH'],
+    ];
+    sh.poly = [[0, 0], [L, 0], [L, W - 4], [0, W - 4]];
+    sh.deck = [[0, W - 4], [L, W - 4], [L, W], [0, W]];
+    sh.posts = [[0, W], [L / 2, W], [L, W]];
+    sh.roles = { entry: 2, entryOpt: { frac: 0.5 }, barn: 3, windows: [2, 0], winOpt: [{ frac: 0.2 }], outlets: [0, 2, 3] };
+    sh.flags.push('The full side porch has no plant drawing yet. It is drawn 4 ft deep. Confirm the door and windows.');
   } else if (pkg === 'Middle Porch') {
     const pl = 8, x1 = (L - pl) / 2, x2 = x1 + pl;
     sh.sides = longFront;
@@ -382,7 +396,7 @@ function bsSpec(c, lay) {
       wood && c.accentColor && `${c.accentArea === 'lower' ? 'Two-tone lower' : 'Accent gable'} ${esc(c.accentColor)}`,
       wood && c.customPaint && `Paint match ${esc(c.customPaint)}`,
     ]],
-    [pkg?.porch ? 'Porch' : 'Package', pkg ? [esc(c.package), pkg.porch && esc(pkg.porch), (c.package === 'Side Porch' || c.package === 'Deluxe Porch') && `On the ${(c.porchSide || 'Left').toUpperCase()}`] : ['No building package']],
+    [pkg?.porch ? 'Porch' : 'Package', pkg ? [esc(c.package), pkg.porch && esc(pkg.porch), (c.package === 'Side Porch' || c.package === 'Deluxe Porch') && `On the ${(c.porchSide || 'Left').toUpperCase()}`, ...(typeof porchNotes === 'function' ? porchNotes(c).map(esc) : [])] : ['No building package']],
     ['Electrical', c.electrical && c.electrical !== 'None' ? [`${esc(c.electrical)} package`, ...elec, ...electricalExtras(c).map((e) => esc(e.label))] : ['No electrical']],
   ];
   return `<div class="bs-spec">${groups.map(([name, list]) => `<div><h3>${name}</h3><ul>${list.filter(Boolean).map((x) => `<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>`;

@@ -842,7 +842,7 @@ const buildingPackages = [
   ["End Porch", "Covered porch at the end. Utility or Lofted Barn. Published range: 8 × 8 to 14 × 40 ft."],
   [
     "Middle Porch",
-    "Covered porch set into the middle of the long side. Utility or Lofted Barn. Published range: 8 × 12 to 14 × 40 ft.",
+    "Covered porch set into the middle of the long side. Utility only. Published range: 8 × 12 to 14 × 40 ft.",
   ],
   [
     "Side Porch",
@@ -850,7 +850,11 @@ const buildingPackages = [
   ],
   [
     "Deluxe Porch",
-    "Wraparound porch across the front and along the left or right side. Utility or Lofted Barn. Published range: 10 × 20 to 14 × 40 ft.",
+    "Wraparound porch across the front and along the left or right side. Utility only. Published range: 12 × 20 to 14 × 40 ft.",
+  ],
+  [
+    "Full Side Porch",
+    "Covered porch down the whole long side. Utility or Lofted Barn. Published range: 8 × 12 to 14 × 40 ft.",
   ],
 ];
 function packagesFor(style) {
@@ -867,6 +871,16 @@ function packageChoices() {
       .map(([name, description]) => {
         if (name === "Dormer Package" && S.c.style !== "Utility")
           return '<button class="choice" type="button" disabled><span class="grow"><strong>Dormer Package</strong><small>Available on Utility. Choose Utility in the Style step.</small></span></button>';
+        /* porch-options.js: a porch this building cannot have is greyed, with the plain reason. */
+        const blocked = typeof porchBlocked === "function" ? porchBlocked(name, S.c) : "";
+        if (blocked)
+          return (
+            '<button class="choice" type="button" disabled><span class="grow"><strong>' +
+            name +
+            "</strong><small>" +
+            blocked +
+            "</small></span></button>"
+          );
         if (!fitsPackage(name, S.c.size))
           return (
             '<button class="choice" type="button" disabled><span class="grow"><strong>' +
@@ -884,7 +898,9 @@ function packageChoices() {
           description + (details ? "<br>Includes " + details : "") + porchPlan(name, S.c.porchSide || "Left"),
           name === "Standard Storage"
             ? "Included"
-            : "+" +
+            : packageReference(S.c, name) === null
+              ? "Price to confirm"
+              : "+" +
                 money(packageReference(S.c, name)) +
                 (packageAmount(S.c, name) === null ? " reference · confirm" : ""),
         );

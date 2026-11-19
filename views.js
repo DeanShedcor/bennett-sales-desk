@@ -458,11 +458,12 @@ function lotCards() {
    Left and right are as you face the front. Shapes are drawn right-handed and flipped for Left. */
 function porchPlan(name, side = 'Left', large = false) {
   const sided = name === 'Side Porch' || name === 'Deluxe Porch';
-  const wide = name === 'Middle Porch' || name === 'Side Porch';
+  const wide = name === 'Middle Porch' || name === 'Side Porch' || name === 'Full Side Porch';
   const [x0, y0, x1, y1] = wide ? [12, 14, 108, 74] : [30, 8, 90, 80];
   const shapes = {
     'Middle Porch': [[[12, 14], [108, 14], [108, 74], [78, 74], [78, 54], [42, 54], [42, 74], [12, 74]], [53, 54, 67, 54]],
     'Side Porch': [[[12, 14], [108, 14], [108, 54], [60, 54], [60, 74], [12, 74]], [77, 54, 91, 54]],
+    'Full Side Porch': [[[12, 14], [108, 14], [108, 54], [12, 54]], [53, 54, 67, 54]],
     'End Porch': [[[30, 8], [90, 8], [90, 62], [30, 62]], [53, 62, 67, 62]],
     'Deluxe Porch': [[[30, 8], [90, 8], [90, 26], [72, 26], [72, 50], [60, 62], [30, 62]], [62.5, 59.5, 69.5, 52.5]]
   };
@@ -494,9 +495,9 @@ function modelMarkup(c, small = false, interactive = !small) {
     'Garage Package': '11-garage-package'
   }[c.package];
   const porchSide = c.porchSide || 'Left';
-  if (c.package === 'Side Porch')
-    return `<div class="reference-model planstage${small ? ' mini' : ''}">${porchPlan('Side Porch', porchSide, !small)}${
-      small ? '' : '<p class="plan-note">Top view of the Side Porch layout. A 3D model for this package is not available yet.</p>'
+  if (c.package === 'Side Porch' || c.package === 'Full Side Porch')
+    return `<div class="reference-model planstage${small ? ' mini' : ''}">${porchPlan(c.package, porchSide, !small)}${
+      small ? '' : `<p class="plan-note">Top view of the ${c.package} layout. A 3D model for this package is not available yet.</p>`
     }</div>`;
   /* The deluxe porch model wraps the right side; the left-hand version is its mirror image. */
   const mirrored = c.package === 'Deluxe Porch' && porchSide === 'Left';
