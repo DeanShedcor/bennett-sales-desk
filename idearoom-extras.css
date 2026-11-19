@@ -1,0 +1,19 @@
+/* idearoom-extras.css: the tick boxes, door questions and loft list added by idearoom-extras.js. */
+.ix-box { margin-top: 14px; }
+.ix-tick span small { display: block; font-weight: 400; color: var(--muted, #5b6675); font-size: 0.86em; margin-top: 2px; }
+.ix-doors { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line, #dfe5ec); }
+.ix-doors h4 { margin: 0 0 8px; }
+.ix-door { padding: 10px 12px; border: 1px solid var(--line, #dfe5ec); border-radius: 12px; margin-bottom: 8px; background: #fff; }
+.ix-door > strong { display: block; margin-bottom: 6px; }
+.ix-ask { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.ix-ask > span { color: var(--muted, #5b6675); }
+.ix-ask .segrow { flex: 0 1 auto; margin: 0; }
+.ix-ask .seg { min-height: 44px; }
+.ix-door .notice { margin: 8px 0 0; }
+.ix-loft { margin-bottom: 18px; }
+.aw-vinyl span small { display: block; font-weight: 400; }
+@media (max-width: 600px) {
+  .ix-ask { flex-direction: column; align-items: stretch; }
+}
+.ix-ask .segrow { display: flex; flex-wrap: nowrap; gap: 8px; }
+.ix-ask .seg { min-width: 104px; flex: 1 1 0; }

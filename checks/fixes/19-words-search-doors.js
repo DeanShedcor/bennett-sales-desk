@@ -225,18 +225,18 @@ const readScreen = () => {
     ok(`${tag}: vinyl wrap is gone from the last step's list`, !/Vinyl wrap/i.test(x), (x.match(/.{0,30}Vinyl wrap.{0,30}/i) || [''])[0]);
     await page.evaluate(() => goStep(steps.indexOf('Exterior'))); await page.waitForTimeout(400);
     ok(`${tag}: the step bar shows Exterior right before Colors`, await page.evaluate(() => { const l = [...document.querySelectorAll('.steps .step-label')].map((e) => e.textContent.trim()); return l.indexOf('Exterior') + 1 === l.indexOf('Colors') && l.indexOf('Exterior') === 4; }), await page.evaluate(() => [...document.querySelectorAll('.steps button')].map((e) => e.textContent.trim()).join('|')));
-    ok(`${tag}: a vinyl wrap box with its fee sits right under the lap siding choice`, await page.evaluate(() => { const v = document.querySelector('label.aw-vinyl'), prev = v && v.previousElementSibling; return !!v && /Add vinyl wrap/.test(v.textContent) && /\+\$450\.00/.test(v.textContent) && !!prev && /Lap Siding/.test(prev.textContent) && v.getBoundingClientRect().height >= 44; }), await page.locator('#app').innerText());
+    ok(`${tag}: a vinyl siding box with its fee sits right under the lap siding choice`, await page.evaluate(() => { const v = document.querySelector('label.aw-vinyl'), prev = v && v.previousElementSibling; return !!v && /Vinyl siding/.test(v.textContent) && /\+\$450\.00/.test(v.textContent) && !!prev && /Lap Siding/.test(prev.textContent) && v.getBoundingClientRect().height >= 44; }), await page.locator('#app').innerText());
     ok(`${tag}: without lap siding it is greyed and says "Only with lap siding"`, await page.isDisabled('#aw-vinyl') && /Only with lap siding/.test(await page.locator('label.aw-vinyl').innerText()));
     await page.evaluate(() => change('siding', 'Lap')); await page.waitForTimeout(400);
     ok(`${tag}: with lap siding it can be ticked`, await page.isEnabled('#aw-vinyl') && !/Only with lap siding/.test(await page.locator('label.aw-vinyl').innerText()));
     const before = await page.evaluate(() => breakdown(S.c).reduce((t, r) => t + r.amount, 0));
     await page.check('#aw-vinyl'); await page.waitForTimeout(300);
     const rows = await page.evaluate(() => breakdown(S.c).map((r) => [r.name, r.amount]));
-    ok(`${tag}: ticking it adds the $450 line to the price`, rows.some((r) => /Vinyl wrap/i.test(r[0]) && r[1] === 450) && Math.abs(rows.reduce((t, r) => t + r[1], 0) - before - 450) < 0.01 && await page.isChecked('#aw-vinyl'), JSON.stringify(rows));
+    ok(`${tag}: ticking it adds the $450 line and the $300 fiberglass door to the price`, rows.some((r) => /Vinyl siding/i.test(r[0]) && r[1] === 450) && rows.some((r) => /Double fiberglass door · comes with vinyl siding/.test(r[0]) && r[1] === 300) && Math.abs(rows.reduce((t, r) => t + r[1], 0) - before - 750) < 0.01 && await page.isChecked('#aw-vinyl'), JSON.stringify(rows));
     if (PIC && page === p) { await page.waitForTimeout(4300); await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(300); await page.screenshot({ path: PIC + '-exterior.png' }); }
     await page.evaluate(() => change('siding', 'Basic groove')); await page.waitForTimeout(400);
-    ok(`${tag}: changing away from lap siding unticks it and takes the price off`, await page.evaluate(() => !S.c.extras?.['Vinyl Wrap'] && !breakdown(S.c).some((r) => /Vinyl wrap/i.test(r.name))) && await page.isDisabled('#aw-vinyl') && !(await page.isChecked('#aw-vinyl')));
-    ok(`${tag}: …and a plain message says so`, /Vinyl wrap was taken off\. It only goes with lap siding\./.test(await page.evaluate(() => document.getElementById('toast')?.textContent || '')), await page.evaluate(() => document.getElementById('toast')?.textContent || ''));
+    ok(`${tag}: changing away from lap siding unticks it and takes the price off`, await page.evaluate(() => !S.c.extras?.['Vinyl Wrap'] && !breakdown(S.c).some((r) => /Vinyl|fiberglass door/i.test(r.name)) && S.c.door === 'Double') && await page.isDisabled('#aw-vinyl') && !(await page.isChecked('#aw-vinyl')));
+    ok(`${tag}: …and a plain message says so`, /Vinyl siding was taken off\. It only goes with lap siding\./.test(await page.evaluate(() => document.getElementById('toast')?.textContent || '')), await page.evaluate(() => document.getElementById('toast')?.textContent || ''));
     ok(`${tag}: no sideways scroll on the Exterior step`, await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
   }
   // a kept sale comes back on the same named step

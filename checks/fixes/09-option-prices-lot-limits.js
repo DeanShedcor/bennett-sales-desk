@@ -76,7 +76,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
     // the Garage Package through the list
     const garage = async (size) => ev((size) => { begin('custom'); change('size', size); change('package', 'Garage Package'); return breakdown(S.c).map((r) => [r.name, r.amount]); }, size);
     r = await garage('10x16');
-    ok('Garage Package on a 10-wide: $1,280, 6 × 7 +$730, 8 × 7 credit −$850, 7 ft wall', find(r, /8 × 7 Garage Package/) === 1280 && find(r, /^6 × 7 Rollup Door$/) === 730 && find(r, /Credit/) === -850 && find(r, /7 ft sidewalls/) === 104, r);
+    ok('Garage Package on a 10-wide: $1,280, 6 × 7 +$730, 8 × 7 credit −$850, 7 ft wall at no charge', find(r, /8 × 7 Garage Package/) === 1280 && find(r, /^6 × 7 Rollup Door$/) === 730 && find(r, /Credit/) === -850 && find(r, /7 ft sidewalls/) == null, r);
     await publish([[{ kind: 'item', name: '8x7 Rollup Garage Package' }, 1300], [{ kind: 'item', name: '6x7 Roll Up' }, 750], [{ kind: 'item', name: '8x7 Roll Up' }, 870], [{ kind: 'item', name: '9x7 Rollup Garage Package' }, 1400]]);
     r = await garage('10x16');
     ok('…and those four amounts follow the published list', find(r, /8 × 7 Garage Package/) === 1300 && find(r, /^6 × 7 Rollup Door$/) === 750 && find(r, /Credit/) === -870, r);

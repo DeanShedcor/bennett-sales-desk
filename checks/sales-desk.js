@@ -39,10 +39,10 @@ const URL = process.argv[2] || 'http://localhost:8765/';
   await p.evaluate(() => goStep(steps.indexOf('Finish'))); await p.waitForTimeout(250);
   ok('add-ons section on Finish', await p.locator('.ta-addons .ta-addon').count() > 8, String(await p.locator('.ta-addons .ta-addon').count()));
   await p.fill('.ta-addon:has-text("Workbench") input', '8'); await p.keyboard.press('Tab'); await p.waitForTimeout(200);
-  await p.fill('.ta-addon:has-text("Additional loft") input', '40'); await p.keyboard.press('Tab'); await p.waitForTimeout(200);
+  await p.locator('#ix-loft .po-opt:has(strong:text-is("4 ft Back"))').click(); await p.waitForTimeout(200);
   await p.check('.ta-addon:has-text("Trusses") input'); await p.waitForTimeout(200);
   const withAdd = await p.evaluate(() => amount());
-  ok('add-ons priced: workbench 8 ft $120 + loft 40 sq ft $160 + trusses 160 sq ft $200', Math.abs(withAdd - base - 480) < 0.01, `${base} -> ${withAdd}`);
+  ok('add-ons priced: workbench 8 ft $120 + a 4 ft back loft $192 + trusses 160 sq ft $200', Math.abs(withAdd - base - 512) < 0.01, `${base} -> ${withAdd}`);
   ok('breakdown rows named', true, (await p.evaluate(() => breakdown().filter((r) => r.addon).map((r) => r.name + ' ' + r.amount))).join(' | '));
   ok('included() lists add-ons', await p.evaluate(() => included(S.c).some((x) => /Workbench/.test(x))));
   ok('build sheet notes list add-ons', await p.evaluate(() => bsLayout(S.c).notes.some((x) => /Workbench/.test(x))));
@@ -62,7 +62,7 @@ const URL = process.argv[2] || 'http://localhost:8765/';
   ok('14x40 Classic Utility uses the higher list price', await p.evaluate(() => PRICE_LIST['Classic Utility']['14x40']) === 18633);
   // tall wall
   await p.evaluate(() => { change('size', '10x16'); S.c.extras = {}; const b0 = amount(); change('wallHeight', 7); window.__tall = amount() - b0; }); await p.waitForTimeout(200);
-  ok('7 ft walls priced at $0.65 per sq ft (10x16 = $104)', Math.abs((await p.evaluate(() => window.__tall)) - 104) < 0.01, String(await p.evaluate(() => window.__tall)));
+  ok('7 ft walls on a Utility are free', Math.abs((await p.evaluate(() => window.__tall)) - 0) < 0.01, String(await p.evaluate(() => window.__tall)));
   await p.evaluate(() => change('wallHeight', 6));
   // build on site
   await p.evaluate(() => { begin('site'); }); await p.waitForTimeout(250);

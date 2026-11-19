@@ -62,7 +62,7 @@ shinglePrice = function (c) {
   const deskChange = change;
   change = function (key, value, resolve) {
     deskChange(key, value, resolve);
-    if (S.c.package === 'Garage Package' && usesWoodOptions(S.c) && Number(S.c.wallHeight) !== 7) {
+    if (S.c.package === 'Garage Package' && usesWoodOptions(S.c) && S.c.style !== 'Lofted' && Number(S.c.wallHeight) !== 7) {
       S.c.wallHeight = 7;
       render();
       if (key === 'wallHeight') toast('The Garage Package is built with 7 ft sidewalls.');

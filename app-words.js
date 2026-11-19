@@ -360,7 +360,7 @@ if (typeof TA_ADDONS !== 'undefined') {
     if (S.c.extras?.['Vinyl Wrap'] && !lap(S.c)) {
       delete S.c.extras['Vinyl Wrap'];
       render();
-      toast('Vinyl wrap was taken off. It only goes with lap siding.');
+      toast('Vinyl siding was taken off. It only goes with lap siding.');
     }
   };
 }
