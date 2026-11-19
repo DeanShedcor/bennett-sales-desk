@@ -93,8 +93,8 @@ const START = { 'End Porch': 'No railing', 'Middle Porch': 'No railing', 'Side P
     ok(`${tag}: Full Side Porch draws on the plan with its porch`, await p.evaluate(() => { const l = bsLayout(S.c); return !!l.sh.deck && l.sh.walls.length === 4 && !!document.querySelector('.porchplan'); }));
     if (!phone) await shot(p, 'full-side', '#po-rail');
     await p.evaluate(() => { openBuildSheet('cfg', true); }); await p.waitForTimeout(900);
-    const spec = await p.evaluate(() => document.querySelector('.bs-spec')?.innerText || '');
-    ok(`${tag}: the build sheet names the railing, its feet and its color`, /Porch railing: Standard railing · 24 ft/.test(spec) && /White railing/.test(spec), spec.slice(0, 600));
+    const spec = await p.evaluate(() => document.querySelector('.b1-side')?.innerText || '');
+    ok(`${tag}: the build sheet names the railing, its feet and its color`, /Porch railing: Standard railing · 24'/.test(spec) && /White railing/.test(spec), spec.slice(0, 600));
     await p.evaluate(() => closeBuildSheet()); await p.waitForTimeout(400);
 
     /* lofted barn */

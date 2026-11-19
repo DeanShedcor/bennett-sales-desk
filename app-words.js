@@ -9,7 +9,7 @@
    4. One search in the top bar on every side: orders, customers, buildings at the plant and on the
       lot, loads and people. It follows the person's lots and sides.
    5. QC page titles read like the other sides' titles; main buttons are one size (app-words.css).
-   6. The wall strips on build sheet 2 draw the placed options; the QC change-order page follows
+   6. The wall strips of the older two-page build sheet draw the placed options; the QC change-order page follows
       the person's lots.
    Words are put right as the page is drawn, the same way plant-polish.js does it, so older checks
    that read the old words can switch this off with PP.raw.
@@ -256,7 +256,8 @@ function awSearchDraw(raw) {
 document.querySelector('.topbar-right')?.insertAdjacentHTML('afterbegin', `<button type="button" class="ta-topbtn" id="aw-search" onclick="awSearchOpen()" aria-label="Search the whole app">${icon('orders', 18)}<span>Search</span></button>`);
 
 /* ---------- 6. Leftovers ---------- */
-/* The wall strips on sheet 2 draw the placed options too. */
+/* The wall strips of the older two-page sheet (bsPagesOld) draw the placed options too. The sheet people
+   print now is build-sheet-one.js: one build sheet with every measurement, and an electrical sheet. */
 if (typeof bsStrip === 'function') {
   const baseStrip = bsStrip;
   bsStrip = function (lay, w, scale) {

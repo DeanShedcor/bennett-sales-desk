@@ -100,7 +100,7 @@ const BENCH = 'Workbench (per LF)', SHELF = 'Three Tier Shelving (per LF)', WALL
     ok(`${tag}: when all five are placed the tray turns to "All placed"`, /All placed/.test(tray) && await p.evaluate(() => fpLeft(S.c).length === 0), tray);
     if (PIC && !phone) { await quiet(p); await p.evaluate(() => { BS.sel = null; bsRender(); document.getElementById('bsheet').scrollTop = 0; }); await p.waitForTimeout(300); await p.screenshot({ path: PIC + '-placed.png' }); }
     const sheet = await p.evaluate(() => document.querySelector('.bs-pages').innerText);
-    ok(`${tag}: the build sheet lists the pieces and where they go`, /Inside options/i.test(sheet) && /Workbench · 6 ft/.test(sheet) && /Shelving · 8 ft/.test(sheet) && /runs 5′|runs 5 ft|into the building/.test(sheet) && !/not placed/i.test(sheet), sheet.slice(0, 600));
+    ok(`${tag}: the build sheet lists the pieces and where they go`, /Inside/i.test(sheet) && /Workbench: 6' long/.test(sheet) && /Shelving: 8' long/.test(sheet) && /Partition wall: \d+' long/.test(sheet) && !/not placed/i.test(sheet), sheet.slice(0, 600));
     ok(`${tag}: the printed plan draws each piece`, await p.evaluate(() => document.querySelectorAll('.bs-pages .fp-piece').length >= 5));
     await p.evaluate(() => closeBuildSheet()); await p.waitForTimeout(500);
     card = await p.locator('#fp-ask').innerText();
@@ -171,7 +171,7 @@ const BENCH = 'Workbench (per LF)', SHELF = 'Three Tier Shelving (per LF)', WALL
       await p.waitForTimeout(4300);
       await p.evaluate((id) => openBuildSheet(id), ord.id); await p.waitForTimeout(700);
       const plant = await p.evaluate(() => ({ text: document.querySelector('.bs-pages').innerText, drawn: document.querySelectorAll('.bs-pages .fp-piece').length }));
-      ok('The build sheet the plant opens draws and lists the workbench and shelving', plant.drawn >= 2 && /Workbench · 6 ft/.test(plant.text) && /Shelving · 8 ft/.test(plant.text) && /Inside options/i.test(plant.text), plant.text.slice(0, 400));
+      ok('The build sheet the plant opens draws and lists the workbench and shelving', plant.drawn >= 2 && /Workbench: 6' long/.test(plant.text) && /Shelving: 8' long/.test(plant.text) && /Inside/i.test(plant.text), plant.text.slice(0, 400));
       if (PIC) { await p.evaluate(() => { const el = document.querySelector('.bs-pages .bs-page'); document.getElementById('bsheet').scrollTop = el.offsetTop - 60; }); await p.waitForTimeout(400); await p.screenshot({ path: PIC + '-plant.png' }); }
       await p.evaluate(() => bsConfirm()); await p.waitForTimeout(300);
       ok('With every piece placed, the layout can be confirmed on the order', await p.evaluate(() => !!sfSale().c.sheet.ok));

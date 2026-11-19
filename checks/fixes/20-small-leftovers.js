@@ -91,11 +91,11 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
     await p.click('button:has-text("Start configuring")'); await p.waitForTimeout(1500);
     await p.evaluate(() => { change('size', '12x20'); goStep(steps.indexOf('Finish')); taAddonSet('Workbench (per LF)', 6); taAddonSet('Three Tier Shelving (per LF)', 8); taAddonSet('Additional Loft (PER SQ FT)', 48); taAddonSet('Partition Wall (per linear foot)', 6); render(); }); await p.waitForTimeout(400);
     await p.evaluate(() => { openBuildSheet('cfg', true); const lay = bsLayout(S.c); for (const it of lay.items.filter((x) => x.kind === 'fix')) bsEdPlace(it.key, it.fw, it.at); bsRender(); }); await p.waitForTimeout(500);
-    const labels = await p.evaluate(() => { const d = document.createElement('div'); d.innerHTML = bsPages(bsOrder('cfg')); return [...d.querySelectorAll('.bs-page')[1].querySelectorAll('.bs-wall text')].map((e) => e.textContent.trim()).filter((t) => /: /.test(t) && !/HOOK TAPE/.test(t)); });
-    const twice = labels.filter((t) => { const m = t.match(/\d+'-\d+[^ ]*" to \d+'-\d+[^ ]*"/g) || []; return m.length > 1; });
-    ok('Build sheet page 2: no wall strip label says its spot twice', labels.length >= 4 && !twice.length, JSON.stringify(twice.length ? twice : labels));
-    ok('The workbench and shelving labels read "name: start to end"', labels.some((t) => /^Workbench · 6 ft: \d+'-\d+" to \d+'-\d+"$/.test(t)) && labels.some((t) => /^Shelving · 8 ft: \d+'-\d+" to \d+'-\d+"$/.test(t)), JSON.stringify(labels));
-    ok('The loft and the inside wall still say how deep they go', labels.some((t) => /^Loft · 48 sq ft \(overhead, .* deep\): /.test(t)) && labels.some((t) => /^Partition wall · 6 ft: starts at .*, runs .* into the building$/.test(t)), JSON.stringify(labels));
+    const labels = await p.evaluate(() => { const d = document.createElement('div'); d.innerHTML = bsPages(bsOrder('cfg')); return [...d.querySelectorAll('.bs-page')[0].querySelectorAll('.b1-plan .fp-piece text')].map((e) => e.textContent.trim()); });
+    const twice = ['WORKBENCH', 'SHELVING', 'LOFT', 'PARTITION WALL'].filter((n) => labels.filter((t) => t.startsWith(n)).length !== 1);
+    ok('Build sheet: each inside piece is named once on the drawing', labels.length >= 4 && !twice.length, JSON.stringify(twice.length ? twice : labels));
+    ok('The workbench and shelving labels give the length, the depth and where they start', labels.some((t) => /^WORKBENCH 6' long, 2' deep$/.test(t)) && labels.some((t) => /^SHELVING 8' long, 1' 6" deep$/.test(t)) && labels.filter((t) => /^starts /.test(t)).length >= 3, JSON.stringify(labels));
+    ok('The loft and the inside wall still say how deep they go', labels.some((t) => /^LOFT \(overhead\) \d+' deep$/.test(t)) && labels.some((t) => /^PARTITION WALL \d+' long$/.test(t)), JSON.stringify(labels));
     if (PIC) { await p.evaluate(() => { BS.edit = false; bsRender(); }); await p.waitForTimeout(600); await p.evaluate(() => document.querySelector('#bsheet .bs-wall').scrollIntoView({ block: 'start' })); await p.waitForTimeout(4300); await p.screenshot({ path: `${PIC}-buildsheet-label.png` }); }
     await p.close(); }
 
