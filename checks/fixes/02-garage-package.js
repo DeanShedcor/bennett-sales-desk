@@ -21,7 +21,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
   ok('10x16: 6 × 7 Rollup Door +$730', find(g, /^6 × 7 Rollup Door$/)?.[1] === 730);
   ok('10x16: 8 × 7 Rollup Door (Credit) −$850', find(g, /8 × 7 Rollup Door \(Credit\)/)?.[1] === -850);
   ok('10x16: a garage now costs more than the plain shed', sum(g) > sum(plain), `${sum(plain)} -> ${sum(g)}`);
-  ok('10x16: the package sets 7 ft sidewalls, at no charge on a Utility', (await p.evaluate(() => S.c.wallHeight)) === 7 && !find(g, /7 ft sidewalls/) && !find(plain, /7 ft sidewalls/), JSON.stringify(g));
+  ok('10x16: the package sets 7 ft sidewalls, at no charge on a Utility', (await p.evaluate(() => S.c.wallHeight)) === 7 && !find(g, /7 ft Side Wall/) && !find(plain, /7 ft Side Wall/), JSON.stringify(g));
   await p.evaluate(() => change('wallHeight', 6)); await p.waitForTimeout(300);
   ok('The wall height stays 7 ft with the package', (await p.evaluate(() => S.c.wallHeight)) === 7);
   const total = await p.evaluate(() => document.body.innerText.match(/BUILDING TOTAL\s*\$([\d,.]+)/i)?.[1]);

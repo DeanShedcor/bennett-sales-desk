@@ -57,15 +57,15 @@ const LOFT_READ = [
     await p.check('#floor-joists'); await p.waitForTimeout(300);
     ok(`${tag}: …and add $268.80`, Math.abs((await total(p)) - base - 268.8) < 0.006 && /\$1\.40 per sq ft/.test(find(await rows(p), /floor joists/)?.[2] || ''));
     await p.uncheck('#floor-joists'); await p.waitForTimeout(300);
-    ok(`${tag}: a Utility's 7 ft wall says “no charge”`, /7 ft · no charge/.test(await p.locator('select[onchange*="wallHeight"]').innerText()));
+    ok(`${tag}: a Utility's 7 ft wall says “no charge”`, /7 ft Side Wall · no charge/.test(await p.locator('select[onchange*="wallHeight"]').innerText()));
     await set(p, { wallHeight: 7 });
-    ok(`${tag}: 7 ft walls on a Utility add nothing and no line`, (await total(p)) === base && !find(await rows(p), /7 ft sidewalls|Permitting/));
+    ok(`${tag}: 7 ft walls on a Utility add nothing and no line`, (await total(p)) === base && !find(await rows(p), /7 ft Side Wall|Permitting/));
     await set(p, { style: 'Lofted' }); await set(p, { wallHeight: 6 });
     const lbase = await total(p);
-    ok(`${tag}: a lofted barn's 7 ft wall shows +$1,124.80 on a 12 × 16`, /7 ft · \+\$1,124\.80/.test(await p.locator('select[onchange*="wallHeight"]').innerText()) && /\$1,000\.00 permitting fee/.test(await p.locator('#ix-wall-note').innerText()));
+    ok(`${tag}: a lofted barn's 7 ft wall shows +$1,124.80 on a 12 × 16`, /7 ft Side Wall · \+\$1,124\.80/.test(await p.locator('select[onchange*="wallHeight"]').innerText()) && /\$1,000\.00 permitting fee/.test(await p.locator('#ix-wall-note').innerText()));
     await set(p, { wallHeight: 7 });
     let r = await rows(p);
-    ok(`${tag}: it adds $124.80 for the wall and a $1,000.00 “Permitting fee” line`, (await total(p)) === lbase + 1124.8 && find(r, /^7 ft sidewalls/)?.[1] === 124.8 && find(r, /^Permitting fee/)?.[1] === 1000, JSON.stringify(r));
+    ok(`${tag}: it adds $124.80 for the wall and a $1,000.00 “Permitting fee” line`, (await total(p)) === lbase + 1124.8 && find(r, /^7 ft Side Wall$/)?.[1] === 124.8 && find(r, /^Permitting fee/)?.[1] === 1000, JSON.stringify(r));
     if (!phone) await shot(p, 'lofted-wall', '#ix-wall-note');
     await set(p, { package: 'End Porch' });
     r = await rows(p);
@@ -184,7 +184,7 @@ const LOFT_READ = [
       /* build on site takes 40% of the new charges too; the invoice and order carry them */
       await p.evaluate(() => { change('roof', 'Shingles'); ixTick('rush', true); S.c.buildOnSite = true; render(); });
       r = await rows(p);
-      ok('Build on site is still last and is 40% of everything else, new charges included', r.at(-1)[0] === 'Build on site' && Math.abs(r.at(-1)[1] - 0.4 * r.slice(0, -1).reduce((t, x) => t + x[1], 0)) < 0.006 && !!find(r, /^Rush order$/) && !!find(r, /^Architectural shingles$/), JSON.stringify(r));
+      ok('Build on site is still last and is 40% of everything else, new charges included', /^Build on Site Surcharge/.test(r.at(-1)[0]) && Math.abs(r.at(-1)[1] - 0.4 * r.slice(0, -1).reduce((t, x) => t + x[1], 0)) < 0.006 && !!find(r, /^Rush order$/) && !!find(r, /^Architectural shingles$/), JSON.stringify(r));
       await p.evaluate(() => { S.c.buildOnSite = false; change('roof', 'Metal'); });
       const old = await p.evaluate(() => { const s = ofSale('STB-3102'); return { total: s.total, list: ofListPrice(s) }; });
       ok('A sample order sold before the change still matches its own prices', old.total === old.list, JSON.stringify(old));

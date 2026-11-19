@@ -14,7 +14,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
   await p.click('button:has-text("Start a sale"):visible'); await p.waitForTimeout(300);
   await p.click('button:has-text("Start configuring")'); await p.waitForTimeout(1800);
   const rows = await p.evaluate(() => breakdown(S.c).map((r) => [r.name, r.amount]));
-  ok('New sale: the base price, Basic electrical and fuel are charged, nothing else', rows.length === 3 && rows[0][1] === 5416 && rows.some((r) => /Basic electrical/.test(r[0]) && r[1] === 205) && rows.some((r) => /Fuel/.test(r[0])), JSON.stringify(rows));
+  ok('New sale: the base price, Basic electrical and fuel are charged, nothing else', rows.length === 3 && rows[0][1] === 5416 && rows.some((r) => /Basic Electrical Package/.test(r[0]) && r[1] === 205) && rows.some((r) => /Fuel/.test(r[0])), JSON.stringify(rows));
   const bar = await p.locator('.quoteaside').innerText();
   ok('Blank start: the bar says "Set a budget", not under/over budget', /Set a budget/.test(bar) && !/under budget|over budget/.test(bar), bar.slice(0, 300));
   ok('New sale: the bar says Basic electrical', /Basic electrical/.test(bar) && !/None electrical/.test(bar));

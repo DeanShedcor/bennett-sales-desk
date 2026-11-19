@@ -5,7 +5,7 @@
    - Files with a version tag (app.css?v=18): the kept copy first. A changed file gets a new tag in
      index.html, so an old copy can never stand in for a new one.
    Nothing here saves any order or customer; the preview still keeps nothing between visits. */
-const KEEP = 'bennett-app-15';
+const KEEP = 'bennett-app-16';
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {

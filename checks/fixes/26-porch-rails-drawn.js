@@ -175,7 +175,7 @@ const READ = () => {
     const e = await open(false);
     const start = await e.evaluate(() => ({ el: S.c.electrical, rows: breakdown(S.c).map((r) => [r.name, r.amount]), place: S.c.elecPlace || '', windows: S.c.windows, bar: document.querySelector('.deal-name small').textContent }));
     ok('A new building starts with the Basic electrical package picked', start.el === 'Basic', JSON.stringify(start));
-    ok('…its price is in the starting total, and nothing else is added', start.rows.length === 3 && start.rows.some((r) => r[0] === 'Basic electrical package' && r[1] > 0) && start.windows === 0, JSON.stringify(start.rows));
+    ok('…its price is in the starting total, and nothing else is added', start.rows.length === 3 && start.rows.some((r) => r[0] === 'Basic Electrical Package' && r[1] > 0) && start.windows === 0, JSON.stringify(start.rows));
     ok('…the bar under the building says “Basic electrical”', /Basic electrical/.test(start.bar), start.bar);
     ok('…and where it goes is not answered for the salesperson', start.place === '');
     for (const st of ['Lofted', 'Studio', 'Greenhouse', 'Silver Bullet', 'Low-Wall Barn']) {

@@ -153,7 +153,7 @@
     return `<label class="checkrow boxed ix-tick${tickOn(c, k) ? ' on' : ''}"><input id="ix-${k}" type="checkbox" ${tickOn(c, k) ? 'checked' : ''} onchange="ixTick('${k}',this.checked)"> <span>${t.name}<small>${esc(note)}</small></span> <strong>+${money(t.price(c))}</strong></label>`;
   };
   const COPPER = 'Copper Penny', COPPER_PRICE = 225;
-  const copperOn = (c) => c.roof === 'Metal' && c.roofColor === COPPER && c.style !== 'Greenhouse';
+  const copperOn = (c) => c.roof === 'Metal' && c.roofColor === COPPER && c.style !== 'Greenhouse' && c.style !== 'Silver Bullet';
   const copperWords = (c) => (copperOn(c) ? `<strong>Copper Penny roof: +${money(COPPER_PRICE)}.</strong> It is on the price.` : `A Copper Penny metal roof adds ${money(COPPER_PRICE)}. The other roof colors cost nothing more.`);
 
   /* ---------- lofts by name ---------- */
@@ -302,7 +302,7 @@
         html = html.replace('<span>Add vinyl wrap</span>', `<span>Vinyl siding<small>The double door changes to a double fiberglass door (+${money(doorPrices[VINYL_DOOR] - doorPrices.Double)}).</small></span>`).replace('<span>Add vinyl wrap <small>', '<span>Vinyl siding <small>');
       }
       if (step === 'Colors') {
-        if (c.style !== 'Greenhouse' && c.roof === 'Metal') html += `<p class="${copperOn(c) ? 'notice' : 'source'}" id="ix-copper">${copperWords(c)}</p>`;
+        if (c.style !== 'Greenhouse' && c.style !== 'Silver Bullet' && c.roof === 'Metal') html += `<p class="${copperOn(c) ? 'notice' : 'source'}" id="ix-copper">${copperWords(c)}</p>`;
         html += `<div class="ix-box" id="ix-paint-box">${tickMarkup(c, 'paintSample')}</div>`;
       }
       if (step === 'Finish') {

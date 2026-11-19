@@ -18,12 +18,12 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
     const find = (rows, re) => (rows.find((x) => re.test(x[0])) || [])[1];
     const publish = (changes, date) => ev(([changes, date]) => { go('of-prices'); for (const [d, v] of changes) adPrice(d, v, true); AD.tab = 'draft'; render(); if (date) document.getElementById('ad-when').value = date; OG.live = true; try { adPublish(); } finally { OG.live = false; } }, [changes, date]);
     let r = await build();
-    ok('before: window $105, fiberglass door $325, Basic electrical $205', find(r, /2 × 3 ft Standard/) === 105 && find(r, /Fiberglass/) === 325 && find(r, /Basic electrical/) === 205, r);
+    ok('before: window $105, fiberglass door $325, Basic electrical $205', find(r, /2 × 3 ft Standard/) === 105 && find(r, /Fiberglass/) === 325 && find(r, /Basic Electrical Package/) === 205, r);
     await publish([[{ kind: 'item', name: '2x3 window - White' }, 605], [{ kind: 'item', name: 'Solid Fiberglass Door Left Hand In Swing Short' }, 425], [{ kind: 'item', name: 'Basic Package' }, 705]]);
     r = await build();
     ok('published window price reaches a new quote ($605)', find(r, /2 × 3 ft Standard/) === 605, r);
     ok('published door price reaches a new quote ($425)', find(r, /Fiberglass/) === 425, r);
-    ok('published electrical price reaches a new quote ($705)', find(r, /Basic electrical/) === 705, r);
+    ok('published electrical price reaches a new quote ($705)', find(r, /Basic Electrical Package/) === 705, r);
     const total = r.reduce((t, x) => t + x[1], 0);
     ok('the designer’s total uses the new prices', await ev(() => amount()) === total, total);
     // the designer's own cards show the new price
@@ -76,7 +76,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
     // the Garage Package through the list
     const garage = async (size) => ev((size) => { begin('custom'); change('size', size); change('package', 'Garage Package'); return breakdown(S.c).map((r) => [r.name, r.amount]); }, size);
     r = await garage('10x16');
-    ok('Garage Package on a 10-wide: $1,280, 6 × 7 +$730, 8 × 7 credit −$850, 7 ft wall at no charge', find(r, /8 × 7 Garage Package/) === 1280 && find(r, /^6 × 7 Rollup Door$/) === 730 && find(r, /Credit/) === -850 && find(r, /7 ft sidewalls/) == null, r);
+    ok('Garage Package on a 10-wide: $1,280, 6 × 7 +$730, 8 × 7 credit −$850, 7 ft wall at no charge', find(r, /8 × 7 Garage Package/) === 1280 && find(r, /^6 × 7 Rollup Door$/) === 730 && find(r, /Credit/) === -850 && find(r, /7 ft Side Wall/) == null, r);
     await publish([[{ kind: 'item', name: '8x7 Rollup Garage Package' }, 1300], [{ kind: 'item', name: '6x7 Roll Up' }, 750], [{ kind: 'item', name: '8x7 Roll Up' }, 870], [{ kind: 'item', name: '9x7 Rollup Garage Package' }, 1400]]);
     r = await garage('10x16');
     ok('…and those four amounts follow the published list', find(r, /8 × 7 Garage Package/) === 1300 && find(r, /^6 × 7 Rollup Door$/) === 750 && find(r, /Credit/) === -870, r);

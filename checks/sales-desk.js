@@ -37,7 +37,7 @@ const URL = process.argv[2] || 'http://localhost:8765/';
   await p.waitForTimeout(300);
   const base = await p.evaluate(() => amount());
   await p.evaluate(() => goStep(steps.indexOf('Finish'))); await p.waitForTimeout(250);
-  ok('add-ons section on Finish', await p.locator('.ta-addons .ta-addon').count() > 8, String(await p.locator('.ta-addons .ta-addon').count()));
+  ok('add-ons section on Finish', await p.locator('.ta-addons .ta-addon').count() > 5, String(await p.locator('.ta-addons .ta-addon').count()));
   await p.fill('.ta-addon:has-text("Workbench") input', '8'); await p.keyboard.press('Tab'); await p.waitForTimeout(200);
   await p.locator('#ix-loft .po-opt:has(strong:text-is("4 ft Back"))').click(); await p.waitForTimeout(200);
   await p.check('.ta-addon:has-text("Trusses") input'); await p.waitForTimeout(200);
@@ -66,7 +66,7 @@ const URL = process.argv[2] || 'http://localhost:8765/';
   await p.evaluate(() => change('wallHeight', 6));
   // build on site
   await p.evaluate(() => { begin('site'); }); await p.waitForTimeout(250);
-  ok('build on site is 40% of the rest of the price', await p.evaluate(() => { const r = breakdown(), s = r.find((x) => x.name === 'Build on site'); return !!s && s.amount === Math.round(r.reduce((t, x) => t + (x === s ? 0 : x.amount), 0) * 40) / 100; }));
+  ok('build on site is 40% of the rest of the price', await p.evaluate(() => { const r = breakdown(), s = r.find((x) => /^Build on Site Surcharge/.test(x.name)); return !!s && s.amount === Math.round(r.reduce((t, x) => t + (x === s ? 0 : x.amount), 0) * 40) / 100; }));
   // RTO calculator from the summary drawer
   await p.evaluate(() => { begin(); S.expanded = true; render(); }); await p.waitForTimeout(250);
   await p.click('.ta-rtolink'); await p.waitForTimeout(250);

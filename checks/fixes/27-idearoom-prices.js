@@ -16,7 +16,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
     await p.evaluate(() => { try { ffSetOn(false); } catch (e) {} localStorage.removeItem('sales:draft'); S.saleLead = null; go('start'); }); await p.waitForTimeout(300);
     return p;
   };
-  const design = async (p) => { await p.click('button:has-text("Start configuring")'); await p.waitForTimeout(1500); };
+  const design = async (p) => { await p.evaluate(() => begin()); await p.waitForTimeout(1500); };
   const shot = async (p, name, sel) => { if (!PIC) return; await p.waitForTimeout(600); if (sel) await p.locator(sel).first().scrollIntoViewIfNeeded().catch(() => {}); await p.waitForTimeout(300); await p.screenshot({ path: `${PIC}-${name}.png` }); };
   const set = (p, o) => p.evaluate((o) => { for (const [k, v] of Object.entries(o)) change(k, v); }, o);
   const rows = (p) => p.evaluate(() => breakdown(S.c).map((r) => [r.name, r.amount, r.source || '']));
@@ -63,19 +63,19 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
   const before = await p.evaluate(() => amount());
   await p.evaluate(() => { S.c.buildOnSite = true; render(); }); await p.waitForTimeout(300);
   r = await rows(p);
-  ok('Build on site on a 12 × 16 Basic Utility is $2,488.64, IdeaRoom’s $2,488', r.at(-1)[0] === 'Build on site' && r.at(-1)[1] === 2488.64, JSON.stringify(r.at(-1)));
+  ok('Build on site on a 12 × 16 Basic Utility is $2,488.64, IdeaRoom’s $2,488', /^Build on Site Surcharge/.test(r.at(-1)[0]) && r.at(-1)[1] === 2488.64, JSON.stringify(r.at(-1)));
   ok('It is 40% of everything else, fuel included', Math.abs(r.at(-1)[1] - 0.4 * before) < 0.006 && await p.evaluate((b) => Math.abs(amount() - b * 1.4) < 0.011, before));
   ok('The line says the customer is responsible for permits', /customer is responsible for permits/i.test(r.at(-1)[2]) && /40%/.test(r.at(-1)[2]));
   await set(p, { package: 'End Porch' });
   r = await rows(p);
   const rest = r.slice(0, -1).reduce((t, x) => t + x[1], 0);
-  ok('A package and its options are inside the 40% (porch: $3,092.64)', r.at(-1)[0] === 'Build on site' && r.at(-1)[1] === 3092.64 && Math.abs(rest * 0.4 - r.at(-1)[1]) < 0.006, JSON.stringify(r));
+  ok('A package and its options are inside the 40% (porch: $3,092.64)', /^Build on Site Surcharge/.test(r.at(-1)[0]) && r.at(-1)[1] === 3092.64 && Math.abs(rest * 0.4 - r.at(-1)[1]) < 0.006, JSON.stringify(r));
   await set(p, { electrical: 'Basic' });
   r = await rows(p);
   ok('Adding electrical moves the build on site line with it', r.at(-1)[1] === Math.round((r.slice(0, -1).reduce((t, x) => t + x[1], 0)) * 40) / 100 && r.at(-1)[1] === 3174.64, JSON.stringify(r.at(-1)));
   ok('The lines still add up to the total', await p.evaluate(() => Math.abs(breakdown(S.c).reduce((t, x) => t + x.amount, 0) - amount()) < 0.011));
   await p.locator('.deal-details').click({ timeout: 3000 }).catch(() => {}); await p.waitForTimeout(500);
-  ok('The price details show the build on site line', /Build on site/.test(await p.evaluate(() => summary())) && /\$3,174\.64/.test(await p.evaluate(() => summary())));
+  ok('The price details show the build on site line', /Build on Site Surcharge/.test(await p.evaluate(() => summary())) && /\$3,174\.64/.test(await p.evaluate(() => summary())));
   await shot(p, 'build-on-site');
   await p.locator('.deal-details').click({ timeout: 3000 }).catch(() => {});
   await p.evaluate(() => { S.c.buildOnSite = false; change('package', 'Standard Storage'); go('start'); }); await p.waitForTimeout(400);
@@ -114,7 +114,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
     const t = await p.evaluate((pk) => { const e = [...document.querySelectorAll('.choice')].find((x) => x.innerText.includes(pk)); return e ? { dis: e.disabled, text: e.innerText } : null; }, pk);
     ok(`A 12 × 24 lofted barn can pick a ${pk}`, t && !t.dis && !/Not on a lofted barn/.test(t.text), JSON.stringify(t));
     await p.evaluate((pk) => [...document.querySelectorAll('.choice')].find((x) => x.innerText.includes(pk)).click(), pk); await p.waitForTimeout(500);
-    ok(`…and it stays picked, with its price (${pk})`, await p.evaluate((pk) => S.c.package === pk && S.c.style === 'Lofted' && breakdown(S.c).some((x) => x.name === pk && x.amount === (pk === 'Middle Porch' ? 1680 : 2330)), pk));
+    ok(`…and it stays picked, with its price (${pk})`, await p.evaluate((pk) => S.c.package === pk && S.c.style === 'Lofted' && breakdown(S.c).some((x) => x.name.startsWith(pk) && x.amount === (pk === 'Middle Porch' ? 1680 : 2330)), pk));
   }
   ok('A lofted Deluxe Porch asks high or low porch ceiling, like the end porch', (await p.locator('#po-loft .po-opt').count()) === 2 && await p.evaluate(() => S.c.porchLoft === 'High'));
   await p.click('#po-loft .po-opt:has-text("Low ceiling")'); await p.waitForTimeout(300);

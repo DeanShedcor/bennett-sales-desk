@@ -70,7 +70,7 @@ function p3Colors(c) {
     body, trim,
     door: paints[c.doorColor] || body,
     doorTrim: paints[c.doorTrimColor] || trim,
-    roof: c.style === 'Greenhouse' ? '#dfeef2' : c.roof === 'Shingles' ? '#4a4d50' : metalRoofColors[c.roofColor] || metalRoofColors.Charcoal,
+    roof: c.style === 'Greenhouse' ? '#dfeef2' : c.roof === 'Shingles' ? (typeof shingleColors !== 'undefined' && shingleColors[c.shingleColor]) || '#4a4d50' : (c.style === 'Silver Bullet' && (bulletStandard[c.roofColor] || bulletPremium[c.roofColor])) || metalRoofColors[c.roofColor] || metalRoofColors.Charcoal,
     glass: '#a9d4ea', floor: '#8a7158', deck: '#7b7b7c', skid: '#cdbf98',
   };
 }
