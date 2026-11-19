@@ -89,7 +89,7 @@ const START = { 'End Porch': 'No railing', 'Middle Porch': 'No railing', 'Side P
     ok(`${tag}: no Deluxe Porch on a 10 wide: the package is taken off and the choice is greyed with the reason`, dl.pkg === 'Standard Storage' && dl.dis && /10 ft wide or narrower/.test(dl.txt), JSON.stringify(dl));
     await p.evaluate(() => change('size', '12x20')); await p.waitForTimeout(300);
     await pick(p, 'Full Side Porch');
-    ok(`${tag}: Full Side Porch can be picked; its package price is to be confirmed and is not in the total`, await p.evaluate(() => S.c.package === 'Full Side Porch' && !breakdown(S.c).some((r) => r.name === 'Full Side Porch') && /Ask the office for the price|Price to confirm/.test([...document.querySelectorAll('.choice')].find((e) => /Full Side Porch/.test(e.innerText)).innerText) && catalogReviewItems(S.c).some((x) => /package price/i.test(x))));
+    ok(`${tag}: Full Side Porch can be picked; it costs $840 plus $110 a foot of length and is in the total`, await p.evaluate(() => { const want = 840 + 110 * Number(S.c.size.split('x')[1]); return S.c.package === 'Full Side Porch' && breakdown(S.c).some((r) => r.name === 'Full Side Porch' && r.amount === want) && !/Ask the office for the price|Price to confirm/.test([...document.querySelectorAll('.choice')].find((e) => /Full Side Porch/.test(e.innerText)).innerText); }));
     ok(`${tag}: Full Side Porch draws on the plan with its porch`, await p.evaluate(() => { const l = bsLayout(S.c); return !!l.sh.deck && l.sh.walls.length === 4 && !!document.querySelector('.porchplan'); }));
     if (!phone) await shot(p, 'full-side', '#po-rail');
     await p.evaluate(() => { openBuildSheet('cfg', true); }); await p.waitForTimeout(900);
@@ -102,8 +102,8 @@ const START = { 'End Porch': 'No railing', 'Middle Porch': 'No railing', 'Side P
     await p.evaluate(() => { goStep(0); change('style', 'Lofted'); goStep(steps.indexOf('Package')); }); await p.waitForTimeout(600);
     const lo = await p.evaluate(() => ({ pkg: S.c.package, ch: [...document.querySelectorAll('.choice')].map((e) => [e.querySelector('strong').textContent.trim(), e.disabled, e.innerText]) }));
     const by = Object.fromEntries(lo.ch.map((c) => [c[0], c]));
-    ok(`${tag}: switching to a lofted barn takes a Middle Porch off`, lo.pkg === 'Standard Storage', lo.pkg);
-    ok(`${tag}: a lofted barn is offered End, Side and Full Side porches only; Middle and Deluxe are greyed with the reason`, !by['End Porch'][1] && !by['Side Porch'][1] && !by['Full Side Porch'][1] && by['Middle Porch'][1] && by['Deluxe Porch'][1] && /Not on a lofted barn/.test(by['Middle Porch'][2]) && /Not on a lofted barn/.test(by['Deluxe Porch'][2]), JSON.stringify(lo.ch.map((c) => c.slice(0, 2))));
+    ok(`${tag}: switching to a lofted barn keeps a Middle Porch`, lo.pkg === 'Middle Porch', lo.pkg);
+    ok(`${tag}: a lofted barn is offered every porch a utility is`, ['End Porch', 'Side Porch', 'Full Side Porch', 'Middle Porch', 'Deluxe Porch'].every((k) => by[k] && !by[k][1] && !/Not on a lofted barn/.test(by[k][2])), JSON.stringify(lo.ch.map((c) => c.slice(0, 2))));
     await pick(p, 'End Porch');
     ok(`${tag}: a lofted end porch asks high ceiling (no loft) or low ceiling (with a loft)`, /High ceiling\s*No loft over the porch\s*Low ceiling\s*A loft over the porch/.test(await p.locator('#po-loft').innerText()) && await p.evaluate(() => S.c.porchLoft === 'High'));
     await p.click('#po-loft .po-opt:has-text("Low ceiling")'); await p.waitForTimeout(300);
@@ -115,11 +115,11 @@ const START = { 'End Porch': 'No railing', 'Middle Porch': 'No railing', 'Side P
     await p.close();
   }
 
-  /* a kept sale from before, with typed feet and a porch a lofted barn can no longer have */
+  /* a kept sale from before, with typed feet, on a lofted barn with a Deluxe Porch */
   { const p = await open(false);
     await p.evaluate(() => { localStorage.setItem('sales:draft', JSON.stringify({ c: { ...S.c, style: 'Lofted', size: '12x20', package: 'Deluxe Porch', catalogOptions: true, extras: { 'Porch Railing (Per Linear Ft)': 37 } }, step: 2, stepName: 'Package', completed: 2, path: S.path, customer: '', term: 60, budget: 0, at: Date.now() })); go('home'); }); await p.waitForTimeout(500);
     await p.click('#sale-draft button:has-text("Resume")'); await p.waitForTimeout(1500);
-    ok('An older kept sale opens with no error, its package set back and the typed feet gone', await p.evaluate(() => S.page === 'configure' && S.c.package === 'Standard Storage' && !S.c.extras?.['Porch Railing (Per Linear Ft)'] && !breakdown(S.c).some((r) => /railing/i.test(r.name))), await p.evaluate(() => JSON.stringify([S.page, S.c.package, S.c.extras])));
+    ok('An older kept sale opens with no error, keeps its porch, and the typed feet are gone', await p.evaluate(() => S.page === 'configure' && S.c.package === 'Deluxe Porch' && S.c.railing === 'Standard railing' && !S.c.extras?.['Porch Railing (Per Linear Ft)'] && !breakdown(S.c).some((r) => /railing/i.test(r.name))), await p.evaluate(() => JSON.stringify([S.page, S.c.package, S.c.extras])));
     await p.close(); }
 
   /* a real order: the invoice and the order name the railing */

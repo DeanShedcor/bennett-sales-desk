@@ -114,7 +114,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
     ok('10 once published the lot is back on the main list', await p.evaluate(() => !AD.over.statesboro || !('Basic Utility|10x16' in AD.over.statesboro)));
     page = await txt(p);
     await p.locator('.op-setlines summary').first().click(); await w(p);
-    ok('10 the Published list opens to show old and new prices', await p.locator('.op-setlines').count() === 2 && /\$5,300\.00|\$5,158\.00/.test(await txt(p, '.op-setlines')), (await txt(p, '.op-setlines')).slice(0, 200));
+    ok('10 the Published list opens to show old and new prices', await p.locator('.op-setlines').count() === 2 && /\$5,300\.00|\$5,158\.00|\$5,416\.00/.test(await txt(p, '.op-setlines')), (await txt(p, '.op-setlines')).slice(0, 200));
     await p.close();
   }
 

@@ -27,19 +27,34 @@
   const SITE_PART = 0.4;
   window.buildOnSiteShare = SITE_PART;
 
+  /* A sample order that was sold before these prices came in keeps the prices it was sold at, so the
+     office's "price matches the price list" check and its invoice lines still agree with its total. */
+  const soldBefore = (c) => { try { return (S.sales || []).some((s) => s.sample && s.c === c); } catch (e) { return false; } };
+  window.irOld = false;
+  function atOldPrices(fn) {
+    const now = {};
+    for (const [model, sizes] of Object.entries(PRICE_LIST)) { now[model] = { ...sizes }; Object.assign(sizes, window.PRICE_LIST_TA[model]); }
+    window.irOld = true;
+    try { return fn(); } finally {
+      window.irOld = false;
+      for (const [model, sizes] of Object.entries(PRICE_LIST)) Object.assign(sizes, now[model]);
+    }
+  }
   {
     const base = breakdown;
     breakdown = function (c = S.c) {
+      if (window.irOld) return base(c);
+      if (soldBefore(c)) return atOldPrices(() => base(c));
       const rows = base(c);
       for (const r of rows) if (/ base price$/.test(r.name) && r.source === PRICE_LIST_SOURCE) r.source = BASE_SOURCE;
       const site = rows.find((r) => r.name === 'Build on site');
-      if (!site) return rows;
       const fuel = rows.find((r) => r.name === 'Fuel surcharge');
       /* a fuel charge that follows the price is worked out before the 40%, as IdeaRoom does */
-      if (fuel && !fuel.needed && typeof ofFuelFor === 'function') {
+      if (fuel && !fuel.needed && typeof ofFuelFor === 'function' && typeof OF !== 'undefined' && OF.set?.fuel?.method === 'percent') {
         const amount = ofFuelFor(c, rows.reduce((t, r) => t + (r === fuel || r === site ? 0 : r.amount), 0));
         if (amount != null) fuel.amount = amount;
       }
+      if (!site) return rows;
       const rest = rows.reduce((t, r) => t + (r === site || r.needed ? 0 : Number(r.amount) || 0), 0);
       site.amount = Math.round(rest * SITE_PART * 100) / 100;
       site.name = 'Build on site';
@@ -56,7 +71,7 @@
   {
     const base = packageReference;
     packageReference = function (c, name = c.package) {
-      if (name === 'Full Side Porch') return FULL_SIDE[0] + FULL_SIDE[1] * Number(String(c.size).split('x')[1]);
+      if (name === 'Full Side Porch' && !window.irOld) return FULL_SIDE[0] + FULL_SIDE[1] * Number(String(c.size).split('x')[1]);
       return base(c, name);
     };
   }

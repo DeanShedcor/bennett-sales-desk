@@ -59,14 +59,14 @@ const URL = process.argv[2] || 'http://localhost:8765/';
   ok('16-wide rule shown', /16 ft wide is build on site only/.test(await p.$eval('#app', (e) => e.innerText)));
   await p.evaluate(() => { change('size', '14x40'); }); await p.waitForTimeout(250);
   ok('14-wide rule shown', /14 ft wide is delivered/.test(await p.$eval('#app', (e) => e.innerText)));
-  ok('14x40 Classic Utility uses the higher list price', await p.evaluate(() => PRICE_LIST['Classic Utility']['14x40']) === 17746);
+  ok('14x40 Classic Utility uses the higher list price', await p.evaluate(() => PRICE_LIST['Classic Utility']['14x40']) === 18633);
   // tall wall
   await p.evaluate(() => { change('size', '10x16'); S.c.extras = {}; const b0 = amount(); change('wallHeight', 7); window.__tall = amount() - b0; }); await p.waitForTimeout(200);
   ok('7 ft walls priced at $0.65 per sq ft (10x16 = $104)', Math.abs((await p.evaluate(() => window.__tall)) - 104) < 0.01, String(await p.evaluate(() => window.__tall)));
   await p.evaluate(() => change('wallHeight', 6));
   // build on site
   await p.evaluate(() => { begin('site'); }); await p.waitForTimeout(250);
-  ok('build on site priced at $0.30 per sq ft (10x16 = $48)', await p.evaluate(() => breakdown().find((r) => r.name === 'Build on site')?.amount) === 48);
+  ok('build on site is 40% of the rest of the price', await p.evaluate(() => { const r = breakdown(), s = r.find((x) => x.name === 'Build on site'); return !!s && s.amount === Math.round(r.reduce((t, x) => t + (x === s ? 0 : x.amount), 0) * 40) / 100; }));
   // RTO calculator from the summary drawer
   await p.evaluate(() => { begin(); S.expanded = true; render(); }); await p.waitForTimeout(250);
   await p.click('.ta-rtolink'); await p.waitForTimeout(250);

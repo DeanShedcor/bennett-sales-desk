@@ -32,7 +32,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
   await p.fill('#saleBilling [name=deposit]', '0'); await p.click('#saleBilling button[type=submit]'); await p.waitForTimeout(300);
   ok('1 a $0 deposit asks "Take no money today?"', /Take no money today\?/.test(await p.locator('.sp-zero').innerText().catch(() => '')) && await p.locator('#saleBilling').count() === 1);
   if (PIC) { await quiet(p); const r = await p.locator('.modal').boundingBox(); await p.screenshot({ path: PIC + '-zero.png', clip: { x: r.x, y: Math.max(0, r.y), width: r.width, height: Math.min(r.height, 1000 - Math.max(0, r.y)) } }); }
-  await p.fill('#saleBilling [name=discount]', '5000'); await p.fill('#saleBilling [name=purpose]', 'Military'); await p.fill('#saleBilling [name=deposit]', '552');
+  await p.fill('#saleBilling [name=discount]', '5000'); await p.fill('#saleBilling [name=purpose]', 'Military'); await p.fill('#saleBilling [name=deposit]', '900');
   await p.click('#saleBilling button[type=submit]'); await p.waitForTimeout(300);
   ok('1 a deposit above the discounted price is refused', /more than the building costs/.test(await p.locator('.sp-fielderror').innerText().catch(() => '')) && await p.locator('#saleBilling').count() === 1);
   await p.fill('#saleBilling [name=discount]', ''); await p.fill('#saleBilling [name=purpose]', ''); await p.fill('#saleBilling [name=deposit]', '0');
@@ -44,7 +44,7 @@ const ok = (n, c, d) => { c ? pass++ : fail++; console.log((c ? 'ok   ' : 'FAIL 
   /* 2. RTO identity, on a phone */
   p = await open(true);
   await toCustomer(p); await fillCustomer(p); await p.click('#customerInfo button[type=submit]'); await p.waitForTimeout(400);
-  await p.selectOption('#saleBilling [name=type]', 'Rent-to-own'); await p.fill('#saleBilling [name=deposit]', '552'); await p.click('#saleBilling button[type=submit]'); await p.waitForTimeout(400);
+  await p.selectOption('#saleBilling [name=type]', 'Rent-to-own'); await p.fill('#saleBilling [name=deposit]', '900'); await p.click('#saleBilling button[type=submit]'); await p.waitForTimeout(400);
   await p.locator('.modal button:has-text("Create the order")').click(); await p.waitForTimeout(900);
   if (!(await p.locator('#rtoForm').count())) { await p.evaluate(() => rtoApply(0)); await p.waitForTimeout(300); }
   await p.click('#rtoForm button[type=submit]'); await p.waitForTimeout(300);
