@@ -101,7 +101,7 @@ const BENCH = 'Workbench (per LF)', SHELF = 'Three Tier Shelving (per LF)', WALL
     if (PIC && !phone) { await quiet(p); await p.evaluate(() => { BS.sel = null; bsRender(); document.getElementById('bsheet').scrollTop = 0; }); await p.waitForTimeout(300); await p.screenshot({ path: PIC + '-placed.png' }); }
     const sheet = await p.evaluate(() => document.querySelector('.bs-pages').innerText);
     ok(`${tag}: the build sheet lists the pieces and where they go`, /Inside/i.test(sheet) && /Workbench: 6' long/.test(sheet) && /Shelving: 8' long/.test(sheet) && /Partition wall: \d+' long/.test(sheet) && !/not placed/i.test(sheet), sheet.slice(0, 600));
-    ok(`${tag}: the printed plan draws each piece`, await p.evaluate(() => document.querySelectorAll('.bs-pages .fp-piece').length >= 5));
+    ok(`${tag}: the printed plan draws each piece`, await p.evaluate(() => document.querySelectorAll('.bs-pages .fp-piece').length >= 4 && [...document.querySelectorAll('.bs-pages .b1-plan text')].some((t) => /^Opening/.test(t.textContent))));
     await p.evaluate(() => closeBuildSheet()); await p.waitForTimeout(500);
     card = await p.locator('#fp-ask').innerText();
     ok(`${tag}: back on the Finish step the card is green: "All placed on the floor plan"`, /All placed on the floor plan/.test(card) && await p.locator('#fp-ask.done').count() === 1, card);
